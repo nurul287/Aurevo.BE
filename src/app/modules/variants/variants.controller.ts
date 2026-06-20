@@ -1,0 +1,45 @@
+import { Request, Response, NextFunction } from "express";
+import * as VariantService from "./variants.service";
+import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput } from "./variants.schema";
+
+export const getVariants = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.getVariants(req.params.productId!);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
+export const getVariantById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.getVariantById(req.params.productId!, req.params.id!);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
+export const createVariant = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.createVariant(req.params.productId!, req.body as CreateVariantInput);
+    res.status(201).json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
+export const updateVariant = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.updateVariant(req.params.productId!, req.params.id!, req.body as UpdateVariantInput);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
+export const deleteVariant = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await VariantService.deleteVariant(req.params.productId!, req.params.id!);
+    res.status(200).json({ success: true, message: "Variant deleted successfully" });
+  } catch (err) { next(err); }
+};
+
+export const adjustStock = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.adjustStock(req.params.productId!, req.params.id!, req.body as AdjustStockInput);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};
