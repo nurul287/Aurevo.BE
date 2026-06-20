@@ -1,9 +1,11 @@
 import { Router, type IRouter } from "express";
+import categoryRoutes from "../app/modules/categories/categories.routes";
 
 const router: IRouter = Router();
 
+router.use("/categories", categoryRoutes);
+
 // Modules will be registered here as they are built:
-// router.use("/categories", categoryRoutes);
 // router.use("/brands", brandRoutes);
 // router.use("/products", productRoutes);
 // router.use("/cart", cartRoutes);

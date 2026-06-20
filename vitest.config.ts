@@ -5,9 +5,8 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./src/test/setup.ts"],
-    // Run test files sequentially to avoid DB race conditions
-    pool: "forks",
-    poolOptions: { forks: { singleFork: true } },
+    // Sequential execution — prevents DB race conditions between test files
+    singleThread: true,
     testTimeout: 15000,
   },
 });
