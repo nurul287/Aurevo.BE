@@ -5,8 +5,8 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./src/test/setup.ts"],
-    // Sequential execution — prevents DB race conditions between test files
-    singleThread: true,
+    // Run test files one at a time — prevents FK violations on shared local DB
+    fileParallelism: false,
     testTimeout: 15000,
   },
 });
