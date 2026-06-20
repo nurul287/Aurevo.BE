@@ -1,229 +1,110 @@
-# Aurevo Fashion - Backend API
+# Aurevo Fashion — Full-Stack E-Commerce Platform
 
-Node.js backend for Aurevo Fashion e-commerce platform using **Modular MVC Architecture**.
+Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate production-grade software engineering across the entire SDLC — from database design to REST API to a React storefront with an AI shopping assistant.
 
-## 🏗️ Architecture
+---
 
-This project follows the **Modular MVC (Model-View-Controller)** pattern with feature-based organization.
-
-```
-backend/
-├── prisma/
-│   └── schema.prisma          # Database schema (Prisma ORM)
-├── src/
-│   ├── app/
-│   │   ├── config/            # ⚙️ Configuration
-│   │   │   ├── index.ts       # Environment variables
-│   │   │   ├── database.ts    # Prisma client
-│   │   │   └── swagger.ts     # API documentation
-│   │   ├── errors/            # 🚨 Custom error classes
-│   │   │   └── AppError.ts    # AppError, NotFoundError, etc.
-│   │   ├── interfaces/        # 📝 Global TypeScript interfaces
-│   │   ├── middlewares/       # 🛡️ Express middlewares
-│   │   │   ├── auth.ts        # JWT authentication
-│   │   │   ├── validateRequest.ts
-│   │   │   └── globalErrorHandler.ts
-│   │   ├── utils/             # 🔧 Utility functions
-│   │   └── modules/           # 📦 Feature Modules
-│   │       ├── auth/
-│   │       │   ├── auth.interface.ts
-│   │       │   ├── auth.validation.ts
-│   │       │   ├── auth.service.ts    # Business logic
-│   │       │   ├── auth.controller.ts # Request handlers
-│   │       │   └── auth.route.ts      # Route definitions
-│   │       ├── product/
-│   │       ├── category/
-│   │       ├── brand/
-│   │       ├── cart/
-│   │       └── order/
-│   ├── routes/
-│   │   └── index.ts           # Central route aggregator
-│   ├── app.ts                 # Express app setup
-│   └── server.ts              # Server entry point
-├── package.json
-└── tsconfig.json
-```
-
-## 🛠️ Tech Stack
-
-- **Runtime**: Node.js 20+
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **ORM**: Prisma
-- **Database**: PostgreSQL
-- **Authentication**: JWT
-- **Validation**: Zod
-- **Documentation**: Swagger/OpenAPI
-
-## 🔄 Request Flow
+## Live Architecture
 
 ```
-Request → Route → Controller → Service → Prisma → Database
-                      ↓            ↓
-               Validation    Business Logic
+┌─────────────────────────────────────────────────────────────┐
+│                        Aurevo.UI                            │
+│         React 19 + Vite + TanStack Query + Tailwind         │
+│              Storefront  ·  Admin Panel                     │
+└──────────────────┬────────────────┬────────────────────────┘
+                   │ REST API       │ Direct (Auth + Storage)
+                   ▼                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       Aurevo.BE                             │
+│          Express + TypeScript + Drizzle ORM                 │
+│   Categories · Products · Cart · Orders · Inventory · Chat  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ PostgreSQL + Storage + Auth
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        Supabase                             │
+│        PostgreSQL 15  ·  Auth (JWT)  ·  Storage             │
+│        Row-Level Security  ·  Edge Functions                │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-| Layer          | File              | Responsibility                      |
-| -------------- | ----------------- | ----------------------------------- |
-| **Route**      | `*.route.ts`      | Define endpoints, apply middleware  |
-| **Controller** | `*.controller.ts` | Handle HTTP req/res, call service   |
-| **Service**    | `*.service.ts`    | Business logic, database operations |
-| **Validation** | `*.validation.ts` | Zod schemas for input validation    |
-| **Interface**  | `*.interface.ts`  | TypeScript types for the module     |
+---
 
-## 🚀 Getting Started
+## Repositories
+
+| Repo | Stack | Purpose |
+|------|-------|---------|
+| `Aurevo.UI` | React 19, Vite, TanStack Query, Tailwind CSS v4, Radix UI | Customer storefront + admin panel |
+| `Aurevo.BE` | Node.js, Express, TypeScript, Drizzle ORM, Zod, Vitest | REST API — business logic, validation, AI chat |
+
+---
+
+## Key Features
+
+- **Product Catalog** — categories, brands, products with variants (size/color/SKU), image management
+- **Guest + Auth Cart** — dual-owner cart (session-based for guests, user-based for logged-in), cart migration on sign-in
+- **Order Management** — transactional stock reservation, full order lifecycle (pending → shipped → delivered), admin status/payment/tracking/fulfillment controls
+- **Inventory System** — per-variant stock tracking, audit log of every movement (`inventoryMovements`), low-stock alerts
+- **Auth & Profiles** — Supabase JWT auth, user profiles, saved address book (billing/shipping)
+- **AI Shopping Assistant** — SSE-streamed responses via Claude API with tool use (product search, detail lookup, category listing)
+- **Admin Dashboard** — product/order/inventory management, bulk operations, analytics
+
+---
+
+## SDLC Documentation
+
+| Phase | Document |
+|-------|----------|
+| 1. Requirements | [docs/01-requirements.md](docs/01-requirements.md) |
+| 2. System Design | [docs/02-system-design.md](docs/02-system-design.md) |
+| 3. Database Design | [docs/03-database-design.md](docs/03-database-design.md) |
+| 4. API Design | [docs/04-api-design.md](docs/04-api-design.md) |
+| 5. Implementation | [docs/05-implementation.md](docs/05-implementation.md) |
+| 6. Testing Strategy | [docs/06-testing.md](docs/06-testing.md) |
+| 7. Deployment | [docs/07-deployment.md](docs/07-deployment.md) |
+
+---
+
+## Quick Start
 
 ### Prerequisites
+- Node.js 20+, pnpm 9+
+- Docker Desktop (for local Supabase)
 
-- Node.js 20+
-- PostgreSQL database
-
-### Installation
-
-1. **Install dependencies**
-
-   ```bash
-   cd backend
-   npm install
-   ```
-
-2. **Set up environment variables**
-
-   ```bash
-   cp env.example .env
-   # Edit .env with your database credentials
-   ```
-
-3. **Set up database**
-
-   ```bash
-   # Generate Prisma client
-   npm run db:generate
-
-   # Push schema to database
-   npm run db:push
-   ```
-
-4. **Start development server**
-
-   ```bash
-   npm run dev
-   ```
-
-   Server will start at `http://localhost:3001`
-
-## 📡 API Endpoints
-
-### Authentication
-
-| Method | Endpoint                  | Description          |
-| ------ | ------------------------- | -------------------- |
-| POST   | `/api/auth/register`      | Register new user    |
-| POST   | `/api/auth/login`         | Login user           |
-| GET    | `/api/auth/me`            | Get current user     |
-| POST   | `/api/auth/guest-session` | Create guest session |
-
-### Products
-
-| Method | Endpoint            | Description               |
-| ------ | ------------------- | ------------------------- |
-| GET    | `/api/products`     | List products (paginated) |
-| GET    | `/api/products/:id` | Get single product        |
-| POST   | `/api/products`     | Create product (admin)    |
-| PUT    | `/api/products/:id` | Update product (admin)    |
-| DELETE | `/api/products/:id` | Delete product (admin)    |
-
-### Categories
-
-| Method | Endpoint              | Description             |
-| ------ | --------------------- | ----------------------- |
-| GET    | `/api/categories`     | List categories         |
-| GET    | `/api/categories/:id` | Get single category     |
-| POST   | `/api/categories`     | Create category (admin) |
-
-### Brands
-
-| Method | Endpoint          | Description          |
-| ------ | ----------------- | -------------------- |
-| GET    | `/api/brands`     | List brands          |
-| GET    | `/api/brands/:id` | Get single brand     |
-| POST   | `/api/brands`     | Create brand (admin) |
-
-### Cart
-
-| Method | Endpoint              | Description      |
-| ------ | --------------------- | ---------------- |
-| GET    | `/api/cart`           | Get user's cart  |
-| POST   | `/api/cart/items`     | Add item to cart |
-| PUT    | `/api/cart/items/:id` | Update cart item |
-| DELETE | `/api/cart/items/:id` | Remove from cart |
-| DELETE | `/api/cart`           | Clear cart       |
-
-### Orders
-
-| Method | Endpoint                 | Description                 |
-| ------ | ------------------------ | --------------------------- |
-| GET    | `/api/orders`            | Get user's orders           |
-| GET    | `/api/orders/:id`        | Get order details           |
-| POST   | `/api/orders`            | Create order                |
-| PUT    | `/api/orders/:id/status` | Update order status (admin) |
-
-## 🔐 Authentication
-
-### Headers
-
-- **Authorization**: `Bearer <token>` - For authenticated requests
-- **X-Guest-Session**: `<session-id>` - For guest cart/checkout
-
-### User Roles
-
-- `USER` - Regular customer
-- `ADMIN` - Store administrator
-
-## 📝 Scripts
-
+### 1. Start local database
 ```bash
-# Development
-npm run dev          # Start dev server with hot reload
-
-# Build
-npm run build        # Build for production
-npm start            # Start production server
-
-# Database
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema to database
-npm run db:migrate   # Run migrations
-npm run db:studio    # Open Prisma Studio
-
-# Code Quality
-npm run lint         # Run ESLint
-npm run format       # Format with Prettier
+cd Aurevo.UI
+pnpm db:start          # starts Supabase Docker stack
+pnpm db:reset          # applies migrations + seed data
 ```
 
-## 🔧 Environment Variables
-
-```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/aurevo_db
-
-# Server
-PORT=3001
-NODE_ENV=development
-
-# JWT
-JWT_SECRET=your-secret-key
-
-# Auth0 (optional)
-AUTH0_DOMAIN=your-tenant.auth0.com
-AUTH0_CLIENT_ID=your-client-id
-AUTH0_CLIENT_SECRET=your-client-secret
-AUTH0_AUDIENCE=https://api.aurevofashion.store
-
-# Frontend
-FRONTEND_URL=http://localhost:5173
+### 2. Run the backend API
+```bash
+cd Aurevo.BE
+cp .env.example .env.local   # fill in Supabase local keys
+pnpm dev                     # http://localhost:3001
+# Swagger docs: http://localhost:3001/api/docs
 ```
 
-## 📄 License
+### 3. Run the frontend
+```bash
+cd Aurevo.UI
+cp .env.example .env.local   # fill in Supabase local keys
+pnpm dev                     # http://localhost:5173
+```
 
-MIT
+---
+
+## Tech Decisions at a Glance
+
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Database | Supabase (PostgreSQL 15) | Managed Postgres + built-in Auth + Storage + RLS |
+| ORM | Drizzle ORM | Type-safe, introspect-first, zero magic |
+| API Framework | Express + TypeScript | Explicit, well-understood, easy to test |
+| Validation | Zod | Schema-first, integrates cleanly with TypeScript |
+| Frontend | React 19 + Vite | Latest concurrent features, fast DX |
+| State/Data | TanStack Query v5 | Server-state management, caching, optimistic updates |
+| UI Components | Radix UI + Tailwind CSS v4 | Accessible headless components + utility CSS |
+| AI | Anthropic Claude + tool use | Agentic product search over real catalog |
+| Testing | Vitest + Supertest | Fast, real DB integration tests, no mocks on data layer |
