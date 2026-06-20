@@ -5,6 +5,7 @@ import productRoutes from "../app/modules/products/products.routes";
 import variantRoutes from "../app/modules/variants/variants.routes";
 import imageRoutes from "../app/modules/images/images.routes";
 import cartRoutes from "../app/modules/cart/cart.routes";
+import orderRoutes from "../app/modules/orders/orders.routes";
 
 const router: IRouter = Router();
 
@@ -14,6 +15,7 @@ router.use("/products", productRoutes);
 router.use("/products/:productId/variants", variantRoutes);
 router.use("/products/:productId/images", imageRoutes);
 router.use("/cart", cartRoutes);
+router.use("/orders", orderRoutes);
 
 // Modules will be registered here as they are built:
 // router.use("/brands", brandRoutes);
