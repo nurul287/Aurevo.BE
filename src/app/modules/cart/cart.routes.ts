@@ -1,9 +1,28 @@
 import { Router } from "express";
-import { authenticate, optionalAuth, validate, publicLimiter, authLimiter } from "../../middlewares";
-import { addItemSchema, updateItemSchema, cartItemParamsSchema, migrateCartSchema } from "./cart.schema";
-import { createGuestSession, getCart, addItem, updateItem, removeItem, clearCart, migrateCart } from "./cart.controller";
+import {
+  authenticate,
+  authLimiter,
+  optionalAuth,
+  publicLimiter,
+  validate,
+} from "../../middlewares";
+import {
+  addItem,
+  clearCart,
+  createGuestSession,
+  getCart,
+  migrateCart,
+  removeItem,
+  updateItem,
+} from "./cart.controller";
+import {
+  addItemSchema,
+  cartItemParamsSchema,
+  migrateCartSchema,
+  updateItemSchema,
+} from "./cart.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -57,7 +76,13 @@ router.get("/", optionalAuth, getCart);
  *       422:
  *         description: Insufficient stock
  */
-router.post("/items", optionalAuth, authLimiter, validate(addItemSchema), addItem);
+router.post(
+  "/items",
+  optionalAuth,
+  authLimiter,
+  validate(addItemSchema),
+  addItem,
+);
 
 /**
  * @swagger
@@ -74,7 +99,12 @@ router.post("/items", optionalAuth, authLimiter, validate(addItemSchema), addIte
  *       200:
  *         description: Quantity updated
  */
-router.patch("/items/:id", optionalAuth, validate(updateItemSchema), updateItem);
+router.patch(
+  "/items/:id",
+  optionalAuth,
+  validate(updateItemSchema),
+  updateItem,
+);
 
 /**
  * @swagger
@@ -91,7 +121,12 @@ router.patch("/items/:id", optionalAuth, validate(updateItemSchema), updateItem)
  *       200:
  *         description: Item removed
  */
-router.delete("/items/:id", optionalAuth, validate(cartItemParamsSchema), removeItem);
+router.delete(
+  "/items/:id",
+  optionalAuth,
+  validate(cartItemParamsSchema),
+  removeItem,
+);
 
 /**
  * @swagger

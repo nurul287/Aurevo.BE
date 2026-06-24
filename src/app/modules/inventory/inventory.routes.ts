@@ -1,15 +1,22 @@
 import { Router } from "express";
-import { authenticate, requireAdmin, validate, publicLimiter } from "../../middlewares";
+import { authenticate, requireAdmin, validate } from "../../middlewares";
 import {
-  getInventorySchema, upsertInventorySchema, adjustInventorySchema,
-  getMovementsSchema, inventoryIdSchema,
-} from "./inventory.schema";
-import {
-  getInventory, getInventoryById, upsertInventory, adjustInventory,
-  getLowStockAlerts, getMovements,
+  adjustInventory,
+  getInventory,
+  getInventoryById,
+  getLowStockAlerts,
+  getMovements,
+  upsertInventory,
 } from "./inventory.controller";
+import {
+  adjustInventorySchema,
+  getInventorySchema,
+  getMovementsSchema,
+  inventoryIdSchema,
+  upsertInventorySchema,
+} from "./inventory.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -33,7 +40,13 @@ const router = Router();
  *       200:
  *         description: Paginated inventory list
  */
-router.get("/", authenticate, requireAdmin, validate(getInventorySchema), getInventory);
+router.get(
+  "/",
+  authenticate,
+  requireAdmin,
+  validate(getInventorySchema),
+  getInventory,
+);
 
 /**
  * @swagger
@@ -68,7 +81,13 @@ router.get("/low-stock", authenticate, requireAdmin, getLowStockAlerts);
  *       200:
  *         description: Paginated movement audit log
  */
-router.get("/movements", authenticate, requireAdmin, validate(getMovementsSchema), getMovements);
+router.get(
+  "/movements",
+  authenticate,
+  requireAdmin,
+  validate(getMovementsSchema),
+  getMovements,
+);
 
 /**
  * @swagger
@@ -82,7 +101,13 @@ router.get("/movements", authenticate, requireAdmin, validate(getMovementsSchema
  *       200:
  *         description: Inventory record
  */
-router.get("/:id", authenticate, requireAdmin, validate(inventoryIdSchema), getInventoryById);
+router.get(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(inventoryIdSchema),
+  getInventoryById,
+);
 
 /**
  * @swagger
@@ -109,7 +134,13 @@ router.get("/:id", authenticate, requireAdmin, validate(inventoryIdSchema), getI
  *       200:
  *         description: Inventory created or updated
  */
-router.put("/", authenticate, requireAdmin, validate(upsertInventorySchema), upsertInventory);
+router.put(
+  "/",
+  authenticate,
+  requireAdmin,
+  validate(upsertInventorySchema),
+  upsertInventory,
+);
 
 /**
  * @swagger
@@ -137,6 +168,12 @@ router.put("/", authenticate, requireAdmin, validate(upsertInventorySchema), ups
  *       422:
  *         description: Adjustment would result in negative inventory
  */
-router.patch("/:id/adjust", authenticate, requireAdmin, validate(adjustInventorySchema), adjustInventory);
+router.patch(
+  "/:id/adjust",
+  authenticate,
+  requireAdmin,
+  validate(adjustInventorySchema),
+  adjustInventory,
+);
 
 export default router;

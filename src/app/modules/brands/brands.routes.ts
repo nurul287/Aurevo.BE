@@ -1,9 +1,26 @@
 import { Router } from "express";
-import { authenticate, requireAdmin, validate, publicLimiter, strictLimiter } from "../../middlewares";
-import { createBrandSchema, updateBrandSchema, getBrandsSchema, brandIdSchema } from "./brands.schema";
-import { getBrands, getBrandById, createBrand, updateBrand, deleteBrand } from "./brands.controller";
+import {
+  authenticate,
+  publicLimiter,
+  requireAdmin,
+  strictLimiter,
+  validate,
+} from "../../middlewares";
+import {
+  createBrand,
+  deleteBrand,
+  getBrandById,
+  getBrands,
+  updateBrand,
+} from "./brands.controller";
+import {
+  brandIdSchema,
+  createBrandSchema,
+  getBrandsSchema,
+  updateBrandSchema,
+} from "./brands.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -83,7 +100,14 @@ router.get("/:id", publicLimiter, validate(brandIdSchema), getBrandById);
  *       409:
  *         description: Slug already taken
  */
-router.post("/", authenticate, requireAdmin, strictLimiter, validate(createBrandSchema), createBrand);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  strictLimiter,
+  validate(createBrandSchema),
+  createBrand,
+);
 
 /**
  * @swagger
@@ -104,7 +128,13 @@ router.post("/", authenticate, requireAdmin, strictLimiter, validate(createBrand
  *       404:
  *         description: Brand not found
  */
-router.patch("/:id", authenticate, requireAdmin, validate(updateBrandSchema), updateBrand);
+router.patch(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(updateBrandSchema),
+  updateBrand,
+);
 
 /**
  * @swagger
@@ -127,6 +157,12 @@ router.patch("/:id", authenticate, requireAdmin, validate(updateBrandSchema), up
  *       422:
  *         description: Brand has products — cannot delete
  */
-router.delete("/:id", authenticate, requireAdmin, validate(brandIdSchema), deleteBrand);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(brandIdSchema),
+  deleteBrand,
+);
 
 export default router;

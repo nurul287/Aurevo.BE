@@ -1,15 +1,29 @@
 import { Router } from "express";
-import { authenticate, requireAdmin, validate, publicLimiter, strictLimiter } from "../../middlewares";
 import {
-  createVariantSchema, updateVariantSchema, adjustStockSchema,
-  variantParamsSchema, productParamsSchema,
-} from "./variants.schema";
+  authenticate,
+  publicLimiter,
+  requireAdmin,
+  strictLimiter,
+  validate,
+} from "../../middlewares";
 import {
-  getVariants, getVariantById, createVariant, updateVariant, deleteVariant, adjustStock,
+  adjustStock,
+  createVariant,
+  deleteVariant,
+  getVariantById,
+  getVariants,
+  updateVariant,
 } from "./variants.controller";
+import {
+  adjustStockSchema,
+  createVariantSchema,
+  productParamsSchema,
+  updateVariantSchema,
+  variantParamsSchema,
+} from "./variants.schema";
 
 // Mounted at /api/products/:productId/variants — productId comes from mergeParams
-const router = Router({ mergeParams: true });
+const router: Router = Router({ mergeParams: true });
 
 /**
  * @swagger
@@ -51,7 +65,12 @@ router.get("/", publicLimiter, validate(productParamsSchema), getVariants);
  *       404:
  *         description: Product or variant not found
  */
-router.get("/:id", publicLimiter, validate(variantParamsSchema), getVariantById);
+router.get(
+  "/:id",
+  publicLimiter,
+  validate(variantParamsSchema),
+  getVariantById,
+);
 
 /**
  * @swagger
@@ -67,7 +86,14 @@ router.get("/:id", publicLimiter, validate(variantParamsSchema), getVariantById)
  *       409:
  *         description: SKU already taken
  */
-router.post("/", authenticate, requireAdmin, strictLimiter, validate(createVariantSchema), createVariant);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  strictLimiter,
+  validate(createVariantSchema),
+  createVariant,
+);
 
 /**
  * @swagger
@@ -81,7 +107,13 @@ router.post("/", authenticate, requireAdmin, strictLimiter, validate(createVaria
  *       200:
  *         description: Variant updated
  */
-router.patch("/:id", authenticate, requireAdmin, validate(updateVariantSchema), updateVariant);
+router.patch(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(updateVariantSchema),
+  updateVariant,
+);
 
 /**
  * @swagger
@@ -95,7 +127,13 @@ router.patch("/:id", authenticate, requireAdmin, validate(updateVariantSchema), 
  *       200:
  *         description: Variant deleted
  */
-router.delete("/:id", authenticate, requireAdmin, validate(variantParamsSchema), deleteVariant);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(variantParamsSchema),
+  deleteVariant,
+);
 
 /**
  * @swagger
@@ -124,6 +162,12 @@ router.delete("/:id", authenticate, requireAdmin, validate(variantParamsSchema),
  *       422:
  *         description: Adjustment would result in negative stock
  */
-router.patch("/:id/stock", authenticate, requireAdmin, validate(adjustStockSchema), adjustStock);
+router.patch(
+  "/:id/stock",
+  authenticate,
+  requireAdmin,
+  validate(adjustStockSchema),
+  adjustStock,
+);
 
 export default router;

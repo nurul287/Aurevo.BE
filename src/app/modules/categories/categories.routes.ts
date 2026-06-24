@@ -1,20 +1,26 @@
 import { Router } from "express";
-import { authenticate, requireAdmin, validate, publicLimiter, strictLimiter } from "../../middlewares";
 import {
-  createCategorySchema,
-  updateCategorySchema,
-  getCategoriesSchema,
-  categoryIdSchema,
-} from "./categories.schema";
+  authenticate,
+  publicLimiter,
+  requireAdmin,
+  strictLimiter,
+  validate,
+} from "../../middlewares";
 import {
+  createCategory,
+  deleteCategory,
   getCategories,
   getCategoryById,
-  createCategory,
   updateCategory,
-  deleteCategory,
 } from "./categories.controller";
+import {
+  categoryIdSchema,
+  createCategorySchema,
+  getCategoriesSchema,
+  updateCategorySchema,
+} from "./categories.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -97,7 +103,14 @@ router.get("/:id", publicLimiter, validate(categoryIdSchema), getCategoryById);
  *       409:
  *         description: Slug already taken
  */
-router.post("/", authenticate, requireAdmin, strictLimiter, validate(createCategorySchema), createCategory);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  strictLimiter,
+  validate(createCategorySchema),
+  createCategory,
+);
 
 /**
  * @swagger
@@ -118,7 +131,13 @@ router.post("/", authenticate, requireAdmin, strictLimiter, validate(createCateg
  *       404:
  *         description: Category not found
  */
-router.patch("/:id", authenticate, requireAdmin, validate(updateCategorySchema), updateCategory);
+router.patch(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(updateCategorySchema),
+  updateCategory,
+);
 
 /**
  * @swagger
@@ -141,6 +160,12 @@ router.patch("/:id", authenticate, requireAdmin, validate(updateCategorySchema),
  *       422:
  *         description: Category has products — cannot delete
  */
-router.delete("/:id", authenticate, requireAdmin, validate(categoryIdSchema), deleteCategory);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(categoryIdSchema),
+  deleteCategory,
+);
 
 export default router;

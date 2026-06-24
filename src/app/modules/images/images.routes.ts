@@ -1,10 +1,27 @@
 import { Router } from "express";
 import multer from "multer";
-import { authenticate, requireAdmin, validate, publicLimiter, uploadLimiter } from "../../middlewares";
-import { updateImageSchema, imageParamsSchema, productParamsSchema } from "./images.schema";
-import { getImages, getImageById, uploadImage, updateImage, setPrimaryImage, deleteImage } from "./images.controller";
+import {
+  authenticate,
+  publicLimiter,
+  requireAdmin,
+  uploadLimiter,
+  validate,
+} from "../../middlewares";
+import {
+  deleteImage,
+  getImageById,
+  getImages,
+  setPrimaryImage,
+  updateImage,
+  uploadImage,
+} from "./images.controller";
+import {
+  imageParamsSchema,
+  productParamsSchema,
+  updateImageSchema,
+} from "./images.schema";
 
-const router = Router({ mergeParams: true });
+const router: Router = Router({ mergeParams: true });
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -77,7 +94,14 @@ router.get("/:id", publicLimiter, validate(imageParamsSchema), getImageById);
  *       201:
  *         description: Image uploaded and record created
  */
-router.post("/", authenticate, requireAdmin, uploadLimiter, upload.single("image"), uploadImage);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  uploadLimiter,
+  upload.single("image"),
+  uploadImage,
+);
 
 /**
  * @swagger
@@ -91,7 +115,13 @@ router.post("/", authenticate, requireAdmin, uploadLimiter, upload.single("image
  *       200:
  *         description: Image updated
  */
-router.patch("/:id", authenticate, requireAdmin, validate(updateImageSchema), updateImage);
+router.patch(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(updateImageSchema),
+  updateImage,
+);
 
 /**
  * @swagger
@@ -105,7 +135,13 @@ router.patch("/:id", authenticate, requireAdmin, validate(updateImageSchema), up
  *       200:
  *         description: Image set as primary, previous primary cleared
  */
-router.patch("/:id/primary", authenticate, requireAdmin, validate(imageParamsSchema), setPrimaryImage);
+router.patch(
+  "/:id/primary",
+  authenticate,
+  requireAdmin,
+  validate(imageParamsSchema),
+  setPrimaryImage,
+);
 
 /**
  * @swagger
@@ -119,6 +155,12 @@ router.patch("/:id/primary", authenticate, requireAdmin, validate(imageParamsSch
  *       200:
  *         description: Image deleted
  */
-router.delete("/:id", authenticate, requireAdmin, validate(imageParamsSchema), deleteImage);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(imageParamsSchema),
+  deleteImage,
+);
 
 export default router;

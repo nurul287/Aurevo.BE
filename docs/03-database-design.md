@@ -28,6 +28,18 @@
 
 ## Entity Relationship Diagram
 
+### Interactive Lucidchart Diagram
+
+Full ER diagram with all 17 active tables, FK cardinality notation (crow's foot), and color-coded domain groups:
+
+**View:** https://lucid.app/lucidchart/e366cdea-a4f9-42b1-aa79-36553c3eb081/view
+
+Color coding: purple = Auth & Users | green = Catalog | red = Products & Inventory | yellow = Commerce
+
+---
+
+### Text Summary (quick reference)
+
 ```
 auth.users (Supabase managed)
     │

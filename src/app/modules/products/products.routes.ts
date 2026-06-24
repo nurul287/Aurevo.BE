@@ -1,15 +1,32 @@
 import { Router } from "express";
-import { authenticate, optionalAuth, requireAdmin, validate, publicLimiter, strictLimiter } from "../../middlewares";
 import {
-  createProductSchema, updateProductSchema, getProductsSchema,
-  productIdSchema, bulkStatusSchema, bulkDeleteSchema,
-} from "./products.schema";
+  authenticate,
+  publicLimiter,
+  requireAdmin,
+  strictLimiter,
+  validate,
+} from "../../middlewares";
 import {
-  getProducts, getProductById, getProductBySlug, getFeaturedProducts,
-  createProduct, updateProduct, deleteProduct, bulkUpdateStatus, bulkDelete,
+  bulkDelete,
+  bulkUpdateStatus,
+  createProduct,
+  deleteProduct,
+  getFeaturedProducts,
+  getProductById,
+  getProductBySlug,
+  getProducts,
+  updateProduct,
 } from "./products.controller";
+import {
+  bulkDeleteSchema,
+  bulkStatusSchema,
+  createProductSchema,
+  getProductsSchema,
+  productIdSchema,
+  updateProductSchema,
+} from "./products.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -116,7 +133,13 @@ router.get("/by-slug/:slug", publicLimiter, getProductBySlug);
  *       200:
  *         description: Products updated
  */
-router.patch("/bulk/status", authenticate, requireAdmin, validate(bulkStatusSchema), bulkUpdateStatus);
+router.patch(
+  "/bulk/status",
+  authenticate,
+  requireAdmin,
+  validate(bulkStatusSchema),
+  bulkUpdateStatus,
+);
 
 /**
  * @swagger
@@ -141,7 +164,13 @@ router.patch("/bulk/status", authenticate, requireAdmin, validate(bulkStatusSche
  *       200:
  *         description: Products deleted
  */
-router.delete("/bulk/delete", authenticate, requireAdmin, validate(bulkDeleteSchema), bulkDelete);
+router.delete(
+  "/bulk/delete",
+  authenticate,
+  requireAdmin,
+  validate(bulkDeleteSchema),
+  bulkDelete,
+);
 
 /**
  * @swagger
@@ -176,7 +205,14 @@ router.get("/:id", publicLimiter, validate(productIdSchema), getProductById);
  *       409:
  *         description: Slug or SKU already taken
  */
-router.post("/", authenticate, requireAdmin, strictLimiter, validate(createProductSchema), createProduct);
+router.post(
+  "/",
+  authenticate,
+  requireAdmin,
+  strictLimiter,
+  validate(createProductSchema),
+  createProduct,
+);
 
 /**
  * @swagger
@@ -195,7 +231,13 @@ router.post("/", authenticate, requireAdmin, strictLimiter, validate(createProdu
  *       200:
  *         description: Product updated
  */
-router.patch("/:id", authenticate, requireAdmin, validate(updateProductSchema), updateProduct);
+router.patch(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(updateProductSchema),
+  updateProduct,
+);
 
 /**
  * @swagger
@@ -214,6 +256,12 @@ router.patch("/:id", authenticate, requireAdmin, validate(updateProductSchema), 
  *       200:
  *         description: Product deleted
  */
-router.delete("/:id", authenticate, requireAdmin, validate(productIdSchema), deleteProduct);
+router.delete(
+  "/:id",
+  authenticate,
+  requireAdmin,
+  validate(productIdSchema),
+  deleteProduct,
+);
 
 export default router;

@@ -1,9 +1,14 @@
 import { Router } from "express";
-import { optionalAuth, validate, chatLimiter, publicLimiter } from "../../middlewares";
-import { chatMessageSchema } from "./chat.schema";
+import {
+  chatLimiter,
+  optionalAuth,
+  publicLimiter,
+  validate,
+} from "../../middlewares";
 import { chat, chatHealth } from "./chat.controller";
+import { chatMessageSchema } from "./chat.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger

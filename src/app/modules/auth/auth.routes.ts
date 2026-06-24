@@ -1,9 +1,21 @@
 import { Router } from "express";
-import { authenticate, validate, authLimiter } from "../../middlewares";
-import { updateProfileSchema, createAddressSchema, updateAddressSchema, addressIdSchema } from "./auth.schema";
-import { getMe, updateProfile, getAddresses, createAddress, updateAddress, deleteAddress } from "./auth.controller";
+import { authenticate, authLimiter, validate } from "../../middlewares";
+import {
+  createAddress,
+  deleteAddress,
+  getAddresses,
+  getMe,
+  updateAddress,
+  updateProfile,
+} from "./auth.controller";
+import {
+  addressIdSchema,
+  createAddressSchema,
+  updateAddressSchema,
+  updateProfileSchema,
+} from "./auth.schema";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -31,7 +43,12 @@ router.get("/me", authenticate, getMe);
  *       200:
  *         description: Updated profile
  */
-router.patch("/profile", authenticate, validate(updateProfileSchema), updateProfile);
+router.patch(
+  "/profile",
+  authenticate,
+  validate(updateProfileSchema),
+  updateProfile,
+);
 
 /**
  * @swagger
@@ -66,7 +83,13 @@ router.get("/addresses", authenticate, getAddresses);
  *       201:
  *         description: Address created
  */
-router.post("/addresses", authenticate, authLimiter, validate(createAddressSchema), createAddress);
+router.post(
+  "/addresses",
+  authenticate,
+  authLimiter,
+  validate(createAddressSchema),
+  createAddress,
+);
 
 /**
  * @swagger
@@ -80,7 +103,12 @@ router.post("/addresses", authenticate, authLimiter, validate(createAddressSchem
  *       200:
  *         description: Address updated
  */
-router.patch("/addresses/:id", authenticate, validate(updateAddressSchema), updateAddress);
+router.patch(
+  "/addresses/:id",
+  authenticate,
+  validate(updateAddressSchema),
+  updateAddress,
+);
 
 /**
  * @swagger
@@ -94,6 +122,11 @@ router.patch("/addresses/:id", authenticate, validate(updateAddressSchema), upda
  *       200:
  *         description: Address deleted
  */
-router.delete("/addresses/:id", authenticate, validate(addressIdSchema), deleteAddress);
+router.delete(
+  "/addresses/:id",
+  authenticate,
+  validate(addressIdSchema),
+  deleteAddress,
+);
 
 export default router;
