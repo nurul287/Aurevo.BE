@@ -10,7 +10,7 @@ const addressSchema = z.object({
 
 export const createOrderSchema = z.object({
   body: z.object({
-    email: z.string().email(),
+    email: z.string().email().optional().nullable(),
     phone: z.string().min(1).max(50).optional(),
     paymentMethod: z.enum(["cash", "online"]).default("cash"),
     shippingAddress: addressSchema,
