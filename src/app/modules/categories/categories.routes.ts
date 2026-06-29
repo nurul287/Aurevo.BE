@@ -1,11 +1,16 @@
 import { Router } from "express";
+import multer from "multer";
 import {
   authenticate,
   publicLimiter,
   requireAdmin,
   strictLimiter,
+  uploadLimiter,
   validate,
 } from "../../middlewares";
+
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 import {
   createCategory,
   deleteCategory,
@@ -107,8 +112,8 @@ router.post(
   "/",
   authenticate,
   requireAdmin,
-  strictLimiter,
-  validate(createCategorySchema),
+  uploadLimiter,
+  upload.single("image"),
   createCategory,
 );
 
@@ -135,7 +140,8 @@ router.patch(
   "/:id",
   authenticate,
   requireAdmin,
-  validate(updateCategorySchema),
+  uploadLimiter,
+  upload.single("image"),
   updateCategory,
 );
 

@@ -2,7 +2,25 @@ import { eq, ne, ilike, and, asc, desc, count, SQL } from "drizzle-orm";
 import { db } from "../../../db";
 import { categories } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors";
+import { uploadFile, deleteFile } from "../../../lib/storage";
 import type { CreateCategoryInput, UpdateCategoryInput, GetCategoriesInput } from "./categories.schema";
+
+const BUCKET = "product-images";
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+
+async function uploadCategoryImage(categoryId: string, file: Express.Multer.File): Promise<string> {
+  if (!ALLOWED_MIME.has(file.mimetype)) throw new Error("Use JPG, PNG, WebP, GIF, or AVIF");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Image must be 5 MB or smaller");
+  const ext = file.originalname.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `categories/${categoryId}/cover.${ext}`;
+  return uploadFile(BUCKET, path, file.buffer, file.mimetype);
+}
+
+function extractStoragePath(url: string): string | null {
+  // Supabase URL: .../storage/v1/object/public/{bucket}/{path}
+  const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
+  return match?.[1] ?? null;
+}
 
 export async function getCategories(filters: GetCategoriesInput) {
   const conditions: SQL[] = [];
@@ -60,8 +78,10 @@ export async function getCategoryById(id: string) {
   return category;
 }
 
-export async function createCategory(input: CreateCategoryInput) {
-  // Check slug uniqueness
+export async function createCategory(
+  input: CreateCategoryInput,
+  file?: Express.Multer.File,
+) {
   const [existing] = await db.select({ id: categories.id })
     .from(categories)
     .where(eq(categories.slug, input.slug));
@@ -77,11 +97,24 @@ export async function createCategory(input: CreateCategoryInput) {
     isActive: input.isActive,
   }).returning();
 
+  if (file && created) {
+    const imageUrl = await uploadCategoryImage(created.id, file);
+    const [withImage] = await db.update(categories)
+      .set({ imageUrl, updatedAt: new Date().toISOString() })
+      .where(eq(categories.id, created.id))
+      .returning();
+    return withImage!;
+  }
+
   return created!;
 }
 
-export async function updateCategory(id: string, input: UpdateCategoryInput) {
-  await getCategoryById(id); // throws 404 if not found
+export async function updateCategory(
+  id: string,
+  input: UpdateCategoryInput,
+  file?: Express.Multer.File,
+) {
+  const existing = await getCategoryById(id);
 
   if (input.slug) {
     const [conflict] = await db.select({ id: categories.id })
@@ -90,8 +123,18 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
     if (conflict) throw new ConflictError(`Slug "${input.slug}" is already taken`);
   }
 
+  let imageUrl = input.imageUrl;
+  if (file) {
+    // Delete old image from storage if present
+    if (existing.imageUrl) {
+      const oldPath = extractStoragePath(existing.imageUrl);
+      if (oldPath) await deleteFile(BUCKET, oldPath).catch(() => {});
+    }
+    imageUrl = await uploadCategoryImage(id, file);
+  }
+
   const [updated] = await db.update(categories)
-    .set({ ...input, updatedAt: new Date().toISOString() })
+    .set({ ...input, imageUrl: imageUrl ?? existing.imageUrl, updatedAt: new Date().toISOString() })
     .where(eq(categories.id, id))
     .returning();
 

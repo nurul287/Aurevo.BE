@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// Used for multipart/form-data — all fields arrive as strings
+const coercedBool = z
+  .union([z.boolean(), z.enum(["true", "false"])])
+  .transform((v) => v === true || v === "true");
+
 export const createCategorySchema = z.object({
   body: z.object({
     name: z.string().min(1).max(255),
@@ -7,8 +12,8 @@ export const createCategorySchema = z.object({
     description: z.string().optional(),
     parentId: z.string().uuid().optional().nullable(),
     imageUrl: z.string().url().optional().nullable(),
-    sortOrder: z.number().int().min(0).default(0),
-    isActive: z.boolean().default(true),
+    sortOrder: z.coerce.number().int().min(0).default(0),
+    isActive: coercedBool.default(true),
   }),
 });
 
@@ -19,8 +24,8 @@ export const updateCategorySchema = z.object({
     description: z.string().optional().nullable(),
     parentId: z.string().uuid().optional().nullable(),
     imageUrl: z.string().url().optional().nullable(),
-    sortOrder: z.number().int().min(0).optional(),
-    isActive: z.boolean().optional(),
+    sortOrder: z.coerce.number().int().min(0).optional(),
+    isActive: coercedBool.optional(),
   }),
   params: z.object({ id: z.string().uuid() }),
 });
