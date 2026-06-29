@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import adminRoutes from "../app/modules/admin/admin.routes";
 import authRoutes from "../app/modules/auth/auth.routes";
 import brandRoutes from "../app/modules/brands/brands.routes";
 import cartRoutes from "../app/modules/cart/cart.routes";
@@ -21,6 +22,7 @@ router.use("/cart", cartRoutes);
 router.use("/orders", orderRoutes);
 router.use("/inventory", inventoryRoutes);
 router.use("/auth", authRoutes);
+router.use("/admin", adminRoutes);
 router.use("/chat", chatRoutes);
 
 export default router;
