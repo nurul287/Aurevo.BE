@@ -1,29 +1,100 @@
-import { and, eq, lt, count, desc, SQL } from "drizzle-orm";
+import { and, eq, lt, count, desc, SQL, inArray, ilike, or } from "drizzle-orm";
 import { db } from "../../../db";
-import { inventory, inventoryMovements, productVariants } from "../../../db/schema";
+import { inventory, inventoryMovements, productVariants, products } from "../../../db/schema";
 import { NotFoundError, BusinessRuleError } from "../../errors/AppError";
 import type { GetInventoryInput, UpsertInventoryInput, AdjustInventoryInput, GetMovementsInput } from "./inventory.schema";
 
 export async function getInventory(filters: GetInventoryInput) {
-  const conditions: SQL[] = [];
-
-  if (filters.variantId) conditions.push(eq(inventory.variantId, filters.variantId));
-  if (filters.location) conditions.push(eq(inventory.location, filters.location));
+  const inventoryConditions: SQL[] = [];
+  if (filters.variantId) inventoryConditions.push(eq(inventory.variantId, filters.variantId));
+  if (filters.location) inventoryConditions.push(eq(inventory.location, filters.location));
   if (filters.lowStock === "true") {
-    // availableQuantity <= reorderPoint
-    conditions.push(lt(inventory.availableQuantity, inventory.reorderPoint));
+    inventoryConditions.push(lt(inventory.availableQuantity, inventory.reorderPoint));
   }
 
   const offset = (filters.page - 1) * filters.limit;
-  const whereClause = conditions.length ? and(...conditions) : undefined;
+
+  // When search is provided, join variant+product tables to filter by name/sku
+  if (filters.search) {
+    const term = `%${filters.search}%`;
+    const searchCond = or(
+      ilike(products.name, term),
+      ilike(productVariants.name, term),
+      ilike(productVariants.sku, term),
+    )!;
+
+    const joinConditions = inventoryConditions.length
+      ? and(...inventoryConditions, searchCond)
+      : searchCond;
+
+    const baseQuery = db
+      .select({ inv: inventory, pv: productVariants, p: products })
+      .from(inventory)
+      .innerJoin(productVariants, eq(inventory.variantId, productVariants.id))
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      .where(joinConditions);
+
+    const countQuery = db
+      .select({ total: count() })
+      .from(inventory)
+      .innerJoin(productVariants, eq(inventory.variantId, productVariants.id))
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      .where(joinConditions);
+
+    const [joined, [{ total }]] = await Promise.all([
+      baseQuery.orderBy(desc(inventory.updatedAt)).limit(filters.limit).offset(offset),
+      countQuery,
+    ]);
+
+    const enrichedRows = joined.map(({ inv, pv, p }) => ({
+      ...inv,
+      productVariants: { ...pv, products: p },
+    }));
+
+    return {
+      data: enrichedRows,
+      meta: {
+        pagination: {
+          page: filters.page,
+          limit: filters.limit,
+          total: Number(total),
+          totalPages: Math.ceil(Number(total) / filters.limit),
+          hasNext: offset + enrichedRows.length < Number(total),
+          hasPrev: filters.page > 1,
+        },
+      },
+    };
+  }
+
+  // No search — existing batch-join approach
+  const whereClause = inventoryConditions.length ? and(...inventoryConditions) : undefined;
 
   const [rows, [{ total }]] = await Promise.all([
     db.select().from(inventory).where(whereClause).orderBy(desc(inventory.updatedAt)).limit(filters.limit).offset(offset),
     db.select({ total: count() }).from(inventory).where(whereClause),
   ]);
 
+  const variantIds = [...new Set(rows.map((r) => r.variantId).filter(Boolean))] as string[];
+  const variants = variantIds.length
+    ? await db.select().from(productVariants).where(inArray(productVariants.id, variantIds))
+    : [];
+  const productIds = [...new Set(variants.map((v) => v.productId).filter(Boolean))] as string[];
+  const productRows = productIds.length
+    ? await db.select({ id: products.id, name: products.name, slug: products.slug, lowStockThreshold: products.lowStockThreshold, basePrice: products.basePrice }).from(products).where(inArray(products.id, productIds))
+    : [];
+
+  const productMap = Object.fromEntries(productRows.map((p) => [p.id, p]));
+  const variantMap = Object.fromEntries(
+    variants.map((v) => [v.id, { ...v, products: productMap[v.productId!] ?? null }])
+  );
+
+  const enrichedRows = rows.map((r) => ({
+    ...r,
+    productVariants: r.variantId ? (variantMap[r.variantId] ?? null) : null,
+  }));
+
   return {
-    data: rows,
+    data: enrichedRows,
     meta: {
       pagination: {
         page: filters.page,
@@ -111,11 +182,30 @@ export async function adjustInventory(id: string, input: AdjustInventoryInput, u
 }
 
 export async function getLowStockAlerts() {
-  return db
+  const rows = await db
     .select()
     .from(inventory)
     .where(lt(inventory.availableQuantity, inventory.reorderPoint))
     .orderBy(inventory.availableQuantity);
+
+  const variantIds = [...new Set(rows.map((r) => r.variantId).filter(Boolean))] as string[];
+  const variants = variantIds.length
+    ? await db.select().from(productVariants).where(inArray(productVariants.id, variantIds))
+    : [];
+  const productIds = [...new Set(variants.map((v) => v.productId).filter(Boolean))] as string[];
+  const productRows = productIds.length
+    ? await db.select({ id: products.id, name: products.name, slug: products.slug }).from(products).where(inArray(products.id, productIds))
+    : [];
+
+  const productMap = Object.fromEntries(productRows.map((p) => [p.id, p]));
+  const variantMap = Object.fromEntries(
+    variants.map((v) => [v.id, { ...v, products: productMap[v.productId!] ?? null }])
+  );
+
+  return rows.map((r) => ({
+    ...r,
+    productVariants: r.variantId ? (variantMap[r.variantId] ?? null) : null,
+  }));
 }
 
 export async function getMovements(filters: GetMovementsInput) {
@@ -131,8 +221,28 @@ export async function getMovements(filters: GetMovementsInput) {
     db.select({ total: count() }).from(inventoryMovements).where(whereClause),
   ]);
 
+  // Embed productVariants + products
+  const variantIds = [...new Set(rows.map((r) => r.variantId).filter(Boolean))] as string[];
+  const variants = variantIds.length
+    ? await db.select().from(productVariants).where(inArray(productVariants.id, variantIds))
+    : [];
+  const productIds = [...new Set(variants.map((v) => v.productId).filter(Boolean))] as string[];
+  const productRows = productIds.length
+    ? await db.select({ id: products.id, name: products.name, slug: products.slug }).from(products).where(inArray(products.id, productIds))
+    : [];
+
+  const productMap = Object.fromEntries(productRows.map((p) => [p.id, p]));
+  const variantMap = Object.fromEntries(
+    variants.map((v) => [v.id, { ...v, products: productMap[v.productId!] ?? null }])
+  );
+
+  const enrichedRows = rows.map((r) => ({
+    ...r,
+    productVariants: r.variantId ? (variantMap[r.variantId] ?? null) : null,
+  }));
+
   return {
-    data: rows,
+    data: enrichedRows,
     meta: {
       pagination: {
         page: filters.page,
@@ -144,4 +254,20 @@ export async function getMovements(filters: GetMovementsInput) {
       },
     },
   };
+}
+
+
+export async function getVariantAvailability(variantIds: string[]): Promise<
+  { variantId: string; quantity: number; reservedQuantity: number }[]
+> {
+  if (variantIds.length === 0) return [];
+  const rows = await db
+    .select({ variantId: inventory.variantId, quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity })
+    .from(inventory)
+    .where(inArray(inventory.variantId, variantIds));
+  return rows.map((r) => ({
+    variantId: r.variantId ?? "",
+    quantity: r.quantity ?? 0,
+    reservedQuantity: r.reservedQuantity ?? 0,
+  }));
 }

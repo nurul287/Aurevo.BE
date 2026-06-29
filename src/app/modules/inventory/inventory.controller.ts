@@ -43,3 +43,11 @@ export const getMovements = async (req: Request, res: Response, next: NextFuncti
     res.status(200).json({ success: true, ...result });
   } catch (err) { next(err); }
 };
+
+export const getVariantAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const ids = [req.query["variantIds"]].flat().filter(Boolean) as string[];
+    const data = await InventoryService.getVariantAvailability(ids);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};

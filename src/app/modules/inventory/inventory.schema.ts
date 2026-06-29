@@ -3,7 +3,8 @@ import { z } from "zod";
 export const getInventorySchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(10000).default(20),
+    search: z.string().optional(),
     lowStock: z.enum(["true", "false"]).optional(),
     location: z.string().optional(),
     variantId: z.string().uuid().optional(),
@@ -34,7 +35,7 @@ export const adjustInventorySchema = z.object({
 export const getMovementsSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(10000).default(20),
     variantId: z.string().uuid().optional(),
     movementType: z.enum(["restock", "sale", "reserve", "unreserve", "cancel", "return", "adjustment", "damage", "theft", "transfer"]).optional(),
   }),

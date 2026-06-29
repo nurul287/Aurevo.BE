@@ -6,6 +6,7 @@ import {
   getInventoryById,
   getLowStockAlerts,
   getMovements,
+  getVariantAvailability,
   upsertInventory,
 } from "./inventory.controller";
 import {
@@ -47,6 +48,9 @@ router.get(
   validate(getInventorySchema),
   getInventory,
 );
+
+// Public endpoint — returns availability for given variant IDs (used by product pages and checkout)
+router.get("/availability", getVariantAvailability);
 
 /**
  * @swagger
