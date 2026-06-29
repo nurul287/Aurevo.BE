@@ -1,32 +1,21 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { config } from "../config";
+import { supabaseAdmin } from "../../lib/supabase";
 import { UnauthorizedError, ForbiddenError } from "../errors";
 
-interface SupabaseJwtPayload {
-  sub: string;
-  email: string;
-  role: string;
-  app_metadata?: { role?: string };
-  user_metadata?: Record<string, unknown>;
-}
-
-function verifySupabaseToken(token: string): SupabaseJwtPayload {
-  return jwt.verify(token, config.SUPABASE_JWT_SECRET) as SupabaseJwtPayload;
-}
-
-export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
+export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) throw new UnauthorizedError("No token provided");
 
-    const token = authHeader.split(" ")[1];
-    const decoded = verifySupabaseToken(token!);
+    const token = authHeader.split(" ")[1]!;
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) throw new UnauthorizedError("Invalid or expired token");
 
     req.user = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.app_metadata?.role ?? decoded.role ?? "user",
+      id: user.id,
+      email: user.email ?? "",
+      role: (user.app_metadata?.role as string) ?? user.role ?? "user",
     };
 
     next();
@@ -36,17 +25,19 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
   }
 };
 
-export const optionalAuth = (req: Request, _res: Response, next: NextFunction): void => {
+export const optionalAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      const decoded = verifySupabaseToken(token!);
-      req.user = {
-        id: decoded.sub,
-        email: decoded.email,
-        role: decoded.app_metadata?.role ?? decoded.role ?? "user",
-      };
+      const token = authHeader.split(" ")[1]!;
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      if (user) {
+        req.user = {
+          id: user.id,
+          email: user.email ?? "",
+          role: (user.app_metadata?.role as string) ?? user.role ?? "user",
+        };
+      }
     }
 
     const guestSessionId = req.headers["x-guest-session"] as string | undefined;
@@ -60,7 +51,8 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
 
 export const requireAdmin = (req: Request, _res: Response, next: NextFunction): void => {
   if (!req.user) return next(new UnauthorizedError());
-  if (req.user.role !== "admin" && req.user.role !== "service_role") {
+  const adminRoles = ["admin", "super_admin", "service_role"];
+  if (!adminRoles.includes(req.user.role)) {
     return next(new ForbiddenError("Admin access required"));
   }
   next();

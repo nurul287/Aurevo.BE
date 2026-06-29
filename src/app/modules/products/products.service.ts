@@ -62,9 +62,37 @@ export async function getProducts(filters: GetProductsInput) {
     db.select({ total: count() }).from(products).where(where),
   ]);
 
+  // Embed images and variants for each product in one batch query each
+  const productIds = rows.map((r) => r.id);
+  const [allImages, allVariants] = productIds.length
+    ? await Promise.all([
+        db.select().from(productImages).where(inArray(productImages.productId, productIds)),
+        db.select().from(productVariants).where(inArray(productVariants.productId, productIds)),
+      ])
+    : [[], []];
+
+  const imagesByProduct = allImages.reduce<Record<string, typeof allImages>>((acc, img) => {
+    const productId = img.productId;
+    if (!productId) return acc;
+    (acc[productId] ??= []).push(img);
+    return acc;
+  }, {});
+  const variantsByProduct = allVariants.reduce<Record<string, typeof allVariants>>((acc, v) => {
+    const productId = v.productId;
+    if (!productId) return acc;
+    (acc[productId] ??= []).push(v);
+    return acc;
+  }, {});
+
+  const enrichedRows = rows.map((r) => ({
+    ...r,
+    images: imagesByProduct[r.id] ?? [],
+    variants: variantsByProduct[r.id] ?? [],
+  }));
+
   const totalCount = Number(total);
   return {
-    data: rows,
+    data: enrichedRows,
     meta: {
       pagination: {
         page: filters.page,
