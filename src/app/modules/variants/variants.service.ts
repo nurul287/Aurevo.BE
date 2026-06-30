@@ -1,8 +1,8 @@
-import { and, eq, ne, asc, desc } from "drizzle-orm";
+import { and, eq, ne, asc, desc, ilike, or, count } from "drizzle-orm";
 import { db } from "../../../db";
 import { productVariants, products } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors/AppError";
-import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput } from "./variants.schema";
+import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput, GetAllVariantsQuery } from "./variants.schema";
 
 async function assertProductExists(productId: string) {
   const [product] = await db.select({ id: products.id }).from(products).where(eq(products.id, productId));
@@ -18,34 +18,74 @@ async function getVariantOrThrow(productId: string, id: string) {
   return variant;
 }
 
-export async function getAllVariants() {
-  return db
-    .select({
-      id: productVariants.id,
-      productId: productVariants.productId,
-      sku: productVariants.sku,
-      name: productVariants.name,
-      size: productVariants.size,
-      color: productVariants.color,
-      colorCode: productVariants.colorCode,
-      price: productVariants.price,
-      compareAtPrice: productVariants.compareAtPrice,
-      stock: productVariants.stock,
-      isActive: productVariants.isActive,
-      sortOrder: productVariants.sortOrder,
-      createdAt: productVariants.createdAt,
-      updatedAt: productVariants.updatedAt,
-      product: {
-        id: products.id,
-        name: products.name,
-        slug: products.slug,
-        basePrice: products.basePrice,
-        isActive: products.isActive,
-      },
-    })
-    .from(productVariants)
-    .innerJoin(products, eq(productVariants.productId, products.id))
-    .orderBy(asc(products.name), asc(productVariants.sortOrder), asc(productVariants.createdAt));
+const variantSelectFields = {
+  id: productVariants.id,
+  productId: productVariants.productId,
+  sku: productVariants.sku,
+  name: productVariants.name,
+  size: productVariants.size,
+  color: productVariants.color,
+  colorCode: productVariants.colorCode,
+  price: productVariants.price,
+  compareAtPrice: productVariants.compareAtPrice,
+  stock: productVariants.stock,
+  isActive: productVariants.isActive,
+  sortOrder: productVariants.sortOrder,
+  createdAt: productVariants.createdAt,
+  updatedAt: productVariants.updatedAt,
+  product: {
+    id: products.id,
+    name: products.name,
+    slug: products.slug,
+    basePrice: products.basePrice,
+    isActive: products.isActive,
+  },
+};
+
+export async function getAllVariants(filters: GetAllVariantsQuery) {
+  const conditions = [];
+  if (filters.search) {
+    conditions.push(or(
+      ilike(productVariants.sku, `%${filters.search}%`),
+      ilike(productVariants.name, `%${filters.search}%`),
+      ilike(productVariants.size, `%${filters.search}%`),
+      ilike(productVariants.color, `%${filters.search}%`),
+    ));
+  }
+  if (filters.isActive !== undefined) {
+    conditions.push(eq(productVariants.isActive, filters.isActive === "true"));
+  }
+  if (filters.productId) {
+    conditions.push(eq(productVariants.productId, filters.productId));
+  }
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, [{ total }]] = await Promise.all([
+    db.select(variantSelectFields)
+      .from(productVariants)
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      .where(where)
+      .orderBy(asc(products.name), asc(productVariants.sortOrder), asc(productVariants.createdAt))
+      .limit(filters.limit)
+      .offset((filters.page - 1) * filters.limit),
+    db.select({ total: count() })
+      .from(productVariants)
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      .where(where),
+  ]);
+
+  const totalCount = Number(total);
+  return {
+    data: rows,
+    pagination: {
+      page: filters.page,
+      limit: filters.limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / filters.limit),
+      hasNext: filters.page * filters.limit < totalCount,
+      hasPrev: filters.page > 1,
+    },
+  };
 }
 
 export async function getVariants(productId: string) {

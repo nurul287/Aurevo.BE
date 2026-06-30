@@ -70,7 +70,18 @@ export const bulkCreateVariantsSchema = z.object({
   params: z.object({ productId: z.string().uuid() }),
 });
 
+export const getAllVariantsSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().optional(),
+    isActive: z.enum(["true", "false"]).optional(),
+    productId: z.string().uuid().optional(),
+  }),
+});
+
 export type CreateVariantInput = z.infer<typeof createVariantSchema>["body"];
 export type UpdateVariantInput = z.infer<typeof updateVariantSchema>["body"];
 export type AdjustStockInput = z.infer<typeof adjustStockSchema>["body"];
 export type BulkCreateVariantsInput = z.infer<typeof bulkCreateVariantsSchema>["body"];
+export type GetAllVariantsQuery = z.infer<typeof getAllVariantsSchema>["query"];

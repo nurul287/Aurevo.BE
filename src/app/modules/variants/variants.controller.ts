@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import * as VariantService from "./variants.service";
-import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput } from "./variants.schema";
+import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput, GetAllVariantsQuery } from "./variants.schema";
 
-export const getAllVariants = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAllVariants = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const data = await VariantService.getAllVariants();
-    res.status(200).json({ success: true, data });
+    const { data, pagination } = await VariantService.getAllVariants(req.query as unknown as GetAllVariantsQuery);
+    res.status(200).json({ success: true, data, meta: { pagination } });
   } catch (err) { next(err); }
 };
 
