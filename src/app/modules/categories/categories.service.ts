@@ -2,25 +2,8 @@ import { eq, ne, ilike, and, asc, desc, count, SQL } from "drizzle-orm";
 import { db } from "../../../db";
 import { categories } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors";
-import { uploadFile, deleteFile } from "../../../lib/storage";
+import { uploadEntityImage, buildImagePath, deleteImageByUrl } from "../../../lib/image-upload";
 import type { CreateCategoryInput, UpdateCategoryInput, GetCategoriesInput } from "./categories.schema";
-
-const BUCKET = "product-images";
-const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
-
-async function uploadCategoryImage(categoryId: string, file: Express.Multer.File): Promise<string> {
-  if (!ALLOWED_MIME.has(file.mimetype)) throw new Error("Use JPG, PNG, WebP, GIF, or AVIF");
-  if (file.size > 5 * 1024 * 1024) throw new Error("Image must be 5 MB or smaller");
-  const ext = file.originalname.split(".").pop()?.toLowerCase() ?? "jpg";
-  const path = `categories/${categoryId}/cover.${ext}`;
-  return uploadFile(BUCKET, path, file.buffer, file.mimetype);
-}
-
-function extractStoragePath(url: string): string | null {
-  // Supabase URL: .../storage/v1/object/public/{bucket}/{path}
-  const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
-  return match?.[1] ?? null;
-}
 
 export async function getCategories(filters: GetCategoriesInput) {
   const conditions: SQL[] = [];
@@ -98,7 +81,8 @@ export async function createCategory(
   }).returning();
 
   if (file && created) {
-    const imageUrl = await uploadCategoryImage(created.id, file);
+    const storagePath = buildImagePath("categories", created.id, "cover", file);
+    const imageUrl = await uploadEntityImage(storagePath, file);
     const [withImage] = await db.update(categories)
       .set({ imageUrl, updatedAt: new Date().toISOString() })
       .where(eq(categories.id, created.id))
@@ -125,12 +109,9 @@ export async function updateCategory(
 
   let imageUrl = input.imageUrl;
   if (file) {
-    // Delete old image from storage if present
-    if (existing.imageUrl) {
-      const oldPath = extractStoragePath(existing.imageUrl);
-      if (oldPath) await deleteFile(BUCKET, oldPath).catch(() => {});
-    }
-    imageUrl = await uploadCategoryImage(id, file);
+    if (existing.imageUrl) await deleteImageByUrl(existing.imageUrl);
+    const storagePath = buildImagePath("categories", id, "cover", file);
+    imageUrl = await uploadEntityImage(storagePath, file);
   }
 
   const [updated] = await db.update(categories)
@@ -153,7 +134,18 @@ export async function deleteCategory(id: string) {
 
   if (Number(productCount) > 0) {
     throw new BusinessRuleError(
-      `Cannot delete category "${category.name}" — it has ${productCount} product(s). Reassign or delete them first.`
+      `Cannot delete "${category.name}" — it has ${productCount} product(s). Reassign or delete them first.`
+    );
+  }
+
+  const [{ childCount }] = await db
+    .select({ childCount: count() })
+    .from(categories)
+    .where(eq(categories.parentId, id));
+
+  if (Number(childCount) > 0) {
+    throw new BusinessRuleError(
+      `Cannot delete "${category.name}" — it has ${childCount} sub-categor${Number(childCount) === 1 ? "y" : "ies"}. Delete or reassign them first.`
     );
   }
 

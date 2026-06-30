@@ -2,6 +2,7 @@ import { eq, ne, ilike, and, asc, desc, count, SQL } from "drizzle-orm";
 import { db } from "../../../db";
 import { brands, products } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors";
+import { uploadEntityImage, buildImagePath, deleteImageByUrl } from "../../../lib/image-upload";
 import type { CreateBrandInput, UpdateBrandInput, GetBrandsInput } from "./brands.schema";
 
 export async function getBrands(filters: GetBrandsInput) {
@@ -49,7 +50,7 @@ export async function getBrandById(id: string) {
   return brand;
 }
 
-export async function createBrand(input: CreateBrandInput) {
+export async function createBrand(input: CreateBrandInput, file?: Express.Multer.File) {
   const [existing] = await db.select({ id: brands.id })
     .from(brands)
     .where(eq(brands.slug, input.slug));
@@ -64,11 +65,21 @@ export async function createBrand(input: CreateBrandInput) {
     isActive: input.isActive,
   }).returning();
 
+  if (file && created) {
+    const storagePath = buildImagePath("brands", created.id, "logo", file);
+    const logoUrl = await uploadEntityImage(storagePath, file);
+    const [withLogo] = await db.update(brands)
+      .set({ logoUrl, updatedAt: new Date().toISOString() })
+      .where(eq(brands.id, created.id))
+      .returning();
+    return withLogo!;
+  }
+
   return created!;
 }
 
-export async function updateBrand(id: string, input: UpdateBrandInput) {
-  await getBrandById(id);
+export async function updateBrand(id: string, input: UpdateBrandInput, file?: Express.Multer.File) {
+  const existing = await getBrandById(id);
 
   if (input.slug) {
     const [conflict] = await db.select({ id: brands.id })
@@ -77,8 +88,16 @@ export async function updateBrand(id: string, input: UpdateBrandInput) {
     if (conflict) throw new ConflictError(`Slug "${input.slug}" is already taken`);
   }
 
+  let logoUrl = input.logoUrl;
+
+  if (file) {
+    if (existing.logoUrl) await deleteImageByUrl(existing.logoUrl);
+    const storagePath = buildImagePath("brands", id, "logo", file);
+    logoUrl = await uploadEntityImage(storagePath, file);
+  }
+
   const [updated] = await db.update(brands)
-    .set({ ...input, updatedAt: new Date().toISOString() })
+    .set({ ...input, ...(logoUrl !== undefined && { logoUrl }), updatedAt: new Date().toISOString() })
     .where(eq(brands.id, id))
     .returning();
 

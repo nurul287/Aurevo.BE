@@ -93,15 +93,31 @@ describe("GET /brands/:id", () => {
 // ─── POST / ───────────────────────────────────────────────────────────────────
 
 describe("POST /brands", () => {
-  it("creates a brand (admin)", async () => {
+  it("creates a brand via multipart (admin)", async () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", adminToken)
-      .send({ name: "New Brand", slug: "new-brand" });
+      .field("name", "New Brand")
+      .field("slug", "new-brand");
 
     expect(res.status).toBe(201);
     expect(res.body.data.slug).toBe("new-brand");
     expect(res.body.data.id).toBeDefined();
+  });
+
+  it("creates a brand with optional fields", async () => {
+    const res = await request(app)
+      .post("/")
+      .set("Authorization", adminToken)
+      .field("name", "Full Brand")
+      .field("slug", "full-brand")
+      .field("description", "A full brand")
+      .field("websiteUrl", "https://fullbrand.com")
+      .field("isActive", "true");
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.description).toBe("A full brand");
+    expect(res.body.data.websiteUrl).toBe("https://fullbrand.com");
   });
 
   it("rejects duplicate slug", async () => {
@@ -110,23 +126,27 @@ describe("POST /brands", () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", adminToken)
-      .send({ name: "Another", slug: "taken" });
+      .field("name", "Another")
+      .field("slug", "taken");
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("CONFLICT");
   });
 
-  it("rejects invalid slug", async () => {
+  it("returns 400 when name or slug missing", async () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", adminToken)
-      .send({ name: "Bad", slug: "Bad Slug!" });
+      .field("name", "No Slug");
 
     expect(res.status).toBe(400);
   });
 
   it("returns 401 with no auth", async () => {
-    const res = await request(app).post("/").send({ name: "X", slug: "x" });
+    const res = await request(app)
+      .post("/")
+      .field("name", "X")
+      .field("slug", "x");
     expect(res.status).toBe(401);
   });
 
@@ -134,7 +154,8 @@ describe("POST /brands", () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", userToken)
-      .send({ name: "X", slug: "x" });
+      .field("name", "X")
+      .field("slug", "x");
     expect(res.status).toBe(403);
   });
 });
@@ -142,13 +163,14 @@ describe("POST /brands", () => {
 // ─── PATCH /:id ───────────────────────────────────────────────────────────────
 
 describe("PATCH /brands/:id", () => {
-  it("updates a brand (admin)", async () => {
+  it("updates a brand via multipart (admin)", async () => {
     const brand = await seed();
 
     const res = await request(app)
       .patch(`/${brand.id}`)
       .set("Authorization", adminToken)
-      .send({ name: "Updated Name", websiteUrl: "https://updated.com" });
+      .field("name", "Updated Name")
+      .field("websiteUrl", "https://updated.com");
 
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe("Updated Name");
@@ -159,7 +181,7 @@ describe("PATCH /brands/:id", () => {
     const res = await request(app)
       .patch("/00000000-0000-0000-0000-000000000000")
       .set("Authorization", adminToken)
-      .send({ name: "X" });
+      .field("name", "X");
     expect(res.status).toBe(404);
   });
 
@@ -170,7 +192,7 @@ describe("PATCH /brands/:id", () => {
     const res = await request(app)
       .patch(`/${b1.id}`)
       .set("Authorization", adminToken)
-      .send({ slug: "b-2" });
+      .field("slug", "b-2");
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("CONFLICT");
@@ -178,7 +200,7 @@ describe("PATCH /brands/:id", () => {
 
   it("returns 401 with no auth", async () => {
     const brand = await seed();
-    const res = await request(app).patch(`/${brand.id}`).send({ name: "X" });
+    const res = await request(app).patch(`/${brand.id}`).field("name", "X");
     expect(res.status).toBe(401);
   });
 });

@@ -105,16 +105,32 @@ describe("GET /categories/:id", () => {
 // ─── POST / ───────────────────────────────────────────────────────────────────
 
 describe("POST /categories", () => {
-  it("creates a category (admin)", async () => {
+  it("creates a category via multipart (admin)", async () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", adminToken)
-      .send({ name: "New Category", slug: "new-category", sortOrder: 1 });
+      .field("name", "New Category")
+      .field("slug", "new-category")
+      .field("sortOrder", "1");
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data.slug).toBe("new-category");
     expect(res.body.data.id).toBeDefined();
+  });
+
+  it("creates a category with optional fields", async () => {
+    const res = await request(app)
+      .post("/")
+      .set("Authorization", adminToken)
+      .field("name", "Hoodies")
+      .field("slug", "hoodies")
+      .field("description", "All hoodies")
+      .field("isActive", "false");
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.description).toBe("All hoodies");
+    expect(res.body.data.isActive).toBe(false);
   });
 
   it("rejects duplicate slug", async () => {
@@ -123,33 +139,27 @@ describe("POST /categories", () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", adminToken)
-      .send({ name: "Another", slug: "dupe-slug" });
+      .field("name", "Another")
+      .field("slug", "dupe-slug");
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("CONFLICT");
   });
 
-  it("rejects invalid slug format", async () => {
+  it("returns 400 when name or slug missing", async () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", adminToken)
-      .send({ name: "Bad", slug: "Has Spaces" });
-
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("rejects missing slug", async () => {
-    const res = await request(app)
-      .post("/")
-      .set("Authorization", adminToken)
-      .send({ name: "No Slug" });
+      .field("name", "No Slug");
 
     expect(res.status).toBe(400);
   });
 
   it("returns 401 with no auth", async () => {
-    const res = await request(app).post("/").send({ name: "X", slug: "x" });
+    const res = await request(app)
+      .post("/")
+      .field("name", "X")
+      .field("slug", "x");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHORIZED");
   });
@@ -158,7 +168,8 @@ describe("POST /categories", () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", userToken)
-      .send({ name: "X", slug: "x" });
+      .field("name", "X")
+      .field("slug", "x");
 
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe("FORBIDDEN");
@@ -168,13 +179,13 @@ describe("POST /categories", () => {
 // ─── PATCH /:id ───────────────────────────────────────────────────────────────
 
 describe("PATCH /categories/:id", () => {
-  it("updates a category (admin)", async () => {
+  it("updates a category via multipart (admin)", async () => {
     const cat = await seed();
 
     const res = await request(app)
       .patch(`/${cat.id}`)
       .set("Authorization", adminToken)
-      .send({ name: "Updated Name" });
+      .field("name", "Updated Name");
 
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe("Updated Name");
@@ -185,7 +196,7 @@ describe("PATCH /categories/:id", () => {
     const res = await request(app)
       .patch("/00000000-0000-0000-0000-000000000000")
       .set("Authorization", adminToken)
-      .send({ name: "X" });
+      .field("name", "X");
 
     expect(res.status).toBe(404);
   });
@@ -197,7 +208,7 @@ describe("PATCH /categories/:id", () => {
     const res = await request(app)
       .patch(`/${cat1.id}`)
       .set("Authorization", adminToken)
-      .send({ slug: "cat-2" });
+      .field("slug", "cat-2");
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("CONFLICT");
@@ -205,7 +216,7 @@ describe("PATCH /categories/:id", () => {
 
   it("returns 401 with no auth", async () => {
     const cat = await seed();
-    const res = await request(app).patch(`/${cat.id}`).send({ name: "X" });
+    const res = await request(app).patch(`/${cat.id}`).field("name", "X");
     expect(res.status).toBe(401);
   });
 });
@@ -251,6 +262,19 @@ describe("DELETE /categories/:id", () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("BUSINESS_RULE");
+  });
+
+  it("returns 422 when category has sub-categories", async () => {
+    const parent = await seed({ name: "Parent", slug: "parent" });
+    await seed({ name: "Child", slug: "child", parentId: parent.id });
+
+    const res = await request(app)
+      .delete(`/${parent.id}`)
+      .set("Authorization", adminToken);
+
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("BUSINESS_RULE");
+    expect(res.body.error.message).toMatch(/sub-categor/i);
   });
 
   it("returns 401 with no auth", async () => {

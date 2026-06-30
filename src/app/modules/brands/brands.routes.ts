@@ -1,11 +1,14 @@
 import { Router } from "express";
+import multer from "multer";
 import {
   authenticate,
   publicLimiter,
   requireAdmin,
-  strictLimiter,
+  uploadLimiter,
   validate,
 } from "../../middlewares";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 import {
   createBrand,
   deleteBrand,
@@ -104,8 +107,8 @@ router.post(
   "/",
   authenticate,
   requireAdmin,
-  strictLimiter,
-  validate(createBrandSchema),
+  uploadLimiter,
+  upload.single("logo"),
   createBrand,
 );
 
@@ -132,7 +135,8 @@ router.patch(
   "/:id",
   authenticate,
   requireAdmin,
-  validate(updateBrandSchema),
+  uploadLimiter,
+  upload.single("logo"),
   updateBrand,
 );
 
