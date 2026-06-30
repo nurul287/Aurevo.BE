@@ -86,6 +86,53 @@ describe("GET /inventory (admin)", () => {
     const res = await request(app).get("/").set("Authorization", userToken);
     expect(res.status).toBe(403);
   });
+
+  it("filters by search term (product name)", async () => {
+    const p1 = await db.insert(products).values({ name: "Air Force One", slug: `af1-${Date.now()}`, basePrice: "500", isActive: true }).returning().then(r => r[0]!);
+    const p2 = await db.insert(products).values({ name: "Chuck Taylor", slug: `ct-${Date.now()}`, basePrice: "400", isActive: true }).returning().then(r => r[0]!);
+    const v1 = await seedVariant(p1.id);
+    const v2 = await seedVariant(p2.id);
+    await seedInventory(v1.id);
+    await seedInventory(v2.id);
+
+    const res = await request(app).get("/?search=air").set("Authorization", adminToken);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+});
+
+// ─── GET /availability ────────────────────────────────────────────────────────
+
+describe("GET /inventory/availability (public)", () => {
+  it("returns quantity for requested variantIds", async () => {
+    const product = await seedProduct();
+    const v1 = await seedVariant(product.id);
+    const v2 = await seedVariant(product.id);
+    await seedInventory(v1.id, { quantity: 30 });
+    await seedInventory(v2.id, { quantity: 0 });
+
+    const res = await request(app).get(`/availability?variantIds=${v1.id}&variantIds=${v2.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    const v1Row = res.body.data.find((r: { variantId: string }) => r.variantId === v1.id);
+    expect(v1Row?.quantity).toBe(30);
+  });
+
+  it("returns empty array for unknown variantIds", async () => {
+    const res = await request(app).get("/availability?variantIds=00000000-0000-0000-0000-000000000000");
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+
+  it("requires at least one variantId", async () => {
+    const res = await request(app).get("/availability");
+    expect(res.status).toBe(400);
+  });
+
+  it("is public — no auth required", async () => {
+    const res = await request(app).get("/availability?variantIds=00000000-0000-0000-0000-000000000000");
+    expect(res.status).toBe(200); // not 401
+  });
 });
 
 // ─── GET /low-stock ───────────────────────────────────────────────────────────
