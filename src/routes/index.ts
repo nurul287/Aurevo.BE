@@ -10,12 +10,14 @@ import inventoryRoutes from "../app/modules/inventory/inventory.routes";
 import orderRoutes from "../app/modules/orders/orders.routes";
 import productRoutes from "../app/modules/products/products.routes";
 import variantRoutes from "../app/modules/variants/variants.routes";
+import variantAdminRoutes from "../app/modules/variants/variants-admin.routes";
 
 const router: IRouter = Router();
 
 router.use("/categories", categoryRoutes);
 router.use("/brands", brandRoutes);
 router.use("/products", productRoutes);
+router.use("/variants", variantAdminRoutes);
 router.use("/products/:productId/variants", variantRoutes);
 router.use("/products/:productId/images", imageRoutes);
 router.use("/cart", cartRoutes);
