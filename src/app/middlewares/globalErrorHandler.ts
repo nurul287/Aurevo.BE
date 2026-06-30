@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../errors";
 import { config } from "../config";
+import { zodFieldErrors } from "./validateRequest";
 
 export const globalErrorHandler = (
   err: Error,
@@ -19,7 +20,7 @@ export const globalErrorHandler = (
       error: {
         code: "VALIDATION_ERROR",
         message: "Validation failed",
-        details: err.flatten().fieldErrors,
+        details: zodFieldErrors(err),
       },
     });
     return;

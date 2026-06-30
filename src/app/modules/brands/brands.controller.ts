@@ -20,8 +20,11 @@ export const getBrandById = async (req: Request, res: Response, next: NextFuncti
 export const createBrand = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { name, slug, description, logoUrl, websiteUrl, isActive } = req.body as Record<string, string>;
-    if (!name?.trim() || !slug?.trim()) {
-      return next(new ValidationError("name and slug are required"));
+    const fieldErrors: Record<string, string[]> = {};
+    if (!name?.trim()) fieldErrors["name"] = ["Name is required"];
+    if (!slug?.trim()) fieldErrors["slug"] = ["Slug is required"];
+    if (Object.keys(fieldErrors).length) {
+      return next(new ValidationError("Validation failed", fieldErrors));
     }
     const data = await BrandService.createBrand(
       {

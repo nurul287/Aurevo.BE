@@ -20,8 +20,11 @@ export const getCategoryById = async (req: Request, res: Response, next: NextFun
 export const createCategory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { name, slug, description, parentId, imageUrl, sortOrder, isActive } = req.body as Record<string, string>;
-    if (!name?.trim() || !slug?.trim()) {
-      return next(new ValidationError("name and slug are required"));
+    const fieldErrors: Record<string, string[]> = {};
+    if (!name?.trim()) fieldErrors["name"] = ["Name is required"];
+    if (!slug?.trim()) fieldErrors["slug"] = ["Slug is required"];
+    if (Object.keys(fieldErrors).length) {
+      return next(new ValidationError("Validation failed", fieldErrors));
     }
     const data = await CategoryService.createCategory(
       {
