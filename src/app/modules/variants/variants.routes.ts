@@ -8,6 +8,7 @@ import {
 } from "../../middlewares";
 import {
   adjustStock,
+  bulkCreateVariants,
   createVariant,
   deleteVariant,
   getVariantById,
@@ -16,6 +17,7 @@ import {
 } from "./variants.controller";
 import {
   adjustStockSchema,
+  bulkCreateVariantsSchema,
   createVariantSchema,
   productParamsSchema,
   updateVariantSchema,
@@ -86,6 +88,14 @@ router.get(
  *       409:
  *         description: SKU already taken
  */
+router.post(
+  "/bulk",
+  authenticate,
+  requireAdmin,
+  validate(bulkCreateVariantsSchema),
+  bulkCreateVariants,
+);
+
 router.post(
   "/",
   authenticate,

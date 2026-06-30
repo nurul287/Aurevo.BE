@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import * as VariantService from "./variants.service";
-import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput } from "./variants.schema";
+import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput } from "./variants.schema";
+
+export const getAllVariants = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.getAllVariants();
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};
 
 export const getVariants = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -34,6 +41,13 @@ export const deleteVariant = async (req: Request, res: Response, next: NextFunct
   try {
     await VariantService.deleteVariant(req.params.productId!, req.params.id!);
     res.status(200).json({ success: true, message: "Variant deleted successfully" });
+  } catch (err) { next(err); }
+};
+
+export const bulkCreateVariants = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await VariantService.bulkCreateVariants(req.params.productId!, req.body as BulkCreateVariantsInput);
+    res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
 };
 

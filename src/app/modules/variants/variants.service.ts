@@ -1,8 +1,8 @@
-import { and, eq, ne, asc } from "drizzle-orm";
+import { and, eq, ne, asc, desc } from "drizzle-orm";
 import { db } from "../../../db";
 import { productVariants, products } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors/AppError";
-import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput } from "./variants.schema";
+import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput } from "./variants.schema";
 
 async function assertProductExists(productId: string) {
   const [product] = await db.select({ id: products.id }).from(products).where(eq(products.id, productId));
@@ -16,6 +16,36 @@ async function getVariantOrThrow(productId: string, id: string) {
     .where(and(eq(productVariants.id, id), eq(productVariants.productId, productId)));
   if (!variant) throw new NotFoundError("Variant");
   return variant;
+}
+
+export async function getAllVariants() {
+  return db
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      sku: productVariants.sku,
+      name: productVariants.name,
+      size: productVariants.size,
+      color: productVariants.color,
+      colorCode: productVariants.colorCode,
+      price: productVariants.price,
+      compareAtPrice: productVariants.compareAtPrice,
+      stock: productVariants.stock,
+      isActive: productVariants.isActive,
+      sortOrder: productVariants.sortOrder,
+      createdAt: productVariants.createdAt,
+      updatedAt: productVariants.updatedAt,
+      product: {
+        id: products.id,
+        name: products.name,
+        slug: products.slug,
+        basePrice: products.basePrice,
+        isActive: products.isActive,
+      },
+    })
+    .from(productVariants)
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .orderBy(asc(products.name), asc(productVariants.sortOrder), asc(productVariants.createdAt));
 }
 
 export async function getVariants(productId: string) {
@@ -99,6 +129,37 @@ export async function updateVariant(productId: string, id: string, input: Update
 export async function deleteVariant(productId: string, id: string) {
   await getVariantOrThrow(productId, id);
   await db.delete(productVariants).where(and(eq(productVariants.id, id), eq(productVariants.productId, productId)));
+}
+
+export async function bulkCreateVariants(productId: string, input: BulkCreateVariantsInput) {
+  await assertProductExists(productId);
+
+  const skus = input.variants.map((v) => v.sku).filter(Boolean) as string[];
+  if (skus.length > 0) {
+    const conflicts = await db
+      .select({ sku: productVariants.sku })
+      .from(productVariants)
+      .where(and(eq(productVariants.productId, productId)));
+    const existingSkus = new Set(conflicts.map((r) => r.sku).filter(Boolean));
+    const duplicate = skus.find((s) => existingSkus.has(s));
+    if (duplicate) throw new ConflictError(`SKU "${duplicate}" is already taken`);
+  }
+
+  const rows = input.variants.map((v, i) => ({
+    productId,
+    sku: v.sku,
+    name: v.name,
+    size: v.size,
+    color: v.color,
+    colorCode: v.color_code,
+    price: v.price?.toString(),
+    compareAtPrice: v.compare_at_price?.toString(),
+    sortOrder: v.sort_order ?? i,
+    stock: v.initial_stock ?? 0,
+    isActive: true,
+  }));
+
+  return db.insert(productVariants).values(rows).returning();
 }
 
 export async function adjustStock(productId: string, id: string, input: AdjustStockInput) {
