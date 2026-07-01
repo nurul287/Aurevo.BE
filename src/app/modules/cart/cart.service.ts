@@ -1,6 +1,6 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../db";
-import { cartItems, productVariants, guestSessions } from "../../../db/schema";
+import { cartItems, products, productVariants, productImages, guestSessions } from "../../../db/schema";
 import { NotFoundError, ValidationError, BusinessRuleError } from "../../errors/AppError";
 import type { AddItemInput, UpdateItemInput, MigrateCartInput } from "./cart.schema";
 
@@ -31,17 +31,61 @@ export async function getCart(owner: CartOwner) {
   const rows = await db
     .select({
       id: cartItems.id,
+      productId: cartItems.productId,
       variantId: cartItems.variantId,
       quantity: cartItems.quantity,
       price: cartItems.price,
       createdAt: cartItems.createdAt,
       updatedAt: cartItems.updatedAt,
+      product: {
+        id: products.id,
+        name: products.name,
+        slug: products.slug,
+        basePrice: products.basePrice,
+        compareAtPrice: products.compareAtPrice,
+        trackInventory: products.trackInventory,
+      },
+      variant: {
+        id: productVariants.id,
+        name: productVariants.name,
+        size: productVariants.size,
+        color: productVariants.color,
+        price: productVariants.price,
+        compareAtPrice: productVariants.compareAtPrice,
+        stock: productVariants.stock,
+      },
     })
     .from(cartItems)
+    .leftJoin(products, eq(cartItems.productId, products.id))
+    .leftJoin(productVariants, eq(cartItems.variantId, productVariants.id))
     .where(ownerCondition(owner));
 
-  const total = rows.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
-  return { items: rows, total: total.toFixed(2), itemCount: rows.length };
+  const productIds = [...new Set(rows.map(r => r.productId).filter(Boolean))] as string[];
+  const images = productIds.length
+    ? await db
+        .select({ productId: productImages.productId, url: productImages.url, isPrimary: productImages.isPrimary, sortOrder: productImages.sortOrder })
+        .from(productImages)
+        .where(inArray(productImages.productId, productIds))
+    : [];
+
+  const imagesByProduct = new Map<string, typeof images>();
+  for (const img of images) {
+    if (!img.productId) continue;
+    const list = imagesByProduct.get(img.productId) ?? [];
+    list.push(img);
+    imagesByProduct.set(img.productId, list);
+  }
+
+  const items = rows.map((row) => ({
+    ...row,
+    product: row.product?.id
+      ? { ...row.product, images: imagesByProduct.get(row.productId!) ?? [] }
+      : undefined,
+    variant: row.variant?.id ? row.variant : undefined,
+  }));
+
+  const total = items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  return { items, total: total.toFixed(2), itemCount: items.length };
 }
 
 export async function addItem(owner: CartOwner, input: AddItemInput) {
@@ -73,8 +117,8 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
   }
 
   const values = "userId" in owner
-    ? { userId: owner.userId, variantId: input.variantId, quantity: input.quantity, price }
-    : { sessionId: owner.sessionId, variantId: input.variantId, quantity: input.quantity, price };
+    ? { userId: owner.userId, productId: input.productId, variantId: input.variantId, quantity: input.quantity, price }
+    : { sessionId: owner.sessionId, productId: input.productId, variantId: input.variantId, quantity: input.quantity, price };
 
   const [item] = await db.insert(cartItems).values(values).returning();
   return item!;
@@ -125,7 +169,7 @@ export async function migrateGuestCart(userId: string, input: MigrateCartInput) 
     if (existing) {
       await db.update(cartItems).set({ quantity: existing.quantity + guestItem.quantity, updatedAt: new Date().toISOString() }).where(eq(cartItems.id, existing.id));
     } else {
-      await db.insert(cartItems).values({ userId, variantId: guestItem.variantId, quantity: guestItem.quantity, price: guestItem.price });
+      await db.insert(cartItems).values({ userId, productId: guestItem.productId, variantId: guestItem.variantId, quantity: guestItem.quantity, price: guestItem.price });
     }
     await db.delete(cartItems).where(eq(cartItems.id, guestItem.id));
     migrated++;
