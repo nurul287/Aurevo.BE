@@ -67,3 +67,10 @@ export const updateFulfillment = async (req: Request, res: Response, next: NextF
     res.status(200).json({ success: true, data });
   } catch (err) { next(err); }
 };
+
+export const getOrderStats = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await OrderService.getOrderStats();
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};

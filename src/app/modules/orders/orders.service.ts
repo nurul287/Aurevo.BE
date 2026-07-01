@@ -1,4 +1,4 @@
-import { and, eq, desc, asc, count, SQL, inArray } from "drizzle-orm";
+import { and, eq, desc, asc, count, sum, SQL, inArray, ilike, or } from "drizzle-orm";
 import { db } from "../../../db";
 import { orders, orderItems, products, productVariants } from "../../../db/schema";
 import { NotFoundError, ForbiddenError, BusinessRuleError } from "../../errors/AppError";
@@ -117,6 +117,18 @@ export async function getOrders(filters: GetOrdersInput, requestUser: { id: stri
 
   if (filters.status) conditions.push(eq(orders.status, filters.status));
   if (filters.paymentStatus) conditions.push(eq(orders.paymentStatus, filters.paymentStatus));
+  if (filters.search) {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(
+        ilike(orders.orderNumber, term),
+        ilike(orders.shippingName, term),
+        ilike(orders.shippingPhone, term),
+        ilike(orders.shippingEmail, term),
+        ilike(orders.email, term),
+      )!
+    );
+  }
 
   const offset = (filters.page - 1) * filters.limit;
   const whereClause = conditions.length ? and(...conditions) : undefined;
@@ -234,4 +246,32 @@ export async function updateFulfillment(id: string, input: UpdateFulfillmentInpu
     .where(eq(orders.id, id))
     .returning();
   return updated!;
+}
+
+export async function getOrderStats() {
+  const [row] = await db
+    .select({
+      totalOrders: count(),
+      totalRevenue: sum(orders.totalAmount),
+    })
+    .from(orders);
+
+  const statusCounts = await db
+    .select({ status: orders.status, cnt: count() })
+    .from(orders)
+    .groupBy(orders.status);
+
+  const byStatus = Object.fromEntries(statusCounts.map(r => [r.status, Number(r.cnt)]));
+
+  return {
+    totalOrders: Number(row?.totalOrders ?? 0),
+    totalRevenue: Number(row?.totalRevenue ?? 0),
+    pendingOrders: byStatus["pending"] ?? 0,
+    confirmedOrders: byStatus["confirmed"] ?? 0,
+    processingOrders: byStatus["processing"] ?? 0,
+    shippedOrders: byStatus["shipped"] ?? 0,
+    deliveredOrders: byStatus["delivered"] ?? 0,
+    cancelledOrders: byStatus["cancelled"] ?? 0,
+    refundedOrders: byStatus["refunded"] ?? 0,
+  };
 }

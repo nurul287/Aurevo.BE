@@ -8,6 +8,7 @@ import {
 import {
   createOrder, getOrders, getOrderById, getOrderByNumber,
   cancelOrder, updateStatus, updatePaymentStatus, updateTracking, updateFulfillment,
+  getOrderStats,
 } from "./orders.controller";
 
 const router = Router();
@@ -64,6 +65,7 @@ router.post("/", optionalAuth, authLimiter, validate(createOrderSchema), createO
  *         description: Paginated order list
  */
 router.get("/", authenticate, validate(getOrdersSchema), getOrders);
+router.get("/stats", authenticate, requireAdmin, getOrderStats);
 
 /**
  * @swagger
