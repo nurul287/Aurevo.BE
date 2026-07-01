@@ -8,6 +8,7 @@ import {
   validate,
 } from "../../middlewares";
 import {
+  bulkUploadImages,
   deleteImage,
   getImageById,
   getImages,
@@ -101,6 +102,15 @@ router.post(
   uploadLimiter,
   upload.single("image"),
   uploadImage,
+);
+
+router.post(
+  "/bulk",
+  authenticate,
+  requireAdmin,
+  uploadLimiter,
+  upload.array("images", 50),
+  bulkUploadImages,
 );
 
 /**

@@ -132,6 +132,52 @@ export async function uploadImage(
   return image!;
 }
 
+export async function bulkUploadImages(
+  productId: string,
+  files: Express.Multer.File[],
+  options: {
+    variantId?: string;
+    metadata: { altText?: string; isPrimary?: boolean; sortOrder?: number }[];
+  }
+) {
+  await assertProductExists(productId);
+
+  if (options.variantId) {
+    const [variant] = await db.select({ id: productVariants.id }).from(productVariants)
+      .where(and(eq(productVariants.id, options.variantId), eq(productVariants.productId, productId)));
+    if (!variant) throw new NotFoundError("Variant");
+  }
+
+  const hasExisting = !!(await db.select({ id: productImages.id }).from(productImages).where(eq(productImages.productId, productId)).limit(1))[0];
+
+  const results = await Promise.all(
+    files.map(async (file, index) => {
+      const meta = options.metadata[index] ?? {};
+      const ext = file.originalname.split(".").pop() ?? "jpg";
+      const storagePath = `${productId}/${Date.now()}-${index}.${ext}`;
+      const url = await uploadFile(BUCKET, storagePath, file.buffer, file.mimetype);
+
+      const shouldBePrimary = meta.isPrimary || (!hasExisting && index === 0);
+      if (shouldBePrimary) {
+        await db.update(productImages).set({ isPrimary: false }).where(and(eq(productImages.productId, productId), eq(productImages.isPrimary, true)));
+      }
+
+      const [image] = await db.insert(productImages).values({
+        productId,
+        variantId: options.variantId ?? null,
+        url,
+        altText: meta.altText,
+        sortOrder: meta.sortOrder ?? index,
+        isPrimary: shouldBePrimary,
+      }).returning();
+
+      return image!;
+    })
+  );
+
+  return results;
+}
+
 export async function createImageRecord(
   productId: string,
   options: { url: string; altText?: string; variantId?: string; sortOrder?: number; isPrimary?: boolean }

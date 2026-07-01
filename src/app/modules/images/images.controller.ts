@@ -24,6 +24,27 @@ export const getImageById = async (req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 };
 
+export const bulkUploadImages = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    if (!files?.length) throw new ValidationError("At least one image file is required");
+
+    let metadata: { altText?: string; isPrimary?: boolean; sortOrder?: number }[] = [];
+    try {
+      metadata = req.body.metadata ? JSON.parse(req.body.metadata) : [];
+    } catch {
+      throw new ValidationError("Invalid metadata JSON");
+    }
+
+    const data = await ImageService.bulkUploadImages(req.params.productId!, files, {
+      variantId: req.body.variantId || undefined,
+      metadata,
+    });
+
+    res.status(201).json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
 export const uploadImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     if (!req.file) throw new ValidationError("Image file is required");
