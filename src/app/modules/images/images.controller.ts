@@ -19,21 +19,14 @@ export const getImageById = async (req: Request, res: Response, next: NextFuncti
 
 export const uploadImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const options = {
+    if (!req.file) throw new ValidationError("Image file is required");
+
+    const data = await ImageService.uploadImage(req.params.productId!, req.file, {
       altText: req.body.altText,
       variantId: req.body.variantId,
       sortOrder: req.body.sortOrder ? parseInt(req.body.sortOrder) : undefined,
-      isPrimary: req.body.isPrimary === true || req.body.isPrimary === "true",
-    };
-
-    let data;
-    if (req.file) {
-      data = await ImageService.uploadImage(req.params.productId!, req.file, options);
-    } else if (req.body.url) {
-      data = await ImageService.createImageRecord(req.params.productId!, { ...options, url: req.body.url });
-    } else {
-      throw new ValidationError("Either an image file or a URL is required");
-    }
+      isPrimary: req.body.isPrimary === "true",
+    });
 
     res.status(201).json({ success: true, data });
   } catch (err) { next(err); }
