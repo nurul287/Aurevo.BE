@@ -37,6 +37,7 @@ export async function getAllImagesAdmin(params: {
       or(
         ilike(productImages.altText, `%${search}%`),
         ilike(productImages.url, `%${search}%`),
+        ilike(products.name, `%${search}%`),
       )!
     );
   }
