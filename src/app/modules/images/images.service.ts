@@ -1,4 +1,4 @@
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq, asc, ilike, or, count, SQL } from "drizzle-orm";
 import { db } from "../../../db";
 import { productImages, products, productVariants } from "../../../db/schema";
 import { NotFoundError, ValidationError } from "../../errors/AppError";
@@ -19,6 +19,66 @@ async function getImageOrThrow(productId: string, id: string) {
     .where(and(eq(productImages.id, id), eq(productImages.productId, productId)));
   if (!image) throw new NotFoundError("Image");
   return image;
+}
+
+export async function getAllImagesAdmin(params: {
+  page: number;
+  limit: number;
+  search?: string;
+  productId?: string;
+}) {
+  const { page, limit, search, productId } = params;
+  const offset = (page - 1) * limit;
+
+  const conditions: SQL[] = [];
+  if (productId) conditions.push(eq(productImages.productId, productId));
+  if (search) {
+    conditions.push(
+      or(
+        ilike(productImages.altText, `%${search}%`),
+        ilike(productImages.url, `%${search}%`),
+      )!
+    );
+  }
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(productImages)
+    .where(where);
+
+  const rows = await db
+    .select({
+      id: productImages.id,
+      productId: productImages.productId,
+      variantId: productImages.variantId,
+      url: productImages.url,
+      altText: productImages.altText,
+      sortOrder: productImages.sortOrder,
+      isPrimary: productImages.isPrimary,
+      createdAt: productImages.createdAt,
+      productName: products.name,
+      variantName: productVariants.name,
+      variantColor: productVariants.color,
+      variantSize: productVariants.size,
+    })
+    .from(productImages)
+    .leftJoin(products, eq(productImages.productId, products.id))
+    .leftJoin(productVariants, eq(productImages.variantId, productVariants.id))
+    .where(where)
+    .orderBy(asc(productImages.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return {
+    data: rows,
+    pagination: {
+      page,
+      limit,
+      total: total ?? 0,
+      totalPages: Math.ceil((total ?? 0) / limit),
+    },
+  };
 }
 
 export async function getImages(productId: string) {

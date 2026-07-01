@@ -18,3 +18,14 @@ export const productParamsSchema = z.object({
 });
 
 export type UpdateImageInput = z.infer<typeof updateImageSchema>["body"];
+
+export const getAllImagesAdminSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().optional(),
+    productId: z.string().uuid().optional(),
+  }),
+});
+
+export type GetAllImagesAdminQuery = z.infer<typeof getAllImagesAdminSchema>["query"];

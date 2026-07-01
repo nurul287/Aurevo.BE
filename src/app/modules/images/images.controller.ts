@@ -1,7 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import * as ImageService from "./images.service";
 import { ValidationError } from "../../errors/AppError";
-import type { UpdateImageInput } from "./images.schema";
+import type { GetAllImagesAdminQuery, UpdateImageInput } from "./images.schema";
+
+export const getAllImagesAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { data, pagination } = await ImageService.getAllImagesAdmin(req.query as unknown as GetAllImagesAdminQuery);
+    res.status(200).json({ success: true, data, meta: { pagination } });
+  } catch (err) { next(err); }
+};
 
 export const getImages = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
