@@ -72,6 +72,37 @@ export async function uploadImage(
   return image!;
 }
 
+export async function createImageRecord(
+  productId: string,
+  options: { url: string; altText?: string; variantId?: string; sortOrder?: number; isPrimary?: boolean }
+) {
+  await assertProductExists(productId);
+
+  if (options.variantId) {
+    const [variant] = await db.select({ id: productVariants.id }).from(productVariants)
+      .where(and(eq(productVariants.id, options.variantId), eq(productVariants.productId, productId)));
+    if (!variant) throw new NotFoundError("Variant");
+  }
+
+  const [existing] = await db.select({ id: productImages.id }).from(productImages).where(eq(productImages.productId, productId));
+  const shouldBePrimary = options.isPrimary || !existing;
+
+  if (shouldBePrimary) {
+    await db.update(productImages).set({ isPrimary: false }).where(and(eq(productImages.productId, productId), eq(productImages.isPrimary, true)));
+  }
+
+  const [image] = await db.insert(productImages).values({
+    productId,
+    variantId: options.variantId ?? null,
+    url: options.url,
+    altText: options.altText,
+    sortOrder: options.sortOrder ?? 0,
+    isPrimary: shouldBePrimary,
+  }).returning();
+
+  return image!;
+}
+
 export async function updateImage(productId: string, id: string, input: UpdateImageInput) {
   await getImageOrThrow(productId, id);
 
