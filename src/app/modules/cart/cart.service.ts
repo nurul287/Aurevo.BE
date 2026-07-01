@@ -13,12 +13,24 @@ function ownerCondition(owner: CartOwner) {
 
 async function getVariantOrThrow(variantId: string) {
   const [variant] = await db
-    .select({ id: productVariants.id, price: productVariants.price, stock: productVariants.stock, isActive: productVariants.isActive })
+    .select({
+      id: productVariants.id,
+      price: productVariants.price,
+      stock: productVariants.stock,
+      isActive: productVariants.isActive,
+      basePrice: products.basePrice,
+    })
     .from(productVariants)
+    .leftJoin(products, eq(productVariants.productId, products.id))
     .where(eq(productVariants.id, variantId));
   if (!variant) throw new NotFoundError("Variant");
   if (!variant.isActive) throw new BusinessRuleError("Variant is not available");
   return variant;
+}
+
+/** Variants don't always override price — fall back to the product's base price. */
+function effectivePrice(variant: { price: string | null; basePrice: string | null }): string {
+  return variant.price ?? variant.basePrice ?? "0";
 }
 
 export async function createGuestSession(): Promise<string> {
@@ -27,39 +39,36 @@ export async function createGuestSession(): Promise<string> {
   return session!.id;
 }
 
-export async function getCart(owner: CartOwner) {
-  const rows = await db
-    .select({
-      id: cartItems.id,
-      productId: cartItems.productId,
-      variantId: cartItems.variantId,
-      quantity: cartItems.quantity,
-      price: cartItems.price,
-      createdAt: cartItems.createdAt,
-      updatedAt: cartItems.updatedAt,
-      product: {
-        id: products.id,
-        name: products.name,
-        slug: products.slug,
-        basePrice: products.basePrice,
-        compareAtPrice: products.compareAtPrice,
-        trackInventory: products.trackInventory,
-      },
-      variant: {
-        id: productVariants.id,
-        name: productVariants.name,
-        size: productVariants.size,
-        color: productVariants.color,
-        price: productVariants.price,
-        compareAtPrice: productVariants.compareAtPrice,
-        stock: productVariants.stock,
-      },
-    })
-    .from(cartItems)
-    .leftJoin(products, eq(cartItems.productId, products.id))
-    .leftJoin(productVariants, eq(cartItems.variantId, productVariants.id))
-    .where(ownerCondition(owner));
+const cartItemSelect = {
+  id: cartItems.id,
+  productId: cartItems.productId,
+  variantId: cartItems.variantId,
+  quantity: cartItems.quantity,
+  price: cartItems.price,
+  createdAt: cartItems.createdAt,
+  updatedAt: cartItems.updatedAt,
+  product: {
+    id: products.id,
+    name: products.name,
+    slug: products.slug,
+    basePrice: products.basePrice,
+    compareAtPrice: products.compareAtPrice,
+    trackInventory: products.trackInventory,
+  },
+  variant: {
+    id: productVariants.id,
+    name: productVariants.name,
+    size: productVariants.size,
+    color: productVariants.color,
+    price: productVariants.price,
+    compareAtPrice: productVariants.compareAtPrice,
+    stock: productVariants.stock,
+  },
+};
 
+async function attachImages<T extends { productId: string | null; product: { id: string | null } | null; variant: { id: string | null } | null }>(
+  rows: T[]
+) {
   const productIds = [...new Set(rows.map(r => r.productId).filter(Boolean))] as string[];
   const images = productIds.length
     ? await db
@@ -76,13 +85,36 @@ export async function getCart(owner: CartOwner) {
     imagesByProduct.set(img.productId, list);
   }
 
-  const items = rows.map((row) => ({
+  return rows.map((row) => ({
     ...row,
     product: row.product?.id
       ? { ...row.product, images: imagesByProduct.get(row.productId!) ?? [] }
       : undefined,
     variant: row.variant?.id ? row.variant : undefined,
   }));
+}
+
+async function getCartItemWithDetails(id: string) {
+  const [row] = await db
+    .select(cartItemSelect)
+    .from(cartItems)
+    .leftJoin(products, eq(cartItems.productId, products.id))
+    .leftJoin(productVariants, eq(cartItems.variantId, productVariants.id))
+    .where(eq(cartItems.id, id));
+  if (!row) return undefined;
+  const [withImages] = await attachImages([row]);
+  return withImages;
+}
+
+export async function getCart(owner: CartOwner) {
+  const rows = await db
+    .select(cartItemSelect)
+    .from(cartItems)
+    .leftJoin(products, eq(cartItems.productId, products.id))
+    .leftJoin(productVariants, eq(cartItems.variantId, productVariants.id))
+    .where(ownerCondition(owner));
+
+  const items = await attachImages(rows);
 
   const total = items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
   return { items, total: total.toFixed(2), itemCount: items.length };
@@ -95,7 +127,7 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
     throw new BusinessRuleError(`Only ${variant.stock} units available`);
   }
 
-  const price = variant.price ?? "0";
+  const price = effectivePrice(variant);
 
   // Upsert: if same variant already in cart, increment quantity
   const existingCondition = "userId" in owner
@@ -108,12 +140,11 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
     const newQty = existing.quantity + input.quantity;
     if (variant.stock < newQty) throw new BusinessRuleError(`Only ${variant.stock} units available`);
 
-    const [updated] = await db
+    await db
       .update(cartItems)
-      .set({ quantity: newQty, updatedAt: new Date().toISOString() })
-      .where(eq(cartItems.id, existing.id))
-      .returning();
-    return updated!;
+      .set({ quantity: newQty, price, updatedAt: new Date().toISOString() })
+      .where(eq(cartItems.id, existing.id));
+    return (await getCartItemWithDetails(existing.id))!;
   }
 
   const values = "userId" in owner
@@ -121,7 +152,7 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
     : { sessionId: owner.sessionId, productId: input.productId, variantId: input.variantId, quantity: input.quantity, price };
 
   const [item] = await db.insert(cartItems).values(values).returning();
-  return item!;
+  return (await getCartItemWithDetails(item!.id))!;
 }
 
 export async function updateItem(owner: CartOwner, id: string, input: UpdateItemInput) {
@@ -131,12 +162,11 @@ export async function updateItem(owner: CartOwner, id: string, input: UpdateItem
   const variant = await getVariantOrThrow(item.variantId!);
   if (variant.stock < input.quantity) throw new BusinessRuleError(`Only ${variant.stock} units available`);
 
-  const [updated] = await db
+  await db
     .update(cartItems)
-    .set({ quantity: input.quantity, updatedAt: new Date().toISOString() })
-    .where(eq(cartItems.id, id))
-    .returning();
-  return updated!;
+    .set({ quantity: input.quantity, price: effectivePrice(variant), updatedAt: new Date().toISOString() })
+    .where(eq(cartItems.id, id));
+  return (await getCartItemWithDetails(id))!;
 }
 
 export async function removeItem(owner: CartOwner, id: string) {
