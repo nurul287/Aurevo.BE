@@ -46,6 +46,7 @@ export async function getAllImagesAdmin(params: {
   const [{ total }] = await db
     .select({ total: count() })
     .from(productImages)
+    .leftJoin(products, eq(productImages.productId, products.id))
     .where(where);
 
   const rows = await db
