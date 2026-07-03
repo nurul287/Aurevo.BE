@@ -121,28 +121,38 @@ export async function upsertInventory(input: UpsertInventoryInput) {
   const [existing] = await db.select().from(inventory)
     .where(and(eq(inventory.variantId, input.variantId), eq(inventory.location, input.location)));
 
-  if (existing) {
-    const [updated] = await db.update(inventory)
-      .set({
-        quantity: input.quantity,
-        reservedQuantity: existing.reservedQuantity ?? 0,
-        reorderPoint: input.reorderPoint,
-        reorderQuantity: input.reorderQuantity,
-        updatedAt: new Date().toISOString(),
-      })
-      .where(eq(inventory.id, existing.id))
-      .returning();
-    return updated!;
-  }
+  return db.transaction(async (tx) => {
+    if (existing) {
+      const [updated] = await tx.update(inventory)
+        .set({
+          quantity: input.quantity,
+          reservedQuantity: existing.reservedQuantity ?? 0,
+          reorderPoint: input.reorderPoint,
+          reorderQuantity: input.reorderQuantity,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(inventory.id, existing.id))
+        .returning();
 
-  const [created] = await db.insert(inventory).values({
-    variantId: input.variantId,
-    location: input.location,
-    quantity: input.quantity,
-    reorderPoint: input.reorderPoint,
-    reorderQuantity: input.reorderQuantity,
-  }).returning();
-  return created!;
+      // Sync product_variants.stock — orders/cart/checkout read this field,
+      // not the inventory table, so they must never drift apart.
+      await tx.update(productVariants).set({ stock: input.quantity, updatedAt: new Date().toISOString() }).where(eq(productVariants.id, input.variantId));
+
+      return updated!;
+    }
+
+    const [created] = await tx.insert(inventory).values({
+      variantId: input.variantId,
+      location: input.location,
+      quantity: input.quantity,
+      reorderPoint: input.reorderPoint,
+      reorderQuantity: input.reorderQuantity,
+    }).returning();
+
+    await tx.update(productVariants).set({ stock: input.quantity, updatedAt: new Date().toISOString() }).where(eq(productVariants.id, input.variantId));
+
+    return created!;
+  });
 }
 
 export async function adjustInventory(id: string, input: AdjustInventoryInput, userId?: string) {
