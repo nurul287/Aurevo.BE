@@ -1,6 +1,6 @@
 import { and, eq, ne, asc, desc, ilike, or, count } from "drizzle-orm";
 import { db } from "../../../db";
-import { productVariants, products } from "../../../db/schema";
+import { productVariants, products, inventory } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors/AppError";
 import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput, GetAllVariantsQuery } from "./variants.schema";
 
@@ -109,27 +109,37 @@ export async function createVariant(productId: string, input: CreateVariantInput
     if (conflict) throw new ConflictError(`SKU "${input.sku}" is already taken`);
   }
 
-  const [variant] = await db
-    .insert(productVariants)
-    .values({
-      productId,
-      sku: input.sku,
-      name: input.name,
-      size: input.size,
-      color: input.color,
-      colorCode: input.colorCode,
-      material: input.material,
-      weight: input.weight?.toString(),
-      price: input.price?.toString(),
-      compareAtPrice: input.compareAtPrice?.toString(),
-      barcode: input.barcode,
-      isActive: input.isActive,
-      sortOrder: input.sortOrder,
-      stock: input.stock,
-    })
-    .returning();
+  return db.transaction(async (tx) => {
+    const [variant] = await tx
+      .insert(productVariants)
+      .values({
+        productId,
+        sku: input.sku,
+        name: input.name,
+        size: input.size,
+        color: input.color,
+        colorCode: input.colorCode,
+        material: input.material,
+        weight: input.weight?.toString(),
+        price: input.price?.toString(),
+        compareAtPrice: input.compareAtPrice?.toString(),
+        barcode: input.barcode,
+        isActive: input.isActive,
+        sortOrder: input.sortOrder,
+        stock: input.stock,
+      })
+      .returning();
 
-  return variant!;
+    // The Inventory admin page joins from `inventory`, not product_variants —
+    // without a matching row here, new variants never show up there.
+    await tx.insert(inventory).values({
+      variantId: variant!.id,
+      location: "main",
+      quantity: input.stock,
+    });
+
+    return variant!;
+  });
 }
 
 export async function updateVariant(productId: string, id: string, input: UpdateVariantInput) {
@@ -199,7 +209,21 @@ export async function bulkCreateVariants(productId: string, input: BulkCreateVar
     isActive: true,
   }));
 
-  return db.insert(productVariants).values(rows).returning();
+  return db.transaction(async (tx) => {
+    const created = await tx.insert(productVariants).values(rows).returning();
+
+    // Same reasoning as createVariant: the Inventory admin page joins from
+    // `inventory`, so every variant needs a matching row to be visible there.
+    await tx.insert(inventory).values(
+      created.map((v) => ({
+        variantId: v.id,
+        location: "main",
+        quantity: v.stock,
+      }))
+    );
+
+    return created;
+  });
 }
 
 export async function adjustStock(productId: string, id: string, input: AdjustStockInput) {
