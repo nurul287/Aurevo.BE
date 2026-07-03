@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as InventoryService from "./inventory.service";
-import type { GetInventoryInput, UpsertInventoryInput, AdjustInventoryInput, GetMovementsInput, ExportInventoryInput } from "./inventory.schema";
+import type { GetInventoryInput, UpsertInventoryInput, AdjustInventoryInput, GetMovementsInput, GetLowStockInput, ExportInventoryInput } from "./inventory.schema";
 import { buildXlsxBuffer, timestampForFilename } from "../../../lib/xlsx-export";
 
 export const getInventory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -31,10 +31,10 @@ export const adjustInventory = async (req: Request, res: Response, next: NextFun
   } catch (err) { next(err); }
 };
 
-export const getLowStockAlerts = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getLowStockAlerts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const data = await InventoryService.getLowStockAlerts();
-    res.status(200).json({ success: true, data });
+    const result = await InventoryService.getLowStockAlerts(req.query as unknown as GetLowStockInput);
+    res.status(200).json({ success: true, ...result });
   } catch (err) { next(err); }
 };
 
@@ -62,7 +62,7 @@ export const exportInventory = async (req: Request, res: Response, next: NextFun
     let filePrefix: string;
 
     if (type === "low-stock") {
-      const data = await InventoryService.getLowStockAlerts();
+      const data = await InventoryService.getAllLowStockAlerts();
       sheetName = "Low Stock";
       filePrefix = "low-stock-items";
       rows = data.map((r) => ({

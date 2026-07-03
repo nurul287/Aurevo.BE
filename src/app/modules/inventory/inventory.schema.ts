@@ -38,6 +38,14 @@ export const getMovementsSchema = z.object({
     limit: z.coerce.number().int().min(1).max(10000).default(20),
     variantId: z.string().uuid().optional(),
     movementType: z.enum(["restock", "sale", "reserve", "unreserve", "cancel", "return", "adjustment", "damage", "theft", "transfer"]).optional(),
+    search: z.string().optional(),
+  }),
+});
+
+export const getLowStockSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(10000).default(20),
   }),
 });
 
@@ -57,4 +65,5 @@ export type GetInventoryInput = z.infer<typeof getInventorySchema>["query"];
 export type UpsertInventoryInput = z.infer<typeof upsertInventorySchema>["body"];
 export type AdjustInventoryInput = z.infer<typeof adjustInventorySchema>["body"];
 export type GetMovementsInput = z.infer<typeof getMovementsSchema>["query"];
+export type GetLowStockInput = z.infer<typeof getLowStockSchema>["query"];
 export type ExportInventoryInput = z.infer<typeof exportInventorySchema>["query"];

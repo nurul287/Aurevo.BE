@@ -14,6 +14,7 @@ import {
   adjustInventorySchema,
   exportInventorySchema,
   getInventorySchema,
+  getLowStockSchema,
   getMovementsSchema,
   inventoryIdSchema,
   upsertInventorySchema,
@@ -66,7 +67,7 @@ router.get("/availability", getVariantAvailability);
  *       200:
  *         description: Low-stock inventory records
  */
-router.get("/low-stock", authenticate, requireAdmin, getLowStockAlerts);
+router.get("/low-stock", authenticate, requireAdmin, validate(getLowStockSchema), getLowStockAlerts);
 
 /**
  * @swagger
