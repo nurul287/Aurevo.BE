@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, requireAdmin, validate } from "../../middlewares";
 import {
   adjustInventory,
+  exportInventory,
   getInventory,
   getInventoryById,
   getLowStockAlerts,
@@ -11,6 +12,7 @@ import {
 } from "./inventory.controller";
 import {
   adjustInventorySchema,
+  exportInventorySchema,
   getInventorySchema,
   getMovementsSchema,
   inventoryIdSchema,
@@ -92,6 +94,30 @@ router.get(
   validate(getMovementsSchema),
   getMovements,
 );
+
+/**
+ * @swagger
+ * /api/inventory/export:
+ *   get:
+ *     summary: Export inventory data as .xlsx (admin)
+ *     tags: [Inventory]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [levels, low-stock, movements], default: levels }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *       - in: query
+ *         name: movementType
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: .xlsx file download
+ */
+router.get("/export", authenticate, requireAdmin, validate(exportInventorySchema), exportInventory);
 
 /**
  * @swagger

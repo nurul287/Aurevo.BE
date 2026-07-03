@@ -45,7 +45,16 @@ export const inventoryIdSchema = z.object({
   params: z.object({ id: z.string().uuid() }),
 });
 
+export const exportInventorySchema = z.object({
+  query: z.object({
+    type: z.enum(["levels", "low-stock", "movements"]).default("levels"),
+    search: z.string().optional(),
+    movementType: z.enum(["restock", "sale", "reserve", "unreserve", "cancel", "return", "adjustment", "damage", "theft", "transfer"]).optional(),
+  }),
+});
+
 export type GetInventoryInput = z.infer<typeof getInventorySchema>["query"];
 export type UpsertInventoryInput = z.infer<typeof upsertInventorySchema>["body"];
 export type AdjustInventoryInput = z.infer<typeof adjustInventorySchema>["body"];
 export type GetMovementsInput = z.infer<typeof getMovementsSchema>["query"];
+export type ExportInventoryInput = z.infer<typeof exportInventorySchema>["query"];
