@@ -21,7 +21,8 @@ export const cartItemParamsSchema = z.object({
 
 export const migrateCartSchema = z.object({
   body: z.object({
-    guestSessionId: z.string().uuid(),
+    // Not a UUID — the FE generates guest session ids as "guest_<ts>_<rand>".
+    guestSessionId: z.string().min(1),
   }),
 });
 
