@@ -1,12 +1,18 @@
 import { z } from "zod";
 
+// Treat "" the same as omitted — form inputs default to empty strings, not undefined.
+const optionalHexColor = z.preprocess(
+  (val) => (val === "" ? undefined : val),
+  z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Must be a valid hex color").optional()
+);
+
 export const createVariantSchema = z.object({
   body: z.object({
     sku: z.string().min(1).max(100).optional(),
     name: z.string().min(1).max(255).optional(),
     size: z.string().max(50).optional(),
     color: z.string().max(100).optional(),
-    colorCode: z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Must be a valid hex color").optional(),
+    colorCode: optionalHexColor,
     material: z.string().max(255).optional(),
     weight: z.number().positive().optional(),
     price: z.number().positive().optional(),
@@ -25,7 +31,7 @@ export const updateVariantSchema = z.object({
     name: z.string().min(1).max(255).optional(),
     size: z.string().max(50).optional(),
     color: z.string().max(100).optional(),
-    colorCode: z.string().regex(/^#[0-9a-fA-F]{3,8}$/).optional(),
+    colorCode: optionalHexColor,
     material: z.string().max(255).optional(),
     weight: z.number().positive().optional(),
     price: z.number().positive().optional(),
@@ -60,7 +66,7 @@ export const bulkCreateVariantsSchema = z.object({
       name: z.string().min(1).max(255).optional(),
       size: z.string().max(50).optional(),
       color: z.string().max(100).optional(),
-      color_code: z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Must be a valid hex color").optional(),
+      color_code: optionalHexColor,
       price: z.number().positive().optional(),
       compare_at_price: z.number().positive().optional(),
       sort_order: z.number().int().min(0).optional(),
