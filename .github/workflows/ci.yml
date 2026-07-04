@@ -10,8 +10,18 @@ jobs:
   # ── Stage 1: Test (runs on PR + push to main) ──────────────────────────────
   test:
     runs-on: ubuntu-latest
+    outputs:
+      migrations_changed: ${{ steps.filter.outputs.migrations }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check for migration file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            migrations:
+              - 'supabase/migrations/**'
 
       - uses: pnpm/action-setup@v4
         with:
@@ -61,7 +71,7 @@ jobs:
     if: |
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      contains(toJson(github.event.commits.*.modified + github.event.commits.*.added + github.event.commits.*.removed), 'supabase/migrations/')
+      needs.test.outputs.migrations_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,15 +102,17 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-  # ── Stage 3: Deploy edge functions (only after migrate succeeds) ──────────
+  # ── Stage 3: Deploy edge functions (after test passes; migrate may be skipped) ──
   # Railway deployment is triggered natively via "Wait for CI" in Railway
   # settings — it fires after all CI checks pass, which includes the migrate
   # job above. No railway up needed here.
   deploy-functions:
     needs: [test, migrate]
     if: |
+      always() &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
+      needs.test.result == 'success' &&
       (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
