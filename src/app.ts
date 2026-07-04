@@ -43,12 +43,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // ==================== Health Check ====================
 
-app.get("/health", (_req, res) => {
+const healthHandler = (_req: import("express").Request, res: import("express").Response) => {
   res.json({
     success: true,
     data: { status: "ok", timestamp: new Date().toISOString(), environment: config.NODE_ENV },
   });
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 // ==================== API Documentation ====================
 
