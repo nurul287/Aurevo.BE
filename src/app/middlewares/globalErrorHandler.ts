@@ -10,7 +10,11 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  console.error("[Error]", err.message, err.stack);
+  console.error("[Error]", err.message);
+  if ((err as NodeJS.ErrnoException).cause) {
+    console.error("[Error cause]", (err as NodeJS.ErrnoException).cause);
+  }
+  console.error(err.stack);
 
   if (err instanceof ZodError) {
     res.status(400).json({
