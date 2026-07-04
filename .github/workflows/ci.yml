@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
   # ── Stage 1: Test (runs on PR + push to main) ──────────────────────────────
