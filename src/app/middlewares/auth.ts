@@ -1,26 +1,27 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { config } from "../../app/config";
+import type { JwtPayload } from "@supabase/supabase-js";
+import { supabaseAdmin } from "../../lib/supabase";
 import { UnauthorizedError, ForbiddenError } from "../errors";
 
-interface SupabaseJwtPayload {
-  sub: string;
-  email?: string;
-  role?: string;
-  app_metadata?: { role?: string };
+/**
+ * Verifies via Supabase's own getClaims(), which fetches/caches the project's
+ * JWKS and validates locally. Required because Supabase now issues tokens
+ * signed with an asymmetric key (ES256) by default — a static HS256 secret
+ * check (the old approach) rejects every such token as invalid.
+ */
+async function verifyToken(token: string): Promise<JwtPayload> {
+  const { data, error } = await supabaseAdmin.auth.getClaims(token);
+  if (error || !data) throw error ?? new Error("Token verification failed");
+  return data.claims;
 }
 
-function verifyToken(token: string): SupabaseJwtPayload {
-  return jwt.verify(token, config.SUPABASE_JWT_SECRET) as SupabaseJwtPayload;
-}
-
-export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
+export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) throw new UnauthorizedError("No token provided");
 
     const token = authHeader.split(" ")[1]!;
-    const payload = verifyToken(token);
+    const payload = await verifyToken(token);
 
     req.user = {
       id: payload.sub,
@@ -35,13 +36,13 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
   }
 };
 
-export const optionalAuth = (req: Request, _res: Response, next: NextFunction): void => {
+export const optionalAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1]!;
       try {
-        const payload = verifyToken(token);
+        const payload = await verifyToken(token);
         req.user = {
           id: payload.sub,
           email: payload.email ?? "",
