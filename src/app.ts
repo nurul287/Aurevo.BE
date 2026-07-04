@@ -20,6 +20,8 @@ const allowedOrigins = Array.from(
   new Set([
     "http://localhost:5173",
     "http://localhost:3000",
+    "https://aurevofashion.store",
+    "https://www.aurevofashion.store",
     ...config.FRONTEND_URL.split(",").map((s) => s.trim()).filter(Boolean),
   ])
 );
