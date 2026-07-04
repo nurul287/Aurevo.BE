@@ -12,10 +12,10 @@ const app: Application = express();
 
 // ==================== Middleware ====================
 
-// Security middleware
-app.use(helmet());
+// Security middleware (disable crossOriginResourcePolicy so CORS headers reach the browser)
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
-// CORS configuration
+// CORS — must come before all routes and rate limiters
 const allowedOrigins = Array.from(
   new Set([
     "http://localhost:5173",
@@ -26,15 +26,24 @@ const allowedOrigins = Array.from(
   ])
 );
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Guest-Session"],
-    exposedHeaders: ["Content-Disposition"],
-  })
-);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow server-to-server requests (no origin) and any listed origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Guest-Session"],
+  exposedHeaders: ["Content-Disposition"],
+};
+
+// Handle preflight OPTIONS requests explicitly before any other middleware
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 
 // Request logging
 app.use(morgan(config.NODE_ENV === "development" ? "dev" : "combined"));
