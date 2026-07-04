@@ -38,6 +38,9 @@ jobs:
       - name: Start local Supabase
         run: supabase start
 
+      - name: Apply migrations
+        run: supabase db reset --local
+
       - name: Run integration tests
         run: pnpm test
         env:
