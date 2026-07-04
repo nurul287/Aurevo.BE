@@ -4,7 +4,8 @@ import express from "express";
 import { createTestApp } from "../../../test/app";
 import { adminToken, userToken } from "../../../test/helpers";
 import { db } from "../../../db";
-import { products, productVariants } from "../../../db/schema";
+import { products, productVariants, inventory } from "../../../db/schema";
+import { eq } from "drizzle-orm";
 import { globalErrorHandler } from "../../middlewares/globalErrorHandler";
 import variantRoutes from "./variants.routes";
 
@@ -20,6 +21,7 @@ function createVariantsApp() {
 const app = createVariantsApp();
 
 async function cleanAll() {
+  await db.delete(inventory);
   await db.delete(productVariants);
   await db.delete(products);
 }
@@ -35,6 +37,7 @@ async function seedProduct(slug = "variant-test-product") {
 }
 
 async function seedVariant(productId: string, overrides: Partial<typeof productVariants.$inferInsert> = {}) {
+  const stock = overrides.stock ?? 10;
   const [row] = await db.insert(productVariants).values({
     productId,
     name: overrides.name ?? "Size M / Black",
@@ -42,10 +45,12 @@ async function seedVariant(productId: string, overrides: Partial<typeof productV
     size: overrides.size ?? "M",
     color: overrides.color ?? "Black",
     price: overrides.price ?? "1999",
-    stock: overrides.stock ?? 10,
+    stock,
     isActive: overrides.isActive ?? true,
     ...overrides,
   }).returning();
+  // Seed inventory — adjustStock syncs both tables, so both must exist in tests
+  await db.insert(inventory).values({ variantId: row!.id, quantity: stock, reservedQuantity: 0 });
   return row!;
 }
 
@@ -257,7 +262,7 @@ describe("DELETE /products/:productId/variants/:id", () => {
 // ─── PATCH /:productId/variants/:id/stock ────────────────────────────────────
 
 describe("PATCH /products/:productId/variants/:id/stock", () => {
-  it("increases stock (admin)", async () => {
+  it("increases stock (admin) and syncs inventory table", async () => {
     const product = await seedProduct();
     const variant = await seedVariant(product.id, { stock: 10 });
 
@@ -268,9 +273,11 @@ describe("PATCH /products/:productId/variants/:id/stock", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.stock).toBe(15);
+    const [inv] = await db.select({ quantity: inventory.quantity }).from(inventory).where(eq(inventory.variantId, variant.id));
+    expect(inv!.quantity).toBe(15);
   });
 
-  it("decreases stock (admin)", async () => {
+  it("decreases stock (admin) and syncs inventory table", async () => {
     const product = await seedProduct();
     const variant = await seedVariant(product.id, { stock: 10 });
 
@@ -281,6 +288,8 @@ describe("PATCH /products/:productId/variants/:id/stock", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.stock).toBe(7);
+    const [inv] = await db.select({ quantity: inventory.quantity }).from(inventory).where(eq(inventory.variantId, variant.id));
+    expect(inv!.quantity).toBe(7);
   });
 
   it("returns 422 when adjustment results in negative stock", async () => {

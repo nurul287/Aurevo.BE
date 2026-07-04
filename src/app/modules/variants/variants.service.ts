@@ -234,11 +234,19 @@ export async function adjustStock(productId: string, id: string, input: AdjustSt
     throw new BusinessRuleError(`Stock adjustment would result in negative stock (current: ${variant.stock}, adjustment: ${input.adjustment})`);
   }
 
-  const [updated] = await db
-    .update(productVariants)
-    .set({ stock: newStock, updatedAt: new Date().toISOString() })
-    .where(and(eq(productVariants.id, id), eq(productVariants.productId, productId)))
-    .returning();
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(productVariants)
+      .set({ stock: newStock, updatedAt: new Date().toISOString() })
+      .where(and(eq(productVariants.id, id), eq(productVariants.productId, productId)))
+      .returning();
 
-  return updated!;
+    // Keep inventory table in sync — it is the source of truth for stock checks
+    await tx
+      .update(inventory)
+      .set({ quantity: newStock, updatedAt: new Date().toISOString() })
+      .where(eq(inventory.variantId, id));
+
+    return updated!;
+  });
 }

@@ -208,7 +208,8 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
     for (const item of input.items) {
       const variant = variants.find((v) => v.id === item.variantId)!;
       const avail = availabilityMap.get(item.variantId);
-      const newStock = Math.max(0, (avail?.quantity ?? variant.stock) - item.quantity);
+      if (!avail) throw new BusinessRuleError(`No inventory record found for variant ${item.variantId}`);
+      const newStock = avail.quantity - item.quantity;
 
       await tx
         .update(productVariants)
@@ -520,37 +521,40 @@ export async function claimGuestOrders(
   userPhone?: string,
   sessionId?: string,
 ) {
-  let claimed = 0;
+  // Run all three strategies in a single transaction to prevent double-claiming
+  return db.transaction(async (tx) => {
+    let claimed = 0;
 
-  // Strategy 1: Match by session ID (most reliable, same browser)
-  if (sessionId) {
-    const rows = await db
-      .update(orders)
-      .set({ userId, sessionId: null })
-      .where(and(eq(orders.sessionId, sessionId), isNull(orders.userId)))
-      .returning({ id: orders.id });
-    claimed += rows.length;
-  }
+    // Strategy 1: Match by session ID (most reliable, same browser)
+    if (sessionId) {
+      const rows = await tx
+        .update(orders)
+        .set({ userId, sessionId: null })
+        .where(and(eq(orders.sessionId, sessionId), isNull(orders.userId)))
+        .returning({ id: orders.id });
+      claimed += rows.length;
+    }
 
-  // Strategy 2: Match by email (cross-device)
-  if (userEmail) {
-    const rows = await db
-      .update(orders)
-      .set({ userId })
-      .where(and(eq(orders.email, userEmail), isNull(orders.userId)))
-      .returning({ id: orders.id });
-    claimed += rows.length;
-  }
+    // Strategy 2: Match by email (cross-device) — skip already-claimed rows
+    if (userEmail) {
+      const rows = await tx
+        .update(orders)
+        .set({ userId })
+        .where(and(eq(orders.email, userEmail), isNull(orders.userId)))
+        .returning({ id: orders.id });
+      claimed += rows.length;
+    }
 
-  // Strategy 3: Match by phone number (common in BD market where phone = primary ID)
-  if (userPhone) {
-    const rows = await db
-      .update(orders)
-      .set({ userId })
-      .where(and(eq(orders.phone, userPhone), isNull(orders.userId)))
-      .returning({ id: orders.id });
-    claimed += rows.length;
-  }
+    // Strategy 3: Match by phone number (common in BD market where phone = primary ID)
+    if (userPhone) {
+      const rows = await tx
+        .update(orders)
+        .set({ userId })
+        .where(and(eq(orders.phone, userPhone), isNull(orders.userId)))
+        .returning({ id: orders.id });
+      claimed += rows.length;
+    }
 
-  return { claimed };
+    return { claimed };
+  });
 }
