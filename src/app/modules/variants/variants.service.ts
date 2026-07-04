@@ -1,6 +1,6 @@
 import { and, eq, ne, asc, desc, ilike, or, count } from "drizzle-orm";
 import { db } from "../../../db";
-import { productVariants, products, inventory } from "../../../db/schema";
+import { productVariants, products, inventory, orderItems } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors/AppError";
 import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput, GetAllVariantsQuery } from "./variants.schema";
 
@@ -177,7 +177,19 @@ export async function updateVariant(productId: string, id: string, input: Update
 }
 
 export async function deleteVariant(productId: string, id: string) {
-  await getVariantOrThrow(productId, id);
+  const variant = await getVariantOrThrow(productId, id);
+
+  const [{ orderCount }] = await db
+    .select({ orderCount: count() })
+    .from(orderItems)
+    .where(eq(orderItems.variantId, id));
+
+  if (Number(orderCount) > 0) {
+    throw new BusinessRuleError(
+      `Cannot delete variant "${variant.sku ?? variant.name ?? id}" — it appears in ${orderCount} order(s). Deactivate it instead.`
+    );
+  }
+
   await db.delete(productVariants).where(and(eq(productVariants.id, id), eq(productVariants.productId, productId)));
 }
 

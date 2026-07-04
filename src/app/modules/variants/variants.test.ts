@@ -4,7 +4,7 @@ import express from "express";
 import { createTestApp } from "../../../test/app";
 import { adminToken, userToken, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
-import { products, productVariants, inventory } from "../../../db/schema";
+import { products, productVariants, inventory, orders, orderItems } from "../../../db/schema";
 import { eq } from "drizzle-orm";
 import { globalErrorHandler } from "../../middlewares/globalErrorHandler";
 import variantRoutes from "./variants.routes";
@@ -21,6 +21,8 @@ function createVariantsApp() {
 const app = createVariantsApp();
 
 async function cleanAll() {
+  await db.delete(orderItems);
+  await db.delete(orders);
   await db.delete(inventory);
   await db.delete(productVariants);
   await db.delete(products);
@@ -242,6 +244,39 @@ describe("DELETE /products/:productId/variants/:id", () => {
 
     const check = await request(app).get(`/${product.id}/variants/${variant.id}`);
     expect(check.status).toBe(404);
+  });
+
+  it("returns 422 when variant appears in an existing order", async () => {
+    const product = await seedProduct();
+    const variant = await seedVariant(product.id, { sku: "ORDERED-SKU" });
+
+    const [order] = await db.insert(orders).values({
+      orderNumber: `ORD-TEST-${Date.now()}`,
+      subtotal: "1999",
+      totalAmount: "1999",
+      billingAddress: {},
+      shippingAddress: {},
+      email: "buyer@example.com",
+    }).returning();
+    await db.insert(orderItems).values({
+      orderId: order!.id,
+      productId: product.id,
+      variantId: variant.id,
+      productName: "Variant Test Product",
+      quantity: 1,
+      unitPrice: "1999",
+      totalPrice: "1999",
+    });
+
+    const res = await request(app)
+      .delete(`/${product.id}/variants/${variant.id}`)
+      .set("Authorization", adminToken);
+
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("BUSINESS_RULE");
+
+    const check = await request(app).get(`/${product.id}/variants/${variant.id}`);
+    expect(check.status).toBe(200);
   });
 
   it("returns 404 for unknown variant", async () => {
