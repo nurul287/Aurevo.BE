@@ -117,12 +117,11 @@ pnpm db:studio         # Drizzle Studio (read-only introspection)
 
 1. **test** — build, lint, and run integration tests against local Supabase Docker
 2. **migrate** — link to production Supabase, validate migrations, run `supabase db push`
-3. **deploy** — deploy to Railway via `railway up` (auto-deploy is disabled; CI is the only deploy path)
-4. **deploy-functions** — deploy edge functions to Supabase
+3. **deploy-functions** — deploy edge functions to Supabase
 
-**Railway auto-deploy is disabled.** The CI pipeline is the only way to deploy, ensuring tests pass and DB migrations succeed before the new server goes live.
+Railway deploys automatically via the native **"Wait for CI"** setting — it triggers only after all CI checks on `main` pass, ensuring tests and DB migrations succeed before the new server goes live. No `RAILWAY_TOKEN` or `railway up` needed.
 
-Required GitHub Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PROJECT_ID`, `ANTHROPIC_API_KEY`, `RAILWAY_TOKEN`
+Required GitHub Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PROJECT_ID`, `ANTHROPIC_API_KEY`
 
 ---
 
