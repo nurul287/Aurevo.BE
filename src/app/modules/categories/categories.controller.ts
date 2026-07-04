@@ -68,3 +68,21 @@ export const deleteCategory = async (req: Request, res: Response, next: NextFunc
     res.status(200).json({ success: true, message: "Category deleted successfully" });
   } catch (err) { next(err); }
 };
+
+export const uploadCategoryImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message: "No file uploaded" } });
+      return;
+    }
+    const data = await CategoryService.setCategoryImage(req.params.id!, req.file);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
+export const deleteCategoryImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const data = await CategoryService.removeCategoryImage(req.params.id!);
+    res.status(200).json({ success: true, data });
+  } catch (err) { next(err); }
+};

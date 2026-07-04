@@ -122,6 +122,28 @@ export async function updateCategory(
   return updated!;
 }
 
+export async function setCategoryImage(id: string, file: Express.Multer.File) {
+  const existing = await getCategoryById(id);
+  if (existing.imageUrl) await deleteImageByUrl(existing.imageUrl);
+  const storagePath = buildImagePath("categories", id, "cover", file);
+  const imageUrl = await uploadEntityImage(storagePath, file);
+  const [updated] = await db.update(categories)
+    .set({ imageUrl, updatedAt: new Date().toISOString() })
+    .where(eq(categories.id, id))
+    .returning();
+  return updated!;
+}
+
+export async function removeCategoryImage(id: string) {
+  const existing = await getCategoryById(id);
+  if (existing.imageUrl) await deleteImageByUrl(existing.imageUrl);
+  const [updated] = await db.update(categories)
+    .set({ imageUrl: null, updatedAt: new Date().toISOString() })
+    .where(eq(categories.id, id))
+    .returning();
+  return updated!;
+}
+
 export async function deleteCategory(id: string) {
   const category = await getCategoryById(id); // throws 404 if not found
 

@@ -13,10 +13,12 @@ import {
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 import {
   createCategory,
+  deleteCategoryImage,
   deleteCategory,
   getCategories,
   getCategoryById,
   updateCategory,
+  uploadCategoryImage,
 } from "./categories.controller";
 import {
   categoryIdSchema,
@@ -172,6 +174,22 @@ router.delete(
   requireAdmin,
   validate(categoryIdSchema),
   deleteCategory,
+);
+
+router.post(
+  "/:id/image",
+  authenticate,
+  requireAdmin,
+  uploadLimiter,
+  upload.single("image"),
+  uploadCategoryImage,
+);
+
+router.delete(
+  "/:id/image",
+  authenticate,
+  requireAdmin,
+  deleteCategoryImage,
 );
 
 export default router;
