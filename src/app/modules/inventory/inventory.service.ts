@@ -430,16 +430,22 @@ export async function getVariantAvailability(variantIds: string[]): Promise<
   { variantId: string; quantity: number; reservedQuantity: number }[]
 > {
   if (variantIds.length === 0) return [];
-  // Source from product_variants.stock/reserved_stock — the fields order
-  // creation/cancellation actually mutate — rather than the separate
-  // `inventory` table, which isn't kept in sync for every variant.
   const rows = await db
-    .select({ variantId: productVariants.id, stock: productVariants.stock, reservedStock: productVariants.reservedStock })
-    .from(productVariants)
-    .where(inArray(productVariants.id, variantIds));
-  return rows.map((r) => ({
-    variantId: r.variantId,
-    quantity: r.stock ?? 0,
-    reservedQuantity: r.reservedStock ?? 0,
-  }));
+    .select({ variantId: inventory.variantId, quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity })
+    .from(inventory)
+    .where(inArray(inventory.variantId, variantIds));
+
+  // Aggregate across locations per variantId
+  const map = new Map<string, { quantity: number; reservedQuantity: number }>();
+  for (const r of rows) {
+    if (!r.variantId) continue;
+    const cur = map.get(r.variantId) ?? { quantity: 0, reservedQuantity: 0 };
+    cur.quantity += r.quantity;
+    cur.reservedQuantity += r.reservedQuantity ?? 0;
+    map.set(r.variantId, cur);
+  }
+
+  return variantIds
+    .filter((id) => map.has(id))
+    .map((id) => ({ variantId: id, ...map.get(id)! }));
 }
