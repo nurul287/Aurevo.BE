@@ -1,11 +1,10 @@
 import express, { Application } from "express";
-import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import { config } from "./app/config";
-import { globalErrorHandler } from "./app/middlewares";
 import { swaggerSpec } from "./app/config/swagger";
+import { globalErrorHandler } from "./app/middlewares";
 import router from "./routes";
 
 const app: Application = express();
@@ -21,29 +20,35 @@ const allowedOrigins = Array.from(
     "http://localhost:5173",
     "http://localhost:3000",
     "https://aurevofashion.store",
-    "https://www.aurevofashion.store",
-    ...config.FRONTEND_URL.split(",").map((s) => s.trim()).filter(Boolean),
-  ])
+    ...(config.FRONTEND_URL
+      ? config.FRONTEND_URL.split(",").map((s) => s.trim())
+      : []),
+  ]),
 );
 
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    // Allow server-to-server requests (no origin) and any listed origin
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Guest-Session"],
-  exposedHeaders: ["Content-Disposition"],
-};
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-// Handle preflight OPTIONS requests explicitly before any other middleware
-app.options("*", cors(corsOptions));
-app.use(cors(corsOptions));
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Guest-Session",
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 // Request logging
 app.use(morgan(config.NODE_ENV === "development" ? "dev" : "combined"));
@@ -54,10 +59,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // ==================== Health Check ====================
 
-const healthHandler = (_req: import("express").Request, res: import("express").Response) => {
+const healthHandler = (
+  _req: import("express").Request,
+  res: import("express").Response,
+) => {
   res.json({
     success: true,
-    data: { status: "ok", timestamp: new Date().toISOString(), environment: config.NODE_ENV },
+    data: {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      environment: config.NODE_ENV,
+    },
   });
 };
 
@@ -72,7 +84,7 @@ app.use(
   swaggerUi.setup(swaggerSpec, {
     customCss: ".swagger-ui .topbar { display: none }",
     customSiteTitle: "Aurevo Fashion API Docs",
-  })
+  }),
 );
 
 // Serve raw OpenAPI spec
@@ -90,7 +102,10 @@ app.use("/api", router);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: { code: "NOT_FOUND", message: `Route ${req.method} ${req.path} not found` },
+    error: {
+      code: "NOT_FOUND",
+      message: `Route ${req.method} ${req.path} not found`,
+    },
   });
 });
 
