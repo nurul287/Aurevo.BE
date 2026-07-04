@@ -42,6 +42,8 @@ export async function createGuestSession(): Promise<string> {
 
 const cartItemSelect = {
   id: cartItems.id,
+  userId: cartItems.userId,
+  sessionId: cartItems.sessionId,
   productId: cartItems.productId,
   variantId: cartItems.variantId,
   quantity: cartItems.quantity,
