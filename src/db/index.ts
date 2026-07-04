@@ -3,7 +3,11 @@ import postgres from "postgres";
 import { config } from "../app/config";
 import * as schema from "./schema";
 
-const client = postgres(config.DATABASE_URL, { max: 10 });
+const isProduction = config.NODE_ENV === "production";
+const client = postgres(config.DATABASE_URL, {
+  max: 10,
+  ssl: isProduction ? "require" : false,
+});
 
 export const db = drizzle(client, { schema });
 
