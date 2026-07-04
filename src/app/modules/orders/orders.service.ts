@@ -331,9 +331,8 @@ export async function getOrderByNumber(
     ) {
       throw new ForbiddenError("Invalid or expired guest token");
     }
-  } else {
-    throw new ForbiddenError("Access denied");
   }
+  // No auth and no guestToken — order number itself is the access key (public guest confirmation)
 
   const items = await fetchOrderItemsWithImages(order.id);
   return { ...stripSensitiveFields(order), items };
