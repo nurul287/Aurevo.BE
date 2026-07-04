@@ -7,6 +7,8 @@ const isProduction = config.NODE_ENV === "production";
 const client = postgres(config.DATABASE_URL, {
   max: 10,
   ssl: isProduction ? "require" : false,
+  // Supabase pooler (transaction mode) doesn't support prepared statements
+  prepare: !isProduction,
 });
 
 export const db = drizzle(client, { schema });
