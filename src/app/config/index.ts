@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+﻿import dotenv from "dotenv";
 import { z } from "zod";
 import path from "path";
 
@@ -14,7 +14,7 @@ const envSchema = z.object({
   SUPABASE_JWT_SECRET: z.string().min(1),
 
   // Server
-  PORT: z.string().default("3001"),
+  PORT: z.string().default("5000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   FRONTEND_URL: z.string().default("http://localhost:5173"),
 

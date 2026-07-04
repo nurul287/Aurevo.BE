@@ -16,13 +16,17 @@ const app: Application = express();
 app.use(helmet());
 
 // CORS configuration
+const allowedOrigins = Array.from(
+  new Set([
+    "http://localhost:5173",
+    "http://localhost:3000",
+    ...config.FRONTEND_URL.split(",").map((s) => s.trim()).filter(Boolean),
+  ])
+);
+
 app.use(
   cors({
-    origin: [
-      config.FRONTEND_URL,
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Guest-Session"],
