@@ -10,9 +10,7 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  if (config.NODE_ENV === "development") {
-    console.error("[Error]", err);
-  }
+  console.error("[Error]", err.message, err.stack);
 
   if (err instanceof ZodError) {
     res.status(400).json({
