@@ -1,4 +1,10 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+
+vi.mock("../../../lib/storage", () => ({
+  uploadFile: vi.fn().mockResolvedValue("http://127.0.0.1:55321/storage/v1/object/public/product-images/test.jpg"),
+  deleteFile: vi.fn().mockResolvedValue(undefined),
+  getPublicUrl: vi.fn().mockReturnValue("http://127.0.0.1:55321/storage/v1/object/public/product-images/test.jpg"),
+}));
 import request from "supertest";
 import express from "express";
 import { db } from "../../../db";
