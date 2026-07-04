@@ -47,7 +47,8 @@ export const getMovements = async (req: Request, res: Response, next: NextFuncti
 
 export const getVariantAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const ids = [req.query["variantIds"]].flat().filter(Boolean) as string[];
+    const raw = req.query["variantIds"];
+    const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter(Boolean) as string[];
     if (ids.length === 0) {
       res.status(400).json({ success: false, error: { code: "VALIDATION_ERROR", message: "At least one variantId is required" } });
       return;

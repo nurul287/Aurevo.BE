@@ -83,10 +83,9 @@ describe("POST /orders", () => {
     expect(res.body.data.items[0].quantity).toBe(2);
     expect(res.body.data.totalAmount).toBe("4000.00");
 
-    // Stock should be reduced on both productVariants and inventory
-    const [pv] = await db.select({ stock: productVariants.stock, reservedStock: productVariants.reservedStock }).from(productVariants).where(eq(productVariants.id, variant.id));
+    // Stock should be reduced — inventory is source of truth, productVariants.stock kept in sync
+    const [pv] = await db.select({ stock: productVariants.stock }).from(productVariants).where(eq(productVariants.id, variant.id));
     expect(pv!.stock).toBe(8);
-    expect(pv!.reservedStock).toBe(2);
     const [inv] = await db.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity }).from(inventory).where(eq(inventory.variantId, variant.id));
     expect(inv!.quantity).toBe(8);
     expect(inv!.reservedQuantity).toBe(2);

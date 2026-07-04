@@ -101,7 +101,6 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
       name: productVariants.name,
       price: productVariants.price,
       stock: productVariants.stock,
-      reservedStock: productVariants.reservedStock,
       isActive: productVariants.isActive,
       productId: productVariants.productId,
     })
@@ -215,7 +214,6 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
         .update(productVariants)
         .set({
           stock: newStock,
-          reservedStock: variant.reservedStock + item.quantity,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(productVariants.id, item.variantId));
@@ -385,7 +383,7 @@ export async function cancelOrder(
     for (const item of items) {
       if (item.variantId) {
         const [[variant], [inv]] = await Promise.all([
-          tx.select({ stock: productVariants.stock, reservedStock: productVariants.reservedStock })
+          tx.select({ stock: productVariants.stock })
             .from(productVariants).where(eq(productVariants.id, item.variantId)),
           tx.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity })
             .from(inventory).where(eq(inventory.variantId, item.variantId)),
@@ -394,10 +392,7 @@ export async function cancelOrder(
           const restoredStock = variant.stock + item.quantity;
           await tx
             .update(productVariants)
-            .set({
-              stock: restoredStock,
-              reservedStock: Math.max(0, variant.reservedStock - item.quantity),
-            })
+            .set({ stock: restoredStock })
             .where(eq(productVariants.id, item.variantId));
 
           if (inv) {

@@ -141,7 +141,7 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
     ? and(eq(cartItems.userId, owner.userId), eq(cartItems.variantId, input.variantId))
     : and(eq(cartItems.sessionId, owner.sessionId), eq(cartItems.variantId, input.variantId));
 
-  const [existing] = await db.select({ id: cartItems.id, quantity: cartItems.quantity }).from(cartItems).where(existingCondition!);
+  const [existing] = await db.select({ id: cartItems.id, quantity: cartItems.quantity }).from(cartItems).where(existingCondition);
 
   if (existing) {
     const newQty = existing.quantity + input.quantity;
