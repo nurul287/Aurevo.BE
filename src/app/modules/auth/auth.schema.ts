@@ -50,6 +50,53 @@ export const addressIdSchema = z.object({
   params: z.object({ id: z.string().uuid() }),
 });
 
+export const loginSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    password: z.string().min(1),
+  }),
+});
+
+export const registerSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    firstName: z.string().min(1).max(100).optional(),
+    lastName: z.string().min(1).max(100).optional(),
+  }),
+});
+
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1),
+  }),
+});
+
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+  }),
+});
+
+export const updatePasswordSchema = z.object({
+  body: z.object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+  }),
+});
+
+export const resendConfirmationSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    type: z.enum(["signup", "email_change"]).default("signup"),
+  }),
+});
+
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>["body"];
 export type CreateAddressInput = z.infer<typeof createAddressSchema>["body"];
 export type UpdateAddressInput = z.infer<typeof updateAddressSchema>["body"];
+export type LoginInput = z.infer<typeof loginSchema>["body"];
+export type RegisterInput = z.infer<typeof registerSchema>["body"];
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>["body"];
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>["body"];
+export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>["body"];
+export type ResendConfirmationInput = z.infer<typeof resendConfirmationSchema>["body"];

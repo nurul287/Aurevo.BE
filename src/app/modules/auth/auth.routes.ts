@@ -1,19 +1,37 @@
 import { Router } from "express";
-import { authenticate, authLimiter, validate } from "../../middlewares";
+import multer from "multer";
+import { authenticate, authLimiter, uploadLimiter, validate } from "../../middlewares";
 import {
   createAddress,
   deleteAddress,
+  deleteAvatar,
+  forgotPassword,
   getAddresses,
   getMe,
+  login,
+  logout,
+  refreshToken,
+  register,
+  resendConfirmation,
   updateAddress,
+  updatePassword,
   updateProfile,
+  uploadAvatar,
 } from "./auth.controller";
 import {
   addressIdSchema,
   createAddressSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  refreshTokenSchema,
+  registerSchema,
+  resendConfirmationSchema,
   updateAddressSchema,
+  updatePasswordSchema,
   updateProfileSchema,
 } from "./auth.schema";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
 const router: Router = Router();
 
@@ -29,6 +47,17 @@ const router: Router = Router();
  *       200:
  *         description: User profile
  */
+router.post("/login", authLimiter, validate(loginSchema), login);
+router.post("/register", authLimiter, validate(registerSchema), register);
+router.post("/logout", authenticate, logout);
+router.post("/refresh", authLimiter, validate(refreshTokenSchema), refreshToken);
+router.post("/forgot-password", authLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post("/update-password", authenticate, validate(updatePasswordSchema), updatePassword);
+router.post("/resend-confirmation", authLimiter, validate(resendConfirmationSchema), resendConfirmation);
+
+router.post("/profile/avatar", authenticate, uploadLimiter, upload.single("avatar"), uploadAvatar);
+router.delete("/profile/avatar", authenticate, deleteAvatar);
+
 router.get("/me", authenticate, getMe);
 
 /**
