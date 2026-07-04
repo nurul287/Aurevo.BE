@@ -9,6 +9,9 @@ import router from "./routes";
 
 const app: Application = express();
 
+// Trust Railway's reverse proxy so X-Forwarded-For is used for real IPs
+app.set("trust proxy", 1);
+
 // ==================== Middleware ====================
 
 // Security middleware (disable crossOriginResourcePolicy so CORS headers reach the browser)
