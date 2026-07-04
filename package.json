@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Aurevo Fashion E-commerce Backend API",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
