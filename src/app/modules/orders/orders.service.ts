@@ -19,7 +19,9 @@ import {
   products,
   productImages,
   productVariants,
+  inventory,
 } from "../../../db/schema";
+import { getVariantAvailability } from "../inventory/inventory.service";
 import {
   NotFoundError,
   ForbiddenError,
@@ -106,15 +108,20 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
     .from(productVariants)
     .where(inArray(productVariants.id, variantIds));
 
-  // Validate all variants exist and have sufficient stock
+  // Validate all variants exist and have sufficient stock (read from inventory table)
+  const availability = await getVariantAvailability(variantIds);
+  const availabilityMap = new Map(availability.map((a) => [a.variantId, a]));
+
   for (const item of input.items) {
     const variant = variants.find((v) => v.id === item.variantId);
     if (!variant) throw new NotFoundError(`Variant ${item.variantId}`);
     if (!variant.isActive)
       throw new BusinessRuleError(`Variant is not available`);
-    if (variant.stock < item.quantity)
+    const avail = availabilityMap.get(item.variantId);
+    const availableStock = avail ? avail.quantity - avail.reservedQuantity : 0;
+    if (availableStock < item.quantity)
       throw new BusinessRuleError(
-        `Insufficient stock for variant ${item.variantId} (available: ${variant.stock})`,
+        `Insufficient stock for variant ${item.variantId} (available: ${availableStock})`,
       );
   }
 
@@ -197,17 +204,30 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
       .insert(orderItems)
       .values(lineItems.map((item) => ({ ...item, orderId: order!.id })));
 
-    // Decrement stock
+    // Decrement stock on both productVariants and inventory (keep in sync)
     for (const item of input.items) {
       const variant = variants.find((v) => v.id === item.variantId)!;
+      const avail = availabilityMap.get(item.variantId);
+      const newStock = Math.max(0, (avail?.quantity ?? variant.stock) - item.quantity);
+
       await tx
         .update(productVariants)
         .set({
-          stock: variant.stock - item.quantity,
+          stock: newStock,
           reservedStock: variant.reservedStock + item.quantity,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(productVariants.id, item.variantId));
+
+      // Sync inventory table
+      await tx
+        .update(inventory)
+        .set({
+          quantity: newStock,
+          reservedQuantity: (avail?.reservedQuantity ?? 0) + item.quantity,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(inventory.variantId, item.variantId));
     }
 
     return { ...order!, items: lineItems };
@@ -363,21 +383,32 @@ export async function cancelOrder(
   await db.transaction(async (tx) => {
     for (const item of items) {
       if (item.variantId) {
-        const [variant] = await tx
-          .select({
-            stock: productVariants.stock,
-            reservedStock: productVariants.reservedStock,
-          })
-          .from(productVariants)
-          .where(eq(productVariants.id, item.variantId));
+        const [[variant], [inv]] = await Promise.all([
+          tx.select({ stock: productVariants.stock, reservedStock: productVariants.reservedStock })
+            .from(productVariants).where(eq(productVariants.id, item.variantId)),
+          tx.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity })
+            .from(inventory).where(eq(inventory.variantId, item.variantId)),
+        ]);
         if (variant) {
+          const restoredStock = variant.stock + item.quantity;
           await tx
             .update(productVariants)
             .set({
-              stock: variant.stock + item.quantity,
+              stock: restoredStock,
               reservedStock: Math.max(0, variant.reservedStock - item.quantity),
             })
             .where(eq(productVariants.id, item.variantId));
+
+          if (inv) {
+            await tx
+              .update(inventory)
+              .set({
+                quantity: restoredStock,
+                reservedQuantity: Math.max(0, (inv.reservedQuantity ?? 0) - item.quantity),
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(inventory.variantId, item.variantId));
+          }
         }
       }
     }

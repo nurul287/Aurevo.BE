@@ -4,7 +4,7 @@ import request from "supertest";
 import { createTestApp } from "../../../test/app";
 import { adminToken, userToken, MOCK_USER, MOCK_ADMIN_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
-import { orders, orderItems, products, productVariants } from "../../../db/schema";
+import { orders, orderItems, products, productVariants, inventory } from "../../../db/schema";
 import orderRoutes from "./orders.routes";
 
 const app = createTestApp(orderRoutes);
@@ -22,6 +22,7 @@ const TEST_ADDRESS = {
 async function cleanAll() {
   await db.delete(orderItems);
   await db.delete(orders);
+  await db.delete(inventory);
   await db.delete(productVariants);
   await db.delete(products);
 }
@@ -35,6 +36,8 @@ async function seedVariant(productId: string, stock = 20) {
   const [row] = await db.insert(productVariants).values({
     productId, sku: `SKU-ORD-${Date.now()}`, price: "2000", stock, reservedStock: 0, isActive: true,
   }).returning();
+  // Seed inventory table — orders service checks stock from here
+  await db.insert(inventory).values({ variantId: row!.id, quantity: stock, reservedQuantity: 0 });
   return row!;
 }
 
@@ -80,10 +83,13 @@ describe("POST /orders", () => {
     expect(res.body.data.items[0].quantity).toBe(2);
     expect(res.body.data.totalAmount).toBe("4000.00");
 
-    // Stock should be reduced
-    const [updated] = await db.select({ stock: productVariants.stock, reservedStock: productVariants.reservedStock }).from(productVariants).where(eq(productVariants.id, variant.id));
-    expect(updated!.stock).toBe(8);
-    expect(updated!.reservedStock).toBe(2);
+    // Stock should be reduced on both productVariants and inventory
+    const [pv] = await db.select({ stock: productVariants.stock, reservedStock: productVariants.reservedStock }).from(productVariants).where(eq(productVariants.id, variant.id));
+    expect(pv!.stock).toBe(8);
+    expect(pv!.reservedStock).toBe(2);
+    const [inv] = await db.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity }).from(inventory).where(eq(inventory.variantId, variant.id));
+    expect(inv!.quantity).toBe(8);
+    expect(inv!.reservedQuantity).toBe(2);
   });
 
   it("creates a guest order (no auth)", async () => {
