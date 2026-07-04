@@ -55,10 +55,13 @@ jobs:
 
       - run: supabase stop
 
-  # ── Stage 2: Migrate DB (only on push to main, after tests pass) ──────────
+  # ── Stage 2: Migrate DB (only on push to main when migrations changed) ──────
   migrate:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      contains(toJson(github.event.commits.*.modified + github.event.commits.*.added + github.event.commits.*.removed), 'supabase/migrations/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -94,8 +97,11 @@ jobs:
   # settings — it fires after all CI checks pass, which includes the migrate
   # job above. No railway up needed here.
   deploy-functions:
-    needs: migrate
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, migrate]
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
