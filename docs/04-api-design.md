@@ -1,8 +1,8 @@
-# Phase 4 — API Design
+﻿# Phase 4 — API Design
 
 ## Base URL
 ```
-http://localhost:3001/api
+http://localhost:5000/api
 ```
 
 ## Interactive Docs
@@ -162,17 +162,27 @@ X-Guest-Session: <uuid>
 |--------|------|------|-------------|
 | POST | `/` | Optional | Create order (auth user or guest with email) |
 | GET | `/` | Auth | List orders (users see own; admins see all) |
-| GET | `/by-number/:orderNumber` | Public | Lookup by order number (for order tracking) |
-| GET | `/:id` | Auth | Get order detail |
+| GET | `/stats` | Admin | Aggregate counts by status + total revenue |
+| GET | `/by-number/:orderNumber` | Optional | Lookup by order number (guest confirmation page) |
+| POST | `/claim` | Auth | Claim guest orders on login (match by session/email/phone) |
+| GET | `/:id` | Optional | Get order detail (auth user/admin or guestToken param) |
 | PATCH | `/:id/cancel` | Auth | Cancel order |
 | PATCH | `/:id/status` | Admin | Update order status |
 | PATCH | `/:id/payment` | Admin | Update payment status |
 | PATCH | `/:id/tracking` | Admin | Set tracking number |
 | PATCH | `/:id/fulfillment` | Admin | Update fulfillment status |
 
-**Order creation:** Validates all variants exist and have sufficient stock. Runs in a single transaction: inserts order + items + decrements `stock` + increments `reserved_stock` on each variant.
+**Order creation:** Validates all variants exist and have sufficient stock. Runs in a single transaction: inserts order + line items (with `productName`, `variantName`, `sku`, `unitPrice`, `totalPrice`) + decrements `stock` + increments `reserved_stock` on each variant. Price resolution: `variant.price ?? product.basePrice`. Accepts optional `shippingAmount`.
 
-**Cancel:** User can cancel own order if status is `pending`. Admin can cancel any non-delivered order. Cancellation restores stock in a transaction.
+**Stats endpoint:** `GET /stats` must be registered before `/:id` in the router to avoid the UUID validator matching the literal string "stats".
+
+**Guest access:** `GET /by-number/:orderNumber` and `GET /:id` accept `?guestToken=<token>` as an alternative to a Bearer JWT. Tokens expire after 30 days.
+
+**Claim:** On login, `POST /claim` with `{ sessionId?, phone? }` assigns all matching guest orders (null `userId`) to the authenticated user via session ID, email, and phone matching.
+
+**Cancel:** User can cancel own pending order. Admin can cancel any non-delivered order. Cancellation restores stock in a transaction.
+
+**Search (GET /):** Supports `?search=` — matches order number, shipping name, phone, and email via `ilike`.
 
 ---
 
@@ -180,12 +190,22 @@ X-Guest-Session: <uuid>
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/` | Admin | List inventory (filter by variantId, location, lowStock) |
+| GET | `/` | Admin | List inventory levels (paginated, filters) |
 | PUT | `/` | Admin | Upsert inventory record for a variant |
 | PATCH | `/:id/adjust` | Admin | Adjust quantity with reason + movement log |
-| GET | `/movements` | Admin | Audit log of all inventory movements |
+| GET | `/movements` | Admin | Paginated audit log of all movements |
+| GET | `/low-stock` | Admin | Variants where quantity ≤ threshold (paginated) |
+| GET | `/export` | Admin | Download full inventory as .xlsx (server-side) |
 
-**Adjust:** Validates new quantity won't go below 0. Runs transaction: updates `inventory.quantity` + inserts `inventory_movements` row + syncs `product_variants.stock`.
+**Query params (GET /):** `page`, `limit`, `search` (matches product name / SKU), `location`, `lowStock` (boolean)
+
+**Adjust:** Validates new quantity ≥ 0. Runs transaction: updates `inventory.quantity` + inserts `inventory_movements` row + syncs `product_variants.stock`.
+
+**Upsert sync:** `PUT /` also syncs `product_variants.stock` in the same transaction so the two ledgers stay consistent.
+
+**Export:** `GET /export` builds an .xlsx buffer server-side using `xlsx` and streams it with `Content-Disposition: attachment; filename="inventory-<timestamp>.xlsx"`. CORS must expose `Content-Disposition` via `exposedHeaders` so the browser can read the filename.
+
+**Variant availability:** `GET /api/variants/:variantId/availability` reads from `product_variants.stock - product_variants.reserved_stock` (not `inventory.quantity`) — this matches what checkout and add-to-cart validate against.
 
 ---
 

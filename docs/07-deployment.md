@@ -1,4 +1,4 @@
-# Phase 7 — Deployment & DevOps
+﻿# Phase 7 — Deployment & DevOps
 
 ## Local Development Setup
 
@@ -42,7 +42,7 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55322/postgres
 SUPABASE_URL=http://127.0.0.1:55321
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key from db:status>
 SUPABASE_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
-PORT=3001
+PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 ANTHROPIC_API_KEY=<your key>
@@ -50,8 +50,8 @@ ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 ```
 
 ```bash
-pnpm dev    # http://localhost:3001
-            # Swagger: http://localhost:3001/api/docs
+pnpm dev    # http://localhost:5000
+            # Swagger: http://localhost:5000/api/docs
 ```
 
 ### Step 4 — Configure frontend
@@ -63,7 +63,7 @@ Create `.env.local`:
 ```env
 VITE_SUPABASE_URL=http://127.0.0.1:55321
 VITE_SUPABASE_ANON_KEY=<anon_key from db:status>
-VITE_API_URL=http://localhost:3001
+VITE_API_URL=http://localhost:5000
 ```
 
 ```bash
@@ -120,7 +120,7 @@ DATABASE_URL=<supabase prod connection string>
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<prod service role key>
 SUPABASE_JWT_SECRET=<prod JWT secret — from Supabase dashboard → Settings → API>
-PORT=3001
+PORT=5000
 NODE_ENV=production
 FRONTEND_URL=https://aurevo.vercel.app
 ANTHROPIC_API_KEY=<prod key>

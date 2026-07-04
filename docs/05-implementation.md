@@ -194,6 +194,105 @@ The generator yields text chunks as they come. The controller writes each chunk 
 
 ---
 
+### effectivePrice Helper (Cart + Orders)
+
+Variants can have a `price` of `null`, meaning they inherit from the parent product's `basePrice`. A single helper resolves this everywhere:
+
+```ts
+function effectivePrice(variant: { price: string | null }, product: { basePrice: string | null }) {
+  return Number(variant.price ?? product.basePrice ?? "0");
+}
+```
+
+Both cart total calculation and order line-item pricing use this. Forgetting the fallback produces ৳0 cart items and zero-value orders.
+
+---
+
+### Variant–Inventory Transaction (Create/Bulk Create)
+
+Every new variant must have a matching `inventory` row. This is enforced in the service, not in the DB:
+
+```ts
+return db.transaction(async (tx) => {
+  const [variant] = await tx.insert(productVariants).values(variantData).returning();
+  await tx.insert(inventory).values({
+    variantId: variant!.id,
+    location: "main",
+    quantity: input.stock ?? 0,
+  });
+  return variant!;
+});
+```
+
+If the inventory insert fails, the variant is also rolled back — no orphaned variants without inventory rows.
+
+---
+
+### Inventory Upsert Syncs Both Ledgers
+
+The `PUT /inventory` upsert updates both the `inventory` table AND `product_variants.stock` in the same transaction:
+
+```ts
+await db.transaction(async (tx) => {
+  await tx.insert(inventory).values(...).onConflictDoUpdate(...);
+  await tx.update(productVariants).set({ stock: input.quantity })
+    .where(eq(productVariants.id, input.variantId));
+});
+```
+
+This keeps two ledgers in sync: `inventory.quantity` (Inventory admin reads) and `product_variants.stock` (cart availability + checkout reads).
+
+---
+
+### Cart `getCart` — Full JOIN
+
+`GET /cart` returns joined product + variant + image data so the cart panel can display names, prices, and thumbnails without extra round-trips:
+
+```ts
+const rows = await db
+  .select({ cartItem: cartItems, product: products, variant: productVariants })
+  .from(cartItems)
+  .leftJoin(productVariants, eq(cartItems.variantId, productVariants.id))
+  .leftJoin(products, eq(productVariants.productId, products.id))
+  .where(ownerCondition(owner));
+```
+
+Primary images are fetched separately and merged by product ID.
+
+---
+
+### CORS `exposedHeaders`
+
+The default CORS setup does not expose `Content-Disposition` to JavaScript. Without this, `response.headers.get("Content-Disposition")` returns `null` and the download filename falls back to "download.xlsx":
+
+```ts
+cors({
+  origin: allowedOrigins,
+  credentials: true,
+  exposedHeaders: ["Content-Disposition"],   // ← required for xlsx filename
+})
+```
+
+---
+
+### Server-Side XLSX Export
+
+Inventory export runs entirely on the server to avoid sending thousands of rows to the browser:
+
+```ts
+// lib/xlsx-export.ts
+export function buildXlsxBuffer(sheetName: string, rows: Record<string, unknown>[]) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+}
+```
+
+The controller sets `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` and `Content-Disposition: attachment; filename="inventory-<ts>.xlsx"`, then writes the buffer directly.
+
+---
+
 ## Non-obvious Decisions
 
 ### `fileParallelism: false` in Vitest config
