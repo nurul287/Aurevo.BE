@@ -2,6 +2,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../../db";
 import { cartItems, products, productVariants, productImages, guestSessions } from "../../../db/schema";
 import { NotFoundError, ValidationError, BusinessRuleError } from "../../errors/AppError";
+import { getVariantAvailability } from "../inventory/inventory.service";
 import type { AddItemInput, UpdateItemInput, MigrateCartInput } from "./cart.schema";
 
 type CartOwner = { userId: string } | { sessionId: string };
@@ -125,12 +126,15 @@ export async function getCart(owner: CartOwner) {
 
 export async function addItem(owner: CartOwner, input: AddItemInput) {
   const variant = await getVariantOrThrow(input.variantId);
-
-  if (variant.stock < input.quantity) {
-    throw new BusinessRuleError(`Only ${variant.stock} units available`);
-  }
-
   const price = effectivePrice(variant);
+
+  // Check stock from the inventory table (source of truth)
+  const [availability] = await getVariantAvailability([input.variantId]);
+  const availableStock = availability ? availability.quantity - availability.reservedQuantity : 0;
+
+  if (availableStock < input.quantity) {
+    throw new BusinessRuleError(`Only ${availableStock} units available`);
+  }
 
   // Upsert: if same variant already in cart, increment quantity
   const existingCondition = "userId" in owner
@@ -141,7 +145,7 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
 
   if (existing) {
     const newQty = existing.quantity + input.quantity;
-    if (variant.stock < newQty) throw new BusinessRuleError(`Only ${variant.stock} units available`);
+    if (availableStock < newQty) throw new BusinessRuleError(`Only ${availableStock} units available`);
 
     await db
       .update(cartItems)
@@ -164,7 +168,9 @@ export async function updateItem(owner: CartOwner, id: string, input: UpdateItem
   if (!item) throw new NotFoundError("Cart item");
 
   const variant = await getVariantOrThrow(item.variantId!);
-  if (variant.stock < input.quantity) throw new BusinessRuleError(`Only ${variant.stock} units available`);
+  const [availability] = await getVariantAvailability([item.variantId!]);
+  const availableStock = availability ? availability.quantity - availability.reservedQuantity : 0;
+  if (availableStock < input.quantity) throw new BusinessRuleError(`Only ${availableStock} units available`);
 
   await db
     .update(cartItems)
