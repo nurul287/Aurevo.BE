@@ -43,6 +43,11 @@ function generateOrderNumber(): string {
   return `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
 
+/** Mirrors the adminRoles list in middlewares/auth.ts requireAdmin — keep in sync. */
+function isAdminRole(role: string): boolean {
+  return role === "admin" || role === "super_admin" || role === "service_role";
+}
+
 function stripSensitiveFields<T extends Record<string, unknown>>(
   order: T,
 ): Omit<T, "guestToken" | "guestTokenExpires"> {
@@ -240,8 +245,7 @@ export async function getOrders(
   filters: GetOrdersInput,
   requestUser: { id: string; role: string },
 ) {
-  const isAdmin =
-    requestUser.role === "admin" || requestUser.role === "service_role";
+  const isAdmin = isAdminRole(requestUser.role);
   const conditions: SQL[] = [];
 
   // Non-admins can only see their own orders
@@ -307,8 +311,7 @@ export async function getOrderById(
   const order = await getOrderOrThrow(id);
 
   if (requestUser) {
-    const isAdmin =
-      requestUser.role === "admin" || requestUser.role === "service_role";
+    const isAdmin = isAdminRole(requestUser.role);
     if (!isAdmin && order.userId !== requestUser.id)
       throw new ForbiddenError("Access denied");
   } else if (guestTokenParam) {
@@ -340,8 +343,7 @@ export async function getOrderByNumber(
   if (!order) throw new NotFoundError("Order");
 
   if (requestUser) {
-    const isAdmin =
-      requestUser.role === "admin" || requestUser.role === "service_role";
+    const isAdmin = isAdminRole(requestUser.role);
     if (!isAdmin && order.userId !== requestUser.id)
       throw new ForbiddenError("Access denied");
   } else if (guestTokenParam) {
@@ -365,8 +367,7 @@ export async function cancelOrder(
   requestUser: { id: string; role: string },
 ) {
   const order = await getOrderOrThrow(id);
-  const isAdmin =
-    requestUser.role === "admin" || requestUser.role === "service_role";
+  const isAdmin = isAdminRole(requestUser.role);
 
   if (!isAdmin && order.userId !== requestUser.id)
     throw new ForbiddenError("Access denied");

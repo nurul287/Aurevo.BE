@@ -15,7 +15,9 @@ const USER_TEST_PASSWORD = "AurevoTestUser123!";
 export const MOCK_ADMIN_USER = {
   id: "",
   email: ADMIN_TEST_EMAIL,
-  role: "admin",
+  // "super_admin" (not "admin") deliberately — this is the role production
+  // accounts actually use, and it exercises the admin-role allowlist fully.
+  role: "super_admin",
 };
 
 export const MOCK_USER = {
@@ -30,7 +32,11 @@ export const MOCK_USER = {
 export let adminToken = "";
 export let userToken = "";
 
-/** Create the Auth user if missing, returning its id either way. Idempotent across test runs. */
+/**
+ * Create the Auth user if missing, returning its id either way. Idempotent
+ * across test runs — if the user already exists (e.g. from an earlier run
+ * with a stale role), its app_metadata.role is synced to match.
+ */
 async function ensureAuthUser(email: string, password: string, role: string): Promise<string> {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -41,8 +47,10 @@ async function ensureAuthUser(email: string, password: string, role: string): Pr
   if (!error) return data.user.id;
 
   const [existing] = await db.execute(sql`SELECT id FROM auth.users WHERE email = ${email} LIMIT 1`);
-  if (existing) return (existing as { id: string }).id;
-  throw error;
+  if (!existing) throw error;
+  const id = (existing as { id: string }).id;
+  await supabaseAdmin.auth.admin.updateUserById(id, { app_metadata: { role } });
+  return id;
 }
 
 let authReady: Promise<void> | null = null;
