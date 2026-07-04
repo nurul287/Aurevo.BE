@@ -15,6 +15,7 @@ async function getVariantOrThrow(variantId: string) {
   const [variant] = await db
     .select({
       id: productVariants.id,
+      productId: productVariants.productId,
       price: productVariants.price,
       stock: productVariants.stock,
       isActive: productVariants.isActive,
@@ -147,9 +148,10 @@ export async function addItem(owner: CartOwner, input: AddItemInput) {
     return (await getCartItemWithDetails(existing.id))!;
   }
 
+  const productId = input.productId ?? variant.productId;
   const values = "userId" in owner
-    ? { userId: owner.userId, productId: input.productId, variantId: input.variantId, quantity: input.quantity, price }
-    : { sessionId: owner.sessionId, productId: input.productId, variantId: input.variantId, quantity: input.quantity, price };
+    ? { userId: owner.userId, productId, variantId: input.variantId, quantity: input.quantity, price }
+    : { sessionId: owner.sessionId, productId, variantId: input.variantId, quantity: input.quantity, price };
 
   const [item] = await db.insert(cartItems).values(values).returning();
   return (await getCartItemWithDetails(item!.id))!;
