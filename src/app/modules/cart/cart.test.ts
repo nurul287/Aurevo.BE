@@ -3,13 +3,14 @@ import request from "supertest";
 import { createTestApp } from "../../../test/app";
 import { userToken, MOCK_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
-import { cartItems, products, productVariants, guestSessions } from "../../../db/schema";
+import { cartItems, products, productVariants, guestSessions, inventory } from "../../../db/schema";
 import cartRoutes from "./cart.routes";
 
 const app = createTestApp(cartRoutes);
 
 async function cleanAll() {
   await db.delete(cartItems);
+  await db.delete(inventory);
   await db.delete(productVariants);
   await db.delete(products);
   await db.delete(guestSessions);
@@ -32,6 +33,8 @@ async function seedVariant(productId: string, stock = 50) {
     stock,
     isActive: true,
   }).returning();
+  // Seed inventory table — cart service checks stock from here
+  await db.insert(inventory).values({ variantId: row!.id, quantity: stock, reservedQuantity: 0 });
   return row!;
 }
 
