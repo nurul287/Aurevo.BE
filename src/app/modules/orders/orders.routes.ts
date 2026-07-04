@@ -1,14 +1,33 @@
 import { Router } from "express";
-import { authenticate, optionalAuth, requireAdmin, validate, authLimiter } from "../../middlewares";
 import {
-  createOrderSchema, getOrdersSchema, updateStatusSchema,
-  updatePaymentStatusSchema, updateTrackingSchema, updateFulfillmentSchema,
-  orderIdSchema, orderNumberSchema,
+  authenticate,
+  optionalAuth,
+  requireAdmin,
+  validate,
+  authLimiter,
+} from "../../middlewares";
+import {
+  createOrderSchema,
+  getOrdersSchema,
+  updateStatusSchema,
+  updatePaymentStatusSchema,
+  updateTrackingSchema,
+  updateFulfillmentSchema,
+  orderIdSchema,
+  orderNumberSchema,
 } from "./orders.schema";
 import {
-  createOrder, getOrders, getOrderById, getOrderByNumber,
-  cancelOrder, updateStatus, updatePaymentStatus, updateTracking, updateFulfillment,
+  createOrder,
+  getOrders,
+  getOrderById,
+  getOrderByNumber,
+  cancelOrder,
+  updateStatus,
+  updatePaymentStatus,
+  updateTracking,
+  updateFulfillment,
   getOrderStats,
+  claimOrders,
 } from "./orders.controller";
 
 const router = Router();
@@ -43,7 +62,13 @@ const router = Router();
  *       422:
  *         description: Insufficient stock
  */
-router.post("/", optionalAuth, authLimiter, validate(createOrderSchema), createOrder);
+router.post(
+  "/",
+  optionalAuth,
+  authLimiter,
+  validate(createOrderSchema),
+  createOrder,
+);
 
 /**
  * @swagger
@@ -82,7 +107,34 @@ router.get("/stats", authenticate, requireAdmin, getOrderStats);
  *       200:
  *         description: Order with items
  */
-router.get("/by-number/:orderNumber", validate(orderNumberSchema), getOrderByNumber);
+router.get(
+  "/by-number/:orderNumber",
+  optionalAuth,
+  validate(orderNumberSchema),
+  getOrderByNumber,
+);
+
+/**
+ * @swagger
+ * /api/orders/claim:
+ *   post:
+ *     summary: Claim guest orders on login (match by session, email, phone)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId: { type: string }
+ *               phone: { type: string }
+ *     responses:
+ *       200:
+ *         description: Number of orders claimed
+ */
+router.post("/claim", authenticate, claimOrders);
 
 /**
  * @swagger
@@ -98,7 +150,7 @@ router.get("/by-number/:orderNumber", validate(orderNumberSchema), getOrderByNum
  *       403:
  *         description: Access denied
  */
-router.get("/:id", authenticate, validate(orderIdSchema), getOrderById);
+router.get("/:id", optionalAuth, validate(orderIdSchema), getOrderById);
 
 /**
  * @swagger
@@ -128,7 +180,13 @@ router.patch("/:id/cancel", authenticate, validate(orderIdSchema), cancelOrder);
  *       200:
  *         description: Status updated
  */
-router.patch("/:id/status", authenticate, requireAdmin, validate(updateStatusSchema), updateStatus);
+router.patch(
+  "/:id/status",
+  authenticate,
+  requireAdmin,
+  validate(updateStatusSchema),
+  updateStatus,
+);
 
 /**
  * @swagger
@@ -142,7 +200,13 @@ router.patch("/:id/status", authenticate, requireAdmin, validate(updateStatusSch
  *       200:
  *         description: Payment status updated
  */
-router.patch("/:id/payment", authenticate, requireAdmin, validate(updatePaymentStatusSchema), updatePaymentStatus);
+router.patch(
+  "/:id/payment",
+  authenticate,
+  requireAdmin,
+  validate(updatePaymentStatusSchema),
+  updatePaymentStatus,
+);
 
 /**
  * @swagger
@@ -156,7 +220,13 @@ router.patch("/:id/payment", authenticate, requireAdmin, validate(updatePaymentS
  *       200:
  *         description: Tracking updated
  */
-router.patch("/:id/tracking", authenticate, requireAdmin, validate(updateTrackingSchema), updateTracking);
+router.patch(
+  "/:id/tracking",
+  authenticate,
+  requireAdmin,
+  validate(updateTrackingSchema),
+  updateTracking,
+);
 
 /**
  * @swagger
@@ -170,6 +240,12 @@ router.patch("/:id/tracking", authenticate, requireAdmin, validate(updateTrackin
  *       200:
  *         description: Fulfillment status updated
  */
-router.patch("/:id/fulfillment", authenticate, requireAdmin, validate(updateFulfillmentSchema), updateFulfillment);
+router.patch(
+  "/:id/fulfillment",
+  authenticate,
+  requireAdmin,
+  validate(updateFulfillmentSchema),
+  updateFulfillment,
+);
 
 export default router;

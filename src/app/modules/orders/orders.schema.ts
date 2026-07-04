@@ -15,11 +15,17 @@ export const createOrderSchema = z.object({
     paymentMethod: z.enum(["cash", "online"]).default("cash"),
     shippingAddress: addressSchema,
     billingAddress: addressSchema.optional(),
+    shippingAmount: z.number().min(0).optional().default(0),
+    sessionId: z.string().max(100).optional(),
     notes: z.string().max(1000).optional(),
-    items: z.array(z.object({
-      variantId: z.string().uuid(),
-      quantity: z.number().int().min(1).max(100),
-    })).min(1, "At least one item is required"),
+    items: z
+      .array(
+        z.object({
+          variantId: z.string().uuid(),
+          quantity: z.number().int().min(1).max(100),
+        }),
+      )
+      .min(1, "At least one item is required"),
   }),
 });
 
@@ -27,8 +33,20 @@ export const getOrdersSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
-    status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"]).optional(),
-    paymentStatus: z.enum(["pending", "paid", "failed", "refunded", "partially_refunded"]).optional(),
+    status: z
+      .enum([
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "refunded",
+      ])
+      .optional(),
+    paymentStatus: z
+      .enum(["pending", "paid", "failed", "refunded", "partially_refunded"])
+      .optional(),
     userId: z.string().uuid().optional(),
     search: z.string().max(200).optional(),
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
@@ -37,7 +55,15 @@ export const getOrdersSchema = z.object({
 
 export const updateStatusSchema = z.object({
   body: z.object({
-    status: z.enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"]),
+    status: z.enum([
+      "pending",
+      "confirmed",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "refunded",
+    ]),
     internalNotes: z.string().max(1000).optional(),
   }),
   params: z.object({ id: z.string().uuid() }),
@@ -45,7 +71,13 @@ export const updateStatusSchema = z.object({
 
 export const updatePaymentStatusSchema = z.object({
   body: z.object({
-    paymentStatus: z.enum(["pending", "paid", "failed", "refunded", "partially_refunded"]),
+    paymentStatus: z.enum([
+      "pending",
+      "paid",
+      "failed",
+      "refunded",
+      "partially_refunded",
+    ]),
   }),
   params: z.object({ id: z.string().uuid() }),
 });
@@ -76,6 +108,10 @@ export const orderNumberSchema = z.object({
 export type CreateOrderInput = z.infer<typeof createOrderSchema>["body"];
 export type GetOrdersInput = z.infer<typeof getOrdersSchema>["query"];
 export type UpdateStatusInput = z.infer<typeof updateStatusSchema>["body"];
-export type UpdatePaymentStatusInput = z.infer<typeof updatePaymentStatusSchema>["body"];
+export type UpdatePaymentStatusInput = z.infer<
+  typeof updatePaymentStatusSchema
+>["body"];
 export type UpdateTrackingInput = z.infer<typeof updateTrackingSchema>["body"];
-export type UpdateFulfillmentInput = z.infer<typeof updateFulfillmentSchema>["body"];
+export type UpdateFulfillmentInput = z.infer<
+  typeof updateFulfillmentSchema
+>["body"];
