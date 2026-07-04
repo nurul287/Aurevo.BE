@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
 import express from "express";
 import { createTestApp } from "../../../test/app";
-import { adminToken, userToken } from "../../../test/helpers";
+import { adminToken, userToken, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
 import { products, productVariants, inventory } from "../../../db/schema";
 import { eq } from "drizzle-orm";
@@ -54,8 +54,9 @@ async function seedVariant(productId: string, overrides: Partial<typeof productV
   return row!;
 }
 
+beforeAll(async () => { await seedTestUsers(); });
 beforeEach(async () => { await cleanAll(); });
-afterAll(async () => { await cleanAll(); });
+afterAll(async () => { await cleanAll(); await cleanTestUsers(); });
 
 const GHOST_ID = "00000000-0000-0000-0000-000000000000";
 

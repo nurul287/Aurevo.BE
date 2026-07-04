@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 
 vi.mock("../../../lib/storage", () => ({
   uploadFile: vi.fn().mockResolvedValue("http://127.0.0.1:55321/storage/v1/object/public/product-images/test.jpg"),
@@ -10,7 +10,7 @@ import express from "express";
 import { db } from "../../../db";
 import { productImages, products } from "../../../db/schema";
 import { globalErrorHandler } from "../../middlewares/globalErrorHandler";
-import { adminToken, userToken } from "../../../test/helpers";
+import { adminToken, userToken, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import imageRoutes from "./images.routes";
 
 function createImagesApp() {
@@ -55,8 +55,9 @@ async function seedImage(productId: string, overrides: Partial<typeof productIma
 // Tiny 1x1 white GIF — valid image bytes for testing upload
 const TINY_GIF = Buffer.from("R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==", "base64");
 
+beforeAll(async () => { await seedTestUsers(); });
 beforeEach(async () => { await cleanAll(); });
-afterAll(async () => { await cleanAll(); });
+afterAll(async () => { await cleanAll(); await cleanTestUsers(); });
 
 // ─── GET /:productId/images ───────────────────────────────────────────────────
 

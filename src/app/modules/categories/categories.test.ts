@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
 import { createTestApp } from "../../../test/app";
-import { cleanCategories, adminToken, userToken } from "../../../test/helpers";
+import { cleanCategories, adminToken, userToken, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
 import { categories, products } from "../../../db/schema";
 import categoryRoutes from "./categories.routes";
@@ -19,12 +19,17 @@ async function seed(overrides: Partial<typeof categories.$inferInsert> = {}) {
   return row!;
 }
 
+beforeAll(async () => {
+  await seedTestUsers();
+});
+
 beforeEach(async () => {
   await cleanCategories();
 });
 
 afterAll(async () => {
   await cleanCategories();
+  await cleanTestUsers();
 });
 
 // ─── GET / ────────────────────────────────────────────────────────────────────

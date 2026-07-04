@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
 import { createTestApp } from "../../../test/app";
-import { adminToken, userToken } from "../../../test/helpers";
+import { adminToken, userToken, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
 import { products, categories, brands } from "../../../db/schema";
 import productRoutes from "./products.routes";
@@ -43,8 +43,9 @@ async function seedProduct(overrides: Partial<typeof products.$inferInsert> = {}
   return row!;
 }
 
+beforeAll(async () => { await seedTestUsers(); });
 beforeEach(async () => { await cleanProducts(); });
-afterAll(async () => { await cleanProducts(); });
+afterAll(async () => { await cleanProducts(); await cleanTestUsers(); });
 
 // ─── GET / ────────────────────────────────────────────────────────────────────
 

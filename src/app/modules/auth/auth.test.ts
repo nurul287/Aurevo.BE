@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
 import { createTestApp } from "../../../test/app";
-import { userToken, adminToken, MOCK_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
+import { userToken, adminToken, MOCK_USER, MOCK_ADMIN_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
 import { profiles, userAddresses } from "../../../db/schema";
 import { eq } from "drizzle-orm";
@@ -183,7 +183,7 @@ describe("PATCH /auth/addresses/:id", () => {
 
   it("returns 404 for address belonging to another user", async () => {
     // Create address under adminUser
-    await db.insert(userAddresses).values({ userId: "00000000-0000-0000-0000-000000000001", ...TEST_ADDRESS });
+    await db.insert(userAddresses).values({ userId: MOCK_ADMIN_USER.id, ...TEST_ADDRESS });
     const [addrs] = await db.select().from(userAddresses);
 
     const res = await request(app).patch(`/addresses/${addrs!.id}`).set("Authorization", userToken).send({ city: "X" });
