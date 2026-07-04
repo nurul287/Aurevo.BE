@@ -1,3 +1,7 @@
+// Force IPv4 DNS resolution — Railway doesn't support IPv6
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+
 import app from "./app";
 import { config } from "./app/config";
 import { db } from "./db";
