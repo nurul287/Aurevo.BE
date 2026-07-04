@@ -20,6 +20,7 @@ import {
   productImages,
   productVariants,
   inventory,
+  profiles,
 } from "../../../db/schema";
 import { getVariantAvailability } from "../inventory/inventory.service";
 import {
@@ -513,7 +514,6 @@ export async function getOrderStats() {
 export async function claimGuestOrders(
   userId: string,
   userEmail: string,
-  userPhone?: string,
   sessionId?: string,
 ) {
   // Run all three strategies in a single transaction to prevent double-claiming
@@ -540,12 +540,20 @@ export async function claimGuestOrders(
       claimed += rows.length;
     }
 
-    // Strategy 3: Match by phone number (common in BD market where phone = primary ID)
-    if (userPhone) {
+    // Strategy 3: Match by phone number (common in BD market where phone = primary ID).
+    // The phone must come from the user's own saved profile — never from client input,
+    // otherwise any authenticated user could claim another customer's guest orders by
+    // guessing their phone number.
+    const [profile] = await tx
+      .select({ phone: profiles.phone })
+      .from(profiles)
+      .where(eq(profiles.id, userId));
+
+    if (profile?.phone) {
       const rows = await tx
         .update(orders)
         .set({ userId })
-        .where(and(eq(orders.phone, userPhone), isNull(orders.userId)))
+        .where(and(eq(orders.phone, profile.phone), isNull(orders.userId)))
         .returning({ id: orders.id });
       claimed += rows.length;
     }

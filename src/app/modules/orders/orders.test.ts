@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { createTestApp } from "../../../test/app";
 import { adminToken, userToken, MOCK_USER, MOCK_ADMIN_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
-import { orders, orderItems, products, productVariants, inventory } from "../../../db/schema";
+import { orders, orderItems, products, productVariants, inventory, profiles } from "../../../db/schema";
 import orderRoutes from "./orders.routes";
 
 const app = createTestApp(orderRoutes);
@@ -356,5 +356,44 @@ describe("PATCH /orders/:id/fulfillment (admin)", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.fulfillmentStatus).toBe("fulfilled");
+  });
+});
+
+// ─── POST /orders/claim ────────────────────────────────────────────────────────
+
+describe("POST /orders/claim", () => {
+  afterEach(async () => {
+    await db.update(profiles).set({ phone: null }).where(eq(profiles.id, MOCK_USER.id));
+  });
+
+  it("claims a guest order matching the caller's own saved phone", async () => {
+    await db.update(profiles).set({ phone: "01711112222" }).where(eq(profiles.id, MOCK_USER.id));
+    await seedOrder({ phone: "01711112222" });
+
+    const res = await request(app).post("/claim").set("Authorization", userToken).send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.claimed).toBe(1);
+  });
+
+  it("does not claim another customer's order using a client-supplied phone", async () => {
+    // MOCK_USER has no phone on their profile; the guest order belongs to someone else's number
+    await seedOrder({ phone: "01799998888" });
+
+    const res = await request(app)
+      .post("/claim")
+      .set("Authorization", userToken)
+      .send({ phone: "01799998888" }); // attacker-supplied phone must be ignored
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.claimed).toBe(0);
+
+    const [order] = await db.select({ userId: orders.userId }).from(orders).where(eq(orders.phone, "01799998888"));
+    expect(order!.userId).toBeNull();
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await request(app).post("/claim").send({});
+    expect(res.status).toBe(401);
   });
 });

@@ -118,7 +118,7 @@ router.get(
  * @swagger
  * /api/orders/claim:
  *   post:
- *     summary: Claim guest orders on login (match by session, email, phone)
+ *     summary: Claim guest orders on login (match by session, email, and the caller's own saved phone)
  *     tags: [Orders]
  *     security:
  *       - bearerAuth: []
@@ -129,7 +129,6 @@ router.get(
  *             type: object
  *             properties:
  *               sessionId: { type: string }
- *               phone: { type: string }
  *     responses:
  *       200:
  *         description: Number of orders claimed

@@ -173,11 +173,10 @@ export const claimOrders = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { sessionId, phone } = req.body;
+    const { sessionId } = req.body as { sessionId?: string };
     const result = await OrderService.claimGuestOrders(
       req.user!.id,
       req.user!.email,
-      phone,
       sessionId,
     );
     res.status(200).json({ success: true, data: result });
