@@ -30,7 +30,7 @@ import {
   claimOrders,
 } from "./orders.controller";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger

@@ -3,7 +3,7 @@ import { authenticate, requireAdmin, publicLimiter, validate } from "../../middl
 import { getAllImagesAdmin } from "./images.controller";
 import { getAllImagesAdminSchema } from "./images.schema";
 
-const router = Router();
+const router: Router = Router();
 
 router.get("/", publicLimiter, authenticate, requireAdmin, validate(getAllImagesAdminSchema), getAllImagesAdmin);
 

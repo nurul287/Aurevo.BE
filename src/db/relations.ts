@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { products, productReviews, profiles, orders, cartItems, productVariants, wishlistItems, productImages, categories, brands, users, addresses, usersInAuth, userAddresses, payments, orderItems, inventoryMovements, metaCapiSent, inventory } from "./schema";
+import { products, productReviews, profiles, orders, cartItems, productVariants, wishlistItems, productImages, categories, brands, users, addresses, userAddresses, payments, orderItems, inventoryMovements, metaCapiSent, inventory } from "./schema";
 
 export const productReviewsRelations = relations(productReviews, ({one}) => ({
 	product: one(products, {
@@ -37,10 +37,6 @@ export const profilesRelations = relations(profiles, ({one, many}) => ({
 	productReviews: many(productReviews),
 	cartItems: many(cartItems),
 	wishlistItems: many(wishlistItems),
-	usersInAuth: one(usersInAuth, {
-		fields: [profiles.id],
-		references: [usersInAuth.id]
-	}),
 	userAddresses: many(userAddresses),
 	orders: many(orders),
 	inventoryMovements: many(inventoryMovements),
@@ -137,10 +133,6 @@ export const addressesRelations = relations(addresses, ({one}) => ({
 
 export const usersRelations = relations(users, ({many}) => ({
 	addresses: many(addresses),
-}));
-
-export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
-	profiles: many(profiles),
 }));
 
 export const userAddressesRelations = relations(userAddresses, ({one}) => ({
