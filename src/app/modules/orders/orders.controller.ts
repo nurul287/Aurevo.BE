@@ -90,6 +90,19 @@ export const cancelOrder = async (
   }
 };
 
+export const deleteOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await OrderService.deleteOrder(req.params.id!);
+    res.status(200).json({ success: true, message: "Order deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const updateStatus = async (
   req: Request,
   res: Response,

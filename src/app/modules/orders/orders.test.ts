@@ -4,7 +4,7 @@ import request from "supertest";
 import { createTestApp } from "../../../test/app";
 import { adminToken, userToken, MOCK_USER, MOCK_ADMIN_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
 import { db } from "../../../db";
-import { orders, orderItems, products, productVariants, inventory, profiles } from "../../../db/schema";
+import { orders, orderItems, products, productVariants, inventory, profiles, productReviews, inventoryMovements } from "../../../db/schema";
 import orderRoutes from "./orders.routes";
 
 const app = createTestApp(orderRoutes);
@@ -20,6 +20,8 @@ const TEST_ADDRESS = {
 };
 
 async function cleanAll() {
+  await db.delete(productReviews);
+  await db.delete(inventoryMovements);
   await db.delete(orderItems);
   await db.delete(orders);
   await db.delete(inventory);
@@ -278,6 +280,87 @@ describe("PATCH /orders/:id/cancel", () => {
     const res = await request(app).patch(`/${order.id}/cancel`).set("Authorization", adminToken);
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("cancelled");
+  });
+});
+
+// ─── DELETE /orders/:id ─────────────────────────────────────────────────────────
+
+describe("DELETE /orders/:id (admin)", () => {
+  it("admin deletes an order and its items cascade", async () => {
+    const order = await seedOrder({ status: "cancelled" });
+    const product = await seedProduct();
+    const variant = await seedVariant(product.id, 5);
+    await db.insert(orderItems).values({
+      orderId: order.id,
+      productId: product.id,
+      variantId: variant.id,
+      productName: "Test Product",
+      quantity: 1,
+      unitPrice: "2000",
+      totalPrice: "2000",
+    });
+
+    const res = await request(app).delete(`/${order.id}`).set("Authorization", adminToken);
+    expect(res.status).toBe(200);
+
+    const [check] = await db.select({ id: orders.id }).from(orders).where(eq(orders.id, order.id));
+    expect(check).toBeUndefined();
+    const remainingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+    expect(remainingItems).toHaveLength(0);
+  });
+
+  it("returns 422 when the order has a review attached", async () => {
+    const order = await seedOrder({ userId: MOCK_USER.id, status: "delivered" });
+    const product = await seedProduct();
+    await db.insert(productReviews).values({
+      productId: product.id,
+      userId: MOCK_USER.id,
+      orderId: order.id,
+      rating: 5,
+    });
+
+    const res = await request(app).delete(`/${order.id}`).set("Authorization", adminToken);
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("BUSINESS_RULE");
+
+    const [check] = await db.select({ id: orders.id }).from(orders).where(eq(orders.id, order.id));
+    expect(check).toBeDefined();
+  });
+
+  it("returns 422 when the order has an inventory movement record attached", async () => {
+    const order = await seedOrder();
+    const product = await seedProduct();
+    const variant = await seedVariant(product.id, 5);
+    await db.insert(inventoryMovements).values({
+      variantId: variant.id,
+      movementType: "sale",
+      reason: "customer_order",
+      quantity: -1,
+      previousQuantity: 5,
+      newQuantity: 4,
+      orderId: order.id,
+    });
+
+    const res = await request(app).delete(`/${order.id}`).set("Authorization", adminToken);
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("BUSINESS_RULE");
+  });
+
+  it("returns 404 for unknown order", async () => {
+    const res = await request(app).delete(`/${GHOST_ID}`).set("Authorization", adminToken);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 403 for non-admin", async () => {
+    const order = await seedOrder();
+    const res = await request(app).delete(`/${order.id}`).set("Authorization", userToken);
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 401 without auth", async () => {
+    const order = await seedOrder();
+    const res = await request(app).delete(`/${order.id}`);
+    expect(res.status).toBe(401);
   });
 });
 

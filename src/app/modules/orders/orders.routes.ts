@@ -22,6 +22,7 @@ import {
   getOrderById,
   getOrderByNumber,
   cancelOrder,
+  deleteOrder,
   updateStatus,
   updatePaymentStatus,
   updateTracking,
@@ -166,6 +167,24 @@ router.get("/:id", optionalAuth, validate(orderIdSchema), getOrderById);
  *         description: Order cannot be cancelled
  */
 router.patch("/:id/cancel", authenticate, validate(orderIdSchema), cancelOrder);
+
+/**
+ * @swagger
+ * /api/orders/{id}:
+ *   delete:
+ *     summary: Permanently delete an order (admin only, irreversible cleanup)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Order deleted
+ *       404:
+ *         description: Order not found
+ *       422:
+ *         description: Order has reviews or inventory movement records attached
+ */
+router.delete("/:id", authenticate, requireAdmin, validate(orderIdSchema), deleteOrder);
 
 /**
  * @swagger

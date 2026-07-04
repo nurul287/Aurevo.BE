@@ -21,6 +21,8 @@ import {
   productVariants,
   inventory,
   profiles,
+  productReviews,
+  inventoryMovements,
 } from "../../../db/schema";
 import { getVariantAvailability } from "../inventory/inventory.service";
 import {
@@ -560,4 +562,31 @@ export async function claimGuestOrders(
 
     return { claimed };
   });
+}
+
+/**
+ * Hard-deletes an order (admin cleanup only — irreversible). order_items,
+ * payments, and meta_capi_sent cascade automatically; the release_inventory_for_deleted_order
+ * DB trigger restores each line item's stock/reservation before the row is removed.
+ * product_reviews and inventory_movements have no cascade on order_id, so a
+ * referencing row would otherwise surface as a raw FK-violation 500 — guard
+ * against that here instead.
+ */
+export async function deleteOrder(id: string) {
+  const [order] = await db.select({ id: orders.id }).from(orders).where(eq(orders.id, id));
+  if (!order) throw new NotFoundError("Order");
+
+  const [[{ reviewCount }], [{ movementCount }]] = await Promise.all([
+    db.select({ reviewCount: count() }).from(productReviews).where(eq(productReviews.orderId, id)),
+    db.select({ movementCount: count() }).from(inventoryMovements).where(eq(inventoryMovements.orderId, id)),
+  ]);
+
+  if (Number(reviewCount) > 0) {
+    throw new BusinessRuleError(`Cannot delete order — it has ${reviewCount} review(s) attached.`);
+  }
+  if (Number(movementCount) > 0) {
+    throw new BusinessRuleError(`Cannot delete order — it has ${movementCount} inventory movement record(s) attached.`);
+  }
+
+  await db.delete(orders).where(eq(orders.id, id));
 }
