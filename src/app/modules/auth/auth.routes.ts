@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { authenticate, authLimiter, uploadLimiter, validate } from "../../middlewares";
+import { oauthCallback, oauthSession, oauthUrl } from "./oauth.controller";
 import {
   createAddress,
   deleteAddress,
@@ -47,6 +48,11 @@ const router: Router = Router();
  *       200:
  *         description: User profile
  */
+// OAuth endpoints (public — no authenticate middleware)
+router.get("/oauth/url", authLimiter, oauthUrl);
+router.get("/oauth/callback", oauthCallback); // no rate limit — external provider redirect
+router.get("/oauth/session", authLimiter, oauthSession);
+
 router.post("/login", authLimiter, validate(loginSchema), login);
 router.post("/register", authLimiter, validate(registerSchema), register);
 router.post("/logout", authenticate, logout);
