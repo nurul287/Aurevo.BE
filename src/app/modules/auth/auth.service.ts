@@ -74,6 +74,11 @@ export async function register(input: RegisterInput) {
 }
 
 
+export async function logout(accessToken: string) {
+  const { error } = await supabaseAdmin.auth.admin.signOut(accessToken, "global");
+  if (error) throw new AppError(500, "Logout failed", "AUTH_ERROR");
+}
+
 export async function refreshSession(input: RefreshTokenInput) {
   const { data, error } = await supabaseAdmin.auth.refreshSession({
     refresh_token: input.refreshToken,

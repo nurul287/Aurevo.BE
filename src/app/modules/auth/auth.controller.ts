@@ -68,8 +68,12 @@ export const register = async (req: Request, res: Response, next: NextFunction):
   } catch (err) { next(err); }
 };
 
-export const logout = async (_req: Request, res: Response): Promise<void> => {
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const token = req.headers.authorization!.replace(/^Bearer\s+/i, "");
+    await AuthService.logout(token);
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+  } catch (err) { next(err); }
 };
 
 export const refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
