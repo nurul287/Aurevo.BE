@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     setupFiles: ["./src/test/setup.ts"],
+    globalSetup: ["./src/test/global-teardown.ts"],
     include: ["src/**/*.test.ts"],
     exclude: ["dist/**", "node_modules/**"],
     // Run test files one at a time — prevents FK violations on shared local DB

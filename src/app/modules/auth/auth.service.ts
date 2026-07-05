@@ -73,8 +73,9 @@ export async function register(input: RegisterInput) {
   return { user: data.user, requiresConfirmation: true };
 }
 
-export async function logout(userId: string) {
-  const { error } = await supabaseAdmin.auth.admin.signOut(userId, "global");
+
+export async function logout(accessToken: string) {
+  const { error } = await supabaseAdmin.auth.admin.signOut(accessToken, "global");
   if (error) throw new AppError(500, "Logout failed", "AUTH_ERROR");
 }
 
