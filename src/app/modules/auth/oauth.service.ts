@@ -52,13 +52,16 @@ export function getOAuthUrl(provider: string): string {
 
   pkceStore.set(state, { codeVerifier, createdAt: Date.now() });
 
-  const callbackUrl = `${config.BACKEND_URL}/api/auth/oauth/callback`;
+  // Our correlation key travels inside redirect_to, NOT as a top-level `state`
+  // param — GoTrue owns `state` for its own provider handshake, and overriding
+  // it makes Supabase reject the callback with "OAuth state parameter is
+  // invalid". GoTrue preserves redirect_to verbatim and appends ?code= to it.
+  const callbackUrl = `${config.BACKEND_URL}/api/auth/oauth/callback?state=${state}`;
   const params = new URLSearchParams({
     provider,
     redirect_to: callbackUrl,
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
-    state,
   });
 
   // Force the provider to show its account chooser on every sign-in instead of
