@@ -61,6 +61,15 @@ export function getOAuthUrl(provider: string): string {
     state,
   });
 
+  // Force the provider to show its account chooser on every sign-in instead of
+  // silently reusing the browser's provider SSO session. Without this, a user
+  // who just logged out gets signed straight back in with one click.
+  if (provider === "google") {
+    params.set("prompt", "select_account");
+  } else if (provider === "facebook") {
+    params.set("auth_type", "reauthenticate");
+  }
+
   return `${config.SUPABASE_URL}/auth/v1/authorize?${params}`;
 }
 
