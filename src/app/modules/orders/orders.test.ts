@@ -90,7 +90,9 @@ describe("POST /orders", () => {
     expect(pv!.stock).toBe(8);
     const [inv] = await db.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity }).from(inventory).where(eq(inventory.variantId, variant.id));
     expect(inv!.quantity).toBe(8);
-    expect(inv!.reservedQuantity).toBe(2);
+    // A sale is recorded solely as a quantity decrement — reserving on top of
+    // it would double-count the sold units in availability calculations.
+    expect(inv!.reservedQuantity).toBe(0);
   });
 
   it("creates a guest order (no auth)", async () => {

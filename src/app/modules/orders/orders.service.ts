@@ -5,6 +5,7 @@ import {
   asc,
   count,
   sum,
+  sql,
   SQL,
   inArray,
   ilike,
@@ -100,8 +101,21 @@ async function fetchOrderItemsWithImages(orderId: string) {
 }
 
 export async function createOrder(input: CreateOrderInput, userId?: string) {
+  // Merge duplicate variant lines so stock validation sees the true total —
+  // otherwise each line is checked against the full available stock on its own.
+  const items = Object.values(
+    input.items.reduce<Record<string, { variantId: string; quantity: number }>>(
+      (acc, item) => {
+        const line = (acc[item.variantId] ??= { variantId: item.variantId, quantity: 0 });
+        line.quantity += item.quantity;
+        return acc;
+      },
+      {},
+    ),
+  );
+
   // Resolve variant details + validate stock
-  const variantIds = input.items.map((i) => i.variantId);
+  const variantIds = items.map((i) => i.variantId);
   const variants = await db
     .select({
       id: productVariants.id,
@@ -119,7 +133,7 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
   const availability = await getVariantAvailability(variantIds);
   const availabilityMap = new Map(availability.map((a) => [a.variantId, a]));
 
-  for (const item of input.items) {
+  for (const item of items) {
     const variant = variants.find((v) => v.id === item.variantId);
     if (!variant) throw new NotFoundError(`Variant ${item.variantId}`);
     if (!variant.isActive)
@@ -151,7 +165,7 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
   );
 
   // Calculate totals
-  const lineItems = input.items.map((item) => {
+  const lineItems = items.map((item) => {
     const variant = variants.find((v) => v.id === item.variantId)!;
     const fallbackPrice = productMap[variant.productId!]?.basePrice ?? "0";
     const unitPrice = Number(variant.price ?? fallbackPrice);
@@ -211,30 +225,41 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
       .insert(orderItems)
       .values(lineItems.map((item) => ({ ...item, orderId: order!.id })));
 
-    // Decrement stock on both productVariants and inventory (keep in sync)
-    for (const item of input.items) {
-      const variant = variants.find((v) => v.id === item.variantId)!;
-      const avail = availabilityMap.get(item.variantId);
-      if (!avail) throw new BusinessRuleError(`No inventory record found for variant ${item.variantId}`);
-      const newStock = avail.quantity - item.quantity;
+    // Decrement stock on both productVariants and inventory (keep in sync).
+    // The decrement is atomic (quantity = quantity - N, guarded by available
+    // stock) so two concurrent checkouts can't both take the last unit — the
+    // pre-validation above only exists to give a friendly error message.
+    // The quantity decrement is the single record of the sale; reservedQuantity
+    // is NOT incremented here — doing both double-counted every sale, since
+    // availability everywhere is computed as quantity - reservedQuantity.
+    for (const item of items) {
+      const decremented = await tx
+        .update(inventory)
+        .set({
+          quantity: sql`${inventory.quantity} - ${item.quantity}`,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(inventory.variantId, item.variantId),
+            sql`${inventory.quantity} - ${inventory.reservedQuantity} >= ${item.quantity}`,
+          ),
+        )
+        .returning({ id: inventory.id });
+
+      if (decremented.length === 0) {
+        throw new BusinessRuleError(
+          `Insufficient stock for variant ${item.variantId}`,
+        );
+      }
 
       await tx
         .update(productVariants)
         .set({
-          stock: newStock,
+          stock: sql`${productVariants.stock} - ${item.quantity}`,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(productVariants.id, item.variantId));
-
-      // Sync inventory table
-      await tx
-        .update(inventory)
-        .set({
-          quantity: newStock,
-          reservedQuantity: (avail?.reservedQuantity ?? 0) + item.quantity,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(inventory.variantId, item.variantId));
     }
 
     return { ...order!, items: lineItems };
@@ -378,40 +403,8 @@ export async function cancelOrder(
   if (order.status === "delivered")
     throw new BusinessRuleError("Delivered orders cannot be cancelled");
 
-  // Restore stock
-  const items = await db
-    .select()
-    .from(orderItems)
-    .where(eq(orderItems.orderId, id));
   await db.transaction(async (tx) => {
-    for (const item of items) {
-      if (item.variantId) {
-        const [[variant], [inv]] = await Promise.all([
-          tx.select({ stock: productVariants.stock })
-            .from(productVariants).where(eq(productVariants.id, item.variantId)),
-          tx.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity })
-            .from(inventory).where(eq(inventory.variantId, item.variantId)),
-        ]);
-        if (variant) {
-          const restoredStock = variant.stock + item.quantity;
-          await tx
-            .update(productVariants)
-            .set({ stock: restoredStock })
-            .where(eq(productVariants.id, item.variantId));
-
-          if (inv) {
-            await tx
-              .update(inventory)
-              .set({
-                quantity: restoredStock,
-                reservedQuantity: Math.max(0, (inv.reservedQuantity ?? 0) - item.quantity),
-                updatedAt: new Date().toISOString(),
-              })
-              .where(eq(inventory.variantId, item.variantId));
-          }
-        }
-      }
-    }
+    await restoreOrderStock(tx, id);
     await tx
       .update(orders)
       .set({ status: "cancelled", updatedAt: new Date().toISOString() })
@@ -422,17 +415,54 @@ export async function cancelOrder(
   return updated!;
 }
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Puts every line item's units back into stock (atomic increments). */
+async function restoreOrderStock(tx: DbTransaction, orderId: string) {
+  const items = await tx
+    .select({ variantId: orderItems.variantId, quantity: orderItems.quantity })
+    .from(orderItems)
+    .where(eq(orderItems.orderId, orderId));
+
+  for (const item of items) {
+    if (!item.variantId) continue;
+    await tx
+      .update(productVariants)
+      .set({
+        stock: sql`${productVariants.stock} + ${item.quantity}`,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(productVariants.id, item.variantId));
+    await tx
+      .update(inventory)
+      .set({
+        quantity: sql`${inventory.quantity} + ${item.quantity}`,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(inventory.variantId, item.variantId));
+  }
+}
+
 export async function updateStatus(id: string, input: UpdateStatusInput) {
-  await getOrderOrThrow(id);
-  const [updated] = await db
-    .update(orders)
-    .set({
-      status: input.status,
-      ...(input.internalNotes && { internalNotes: input.internalNotes }),
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(orders.id, id))
-    .returning();
+  const order = await getOrderOrThrow(id);
+
+  // Cancelling via the admin status endpoint must restore stock exactly like
+  // the cancel endpoint — two paths for the same business event.
+  const shouldRestoreStock =
+    input.status === "cancelled" && order.status !== "cancelled";
+
+  const [updated] = await db.transaction(async (tx) => {
+    if (shouldRestoreStock) await restoreOrderStock(tx, id);
+    return tx
+      .update(orders)
+      .set({
+        status: input.status,
+        ...(input.internalNotes && { internalNotes: input.internalNotes }),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(orders.id, id))
+      .returning();
+  });
   return updated!;
 }
 
