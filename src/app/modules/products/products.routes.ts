@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   authenticate,
+  optionalAuth,
   publicLimiter,
   requireAdmin,
   strictLimiter,
@@ -72,7 +73,9 @@ const router: Router = Router();
  *       200:
  *         description: Paginated product list
  */
-router.get("/", publicLimiter, validate(getProductsSchema), getProducts);
+// optionalAuth lets admin requests (with a token) see inactive products;
+// anonymous callers are always restricted to active ones in the controller.
+router.get("/", publicLimiter, optionalAuth, validate(getProductsSchema), getProducts);
 
 /**
  * @swagger
@@ -107,7 +110,7 @@ router.get("/featured", publicLimiter, getFeaturedProducts);
  *       404:
  *         description: Product not found
  */
-router.get("/by-slug/:slug", publicLimiter, getProductBySlug);
+router.get("/by-slug/:slug", publicLimiter, optionalAuth, getProductBySlug);
 
 /**
  * @swagger
@@ -189,7 +192,7 @@ router.delete(
  *       404:
  *         description: Product not found
  */
-router.get("/:id", publicLimiter, validate(productIdSchema), getProductById);
+router.get("/:id", publicLimiter, optionalAuth, validate(productIdSchema), getProductById);
 
 /**
  * @swagger

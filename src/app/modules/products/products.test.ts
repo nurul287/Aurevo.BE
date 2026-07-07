@@ -121,14 +121,34 @@ describe("GET /products", () => {
     expect(res.body.data[0].slug).toBe("air-force-one");
   });
 
-  it("filters by isActive", async () => {
+  it("filters by isActive (admin)", async () => {
+    await seedProduct({ slug: "active", isActive: true });
+    await seedProduct({ slug: "inactive", isActive: false });
+
+    const res = await request(app).get("/?isActive=false").set("Authorization", adminToken);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].slug).toBe("inactive");
+  });
+
+  it("hides inactive products from the public even when isActive=false is requested", async () => {
     await seedProduct({ slug: "active", isActive: true });
     await seedProduct({ slug: "inactive", isActive: false });
 
     const res = await request(app).get("/?isActive=false");
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].slug).toBe("inactive");
+    expect(res.body.data[0].slug).toBe("active");
+  });
+
+  it("returns 404 for an inactive product detail to the public, 200 for admin", async () => {
+    const product = await seedProduct({ slug: "inactive-detail", isActive: false });
+
+    const publicRes = await request(app).get(`/${product.id}`);
+    expect(publicRes.status).toBe(404);
+
+    const adminRes = await request(app).get(`/${product.id}`).set("Authorization", adminToken);
+    expect(adminRes.status).toBe(200);
   });
 
   it("rejects invalid gender enum", async () => {
@@ -333,7 +353,7 @@ describe("PATCH /products/bulk/status", () => {
     expect(res.body.data).toHaveLength(2);
 
     // Verify they're inactive
-    const list = await request(app).get("/?isActive=false");
+    const list = await request(app).get("/?isActive=false").set("Authorization", adminToken);
     expect(list.body.meta.pagination.total).toBe(2);
   });
 
