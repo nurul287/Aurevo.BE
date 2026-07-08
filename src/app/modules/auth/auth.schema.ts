@@ -11,20 +11,18 @@ export const updateProfileSchema = z.object({
   }).refine(data => Object.keys(data).length > 0, { message: "At least one field is required" }),
 });
 
+// Matches the order shippingAddress shape so a saved address can fill the
+// checkout form directly; `label` is a display name (Home / Work).
 export const createAddressSchema = z.object({
   body: z.object({
     type: z.enum(["billing", "shipping"]).default("shipping"),
     isDefault: z.boolean().default(false),
-    firstName: z.string().min(1).max(100),
-    lastName: z.string().min(1).max(100),
-    company: z.string().max(255).optional(),
-    addressLine1: z.string().min(1).max(500),
-    addressLine2: z.string().max(500).optional(),
-    city: z.string().min(1).max(100),
-    state: z.string().min(1).max(100),
-    postalCode: z.string().min(1).max(20),
-    country: z.string().length(2).default("US"),
-    phone: z.string().max(50).optional(),
+    label: z.string().max(50).optional(),
+    name: z.string().min(1).max(255),
+    phone: z.string().min(1).max(50),
+    address: z.string().min(1).max(500),
+    district: z.string().min(1).max(100),
+    upazila: z.string().min(1).max(100),
   }),
 });
 
@@ -32,16 +30,12 @@ export const updateAddressSchema = z.object({
   body: z.object({
     type: z.enum(["billing", "shipping"]).optional(),
     isDefault: z.boolean().optional(),
-    firstName: z.string().min(1).max(100).optional(),
-    lastName: z.string().min(1).max(100).optional(),
-    company: z.string().max(255).optional(),
-    addressLine1: z.string().min(1).max(500).optional(),
-    addressLine2: z.string().max(500).optional(),
-    city: z.string().min(1).max(100).optional(),
-    state: z.string().min(1).max(100).optional(),
-    postalCode: z.string().min(1).max(20).optional(),
-    country: z.string().length(2).optional(),
-    phone: z.string().max(50).optional(),
+    label: z.string().max(50).optional().nullable(),
+    name: z.string().min(1).max(255).optional(),
+    phone: z.string().min(1).max(50).optional(),
+    address: z.string().min(1).max(500).optional(),
+    district: z.string().min(1).max(100).optional(),
+    upazila: z.string().min(1).max(100).optional(),
   }).refine(data => Object.keys(data).length > 0, { message: "At least one field is required" }),
   params: z.object({ id: z.string().uuid() }),
 });
