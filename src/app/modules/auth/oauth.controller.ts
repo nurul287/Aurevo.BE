@@ -12,25 +12,32 @@ export const oauthUrl = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
-export const oauthCallback = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// The callback is a browser navigation, not an API call — every failure path
+// must redirect back to the frontend, never render a JSON error body.
+export const oauthCallback = async (req: Request, res: Response): Promise<void> => {
+  const fail = (error: string, description: string) => {
+    const params = new URLSearchParams({ error, error_description: description });
+    res.redirect(`${config.FRONTEND_URL}/auth/error?${params}`);
+  };
+
   try {
     const { code, state, error, error_description } = req.query as Record<string, string>;
 
     if (error) {
-      const params = new URLSearchParams({ error, error_description: error_description ?? "" });
-      res.redirect(`${config.FRONTEND_URL}/auth/error?${params}`);
+      fail(error, error_description ?? "");
       return;
     }
 
     if (!code || !state) {
-      next(new Error("Missing code or state"));
+      fail("invalid_request", "Missing code or state");
       return;
     }
 
     const redirectUrl = await handleOAuthCallback(code, state);
     res.redirect(redirectUrl);
   } catch (err) {
-    next(err);
+    const message = err instanceof Error ? err.message : "OAuth sign-in failed";
+    fail("oauth_failed", message);
   }
 };
 

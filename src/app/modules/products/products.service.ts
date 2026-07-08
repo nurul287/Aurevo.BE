@@ -4,11 +4,14 @@ import { products, productVariants, productImages, categories, brands } from "..
 import { NotFoundError, ConflictError } from "../../errors";
 import type { CreateProductInput, UpdateProductInput, GetProductsInput, BulkStatusInput, BulkDeleteInput } from "./products.schema";
 
-export async function getProducts(filters: GetProductsInput) {
+export async function getProducts(filters: GetProductsInput, isAdmin = false) {
   const conditions: SQL[] = [];
 
-  // Admin can see all; public only sees active
-  if (filters.isActive !== undefined) {
+  // Admins may filter freely (or see everything); the public only ever sees
+  // active products regardless of what query params they send.
+  if (!isAdmin) {
+    conditions.push(eq(products.isActive, true));
+  } else if (filters.isActive !== undefined) {
     conditions.push(eq(products.isActive, filters.isActive === "true"));
   }
   if (filters.isFeatured !== undefined) {
@@ -106,9 +109,10 @@ export async function getProducts(filters: GetProductsInput) {
   };
 }
 
-export async function getProductById(id: string) {
+export async function getProductById(id: string, isAdmin = false) {
   const [product] = await db.select().from(products).where(eq(products.id, id));
   if (!product) throw new NotFoundError("Product");
+  if (!isAdmin && !product.isActive) throw new NotFoundError("Product");
 
   const [variants, images] = await Promise.all([
     db.select().from(productVariants)
@@ -121,9 +125,10 @@ export async function getProductById(id: string) {
   return { ...product, variants, images };
 }
 
-export async function getProductBySlug(slug: string) {
+export async function getProductBySlug(slug: string, isAdmin = false) {
   const [product] = await db.select().from(products).where(eq(products.slug, slug));
   if (!product) throw new NotFoundError("Product");
+  if (!isAdmin && !product.isActive) throw new NotFoundError("Product");
 
   const [variants, images] = await Promise.all([
     db.select().from(productVariants)

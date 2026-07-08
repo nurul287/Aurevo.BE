@@ -2,23 +2,32 @@ import { Request, Response, NextFunction } from "express";
 import * as ProductService from "./products.service";
 import type { GetProductsInput } from "./products.schema";
 
+/** Mirrors the adminRoles list in middlewares/auth.ts requireAdmin — keep in sync. */
+function isAdminRequest(req: Request): boolean {
+  const role = req.user?.role ?? "";
+  return role === "admin" || role === "super_admin" || role === "service_role";
+}
+
 export const getProducts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const result = await ProductService.getProducts(req.query as unknown as GetProductsInput);
+    const result = await ProductService.getProducts(
+      req.query as unknown as GetProductsInput,
+      isAdminRequest(req),
+    );
     res.status(200).json({ success: true, ...result });
   } catch (err) { next(err); }
 };
 
 export const getProductById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const data = await ProductService.getProductById(req.params.id!);
+    const data = await ProductService.getProductById(req.params.id!, isAdminRequest(req));
     res.status(200).json({ success: true, data });
   } catch (err) { next(err); }
 };
 
 export const getProductBySlug = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const data = await ProductService.getProductBySlug(req.params.slug!);
+    const data = await ProductService.getProductBySlug(req.params.slug!, isAdminRequest(req));
     res.status(200).json({ success: true, data });
   } catch (err) { next(err); }
 };

@@ -1,6 +1,6 @@
-import { and, eq, ne, asc, desc, ilike, or, count } from "drizzle-orm";
+import { and, eq, ne, asc, desc, ilike, or, count, inArray } from "drizzle-orm";
 import { db } from "../../../db";
-import { productVariants, products, inventory, orderItems } from "../../../db/schema";
+import { productVariants, products, inventory, inventoryMovements, orderItems } from "../../../db/schema";
 import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors/AppError";
 import type { CreateVariantInput, UpdateVariantInput, AdjustStockInput, BulkCreateVariantsInput, GetAllVariantsQuery } from "./variants.schema";
 
@@ -198,13 +198,21 @@ export async function bulkCreateVariants(productId: string, input: BulkCreateVar
 
   const skus = input.variants.map((v) => v.sku).filter(Boolean) as string[];
   if (skus.length > 0) {
+    // Duplicates within the batch itself
+    const seen = new Set<string>();
+    for (const sku of skus) {
+      if (seen.has(sku)) throw new ConflictError(`SKU "${sku}" appears more than once in the batch`);
+      seen.add(sku);
+    }
+
+    // SKUs are unique across ALL products, not just this one — same rule as createVariant
     const conflicts = await db
       .select({ sku: productVariants.sku })
       .from(productVariants)
-      .where(and(eq(productVariants.productId, productId)));
-    const existingSkus = new Set(conflicts.map((r) => r.sku).filter(Boolean));
-    const duplicate = skus.find((s) => existingSkus.has(s));
-    if (duplicate) throw new ConflictError(`SKU "${duplicate}" is already taken`);
+      .where(inArray(productVariants.sku, skus));
+    if (conflicts.length > 0) {
+      throw new ConflictError(`SKU "${conflicts[0]!.sku}" is already taken`);
+    }
   }
 
   const rows = input.variants.map((v, i) => ({
@@ -258,6 +266,20 @@ export async function adjustStock(productId: string, id: string, input: AdjustSt
       .update(inventory)
       .set({ quantity: newStock, updatedAt: new Date().toISOString() })
       .where(eq(inventory.variantId, id));
+
+    // Audit trail — inventory.adjustInventory logs a movement for every
+    // adjustment; adjustments made through this endpoint must show up in the
+    // same movements log.
+    await tx.insert(inventoryMovements).values({
+      variantId: id,
+      movementType: "adjustment",
+      reason: "manual_adjustment",
+      quantity: Math.abs(input.adjustment),
+      previousQuantity: variant.stock,
+      newQuantity: newStock,
+      location: "main",
+      notes: input.reason,
+    });
 
     return updated!;
   });

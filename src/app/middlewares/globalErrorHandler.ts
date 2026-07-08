@@ -40,6 +40,23 @@ export const globalErrorHandler = (
     return;
   }
 
+  // Postgres unique violation — the check-then-insert uniqueness guards
+  // (slug, SKU) are racy; when two requests slip through simultaneously the
+  // DB constraint fires. Surface it as a conflict, not a 500.
+  const pgCode =
+    (err as { code?: string }).code ??
+    ((err as { cause?: { code?: string } }).cause?.code);
+  if (pgCode === "23505") {
+    res.status(409).json({
+      success: false,
+      error: {
+        code: "CONFLICT",
+        message: "A record with this value already exists",
+      },
+    });
+    return;
+  }
+
   res.status(500).json({
     success: false,
     error: {
