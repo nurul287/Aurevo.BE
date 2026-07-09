@@ -2,19 +2,19 @@ import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../errors";
 import { config } from "../config";
+import { logger } from "../../lib/logger";
 import { zodFieldErrors } from "./validateRequest";
 
 export const globalErrorHandler = (
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
-  console.error("[Error]", err.message);
-  if ((err as NodeJS.ErrnoException).cause) {
-    console.error("[Error cause]", (err as NodeJS.ErrnoException).cause);
-  }
-  console.error(err.stack);
+  logger.error(
+    { err, cause: (err as NodeJS.ErrnoException).cause, method: req.method, path: req.path },
+    err.message,
+  );
 
   if (err instanceof ZodError) {
     res.status(400).json({
