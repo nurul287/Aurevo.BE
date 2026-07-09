@@ -1,0 +1,29 @@
+name: Merge main back into dev
+
+# Squash-merging a PR creates a commit that exists only on main, so dev drifts
+# after every merge. This keeps dev in sync automatically. If the merge
+# conflicts, the job fails visibly in Actions and the merge-back must be done
+# locally.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  merge-back:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Merge main into dev and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git merge origin/main --no-edit
+          git push origin dev
