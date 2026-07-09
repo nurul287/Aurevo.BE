@@ -11,9 +11,8 @@ const app = createTestApp(authRoutes);
 const GHOST_ID = "00000000-0000-0000-0000-000000000000";
 
 const TEST_ADDRESS = {
-  firstName: "Test", lastName: "User",
-  addressLine1: "123 Main St", city: "Dhaka",
-  state: "Dhaka Division", postalCode: "1207", country: "BD",
+  label: "Home", name: "Test User", phone: "01700000000",
+  address: "123 Main St", district: "Dhaka", upazila: "Dhanmondi",
 };
 
 async function cleanAll() {
@@ -108,7 +107,7 @@ describe("GET /auth/addresses", () => {
     const res = await request(app).get("/addresses").set("Authorization", userToken);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].city).toBe("Dhaka");
+    expect(res.body.data[0].district).toBe("Dhaka");
   });
 
   it("returns 401 without auth", async () => {
@@ -129,7 +128,7 @@ describe("POST /auth/addresses", () => {
       .send({ ...TEST_ADDRESS, type: "shipping" });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.city).toBe("Dhaka");
+    expect(res.body.data.district).toBe("Dhaka");
     expect(res.body.data.userId).toBe(MOCK_USER.id);
   });
 
@@ -140,7 +139,7 @@ describe("POST /auth/addresses", () => {
     const res = await request(app)
       .post("/addresses")
       .set("Authorization", userToken)
-      .send({ ...TEST_ADDRESS, firstName: "New", type: "shipping", isDefault: true });
+      .send({ ...TEST_ADDRESS, name: "New User", type: "shipping", isDefault: true });
 
     expect(res.status).toBe(201);
     expect(res.body.data.isDefault).toBe(true);
@@ -155,7 +154,7 @@ describe("POST /auth/addresses", () => {
     const res = await request(app)
       .post("/addresses")
       .set("Authorization", userToken)
-      .send({ firstName: "Only" }); // missing many required fields
+      .send({ name: "Only" }); // missing many required fields
     expect(res.status).toBe(400);
   });
 
@@ -175,10 +174,10 @@ describe("PATCH /auth/addresses/:id", () => {
     const res = await request(app)
       .patch(`/addresses/${addr!.id}`)
       .set("Authorization", userToken)
-      .send({ city: "Chittagong" });
+      .send({ district: "Chittagong" });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.city).toBe("Chittagong");
+    expect(res.body.data.district).toBe("Chittagong");
   });
 
   it("returns 404 for address belonging to another user", async () => {
@@ -186,12 +185,12 @@ describe("PATCH /auth/addresses/:id", () => {
     await db.insert(userAddresses).values({ userId: MOCK_ADMIN_USER.id, ...TEST_ADDRESS });
     const [addrs] = await db.select().from(userAddresses);
 
-    const res = await request(app).patch(`/addresses/${addrs!.id}`).set("Authorization", userToken).send({ city: "X" });
+    const res = await request(app).patch(`/addresses/${addrs!.id}`).set("Authorization", userToken).send({ district: "X" });
     expect(res.status).toBe(404);
   });
 
   it("returns 401 without auth", async () => {
-    const res = await request(app).patch(`/addresses/${GHOST_ID}`).send({ city: "X" });
+    const res = await request(app).patch(`/addresses/${GHOST_ID}`).send({ district: "X" });
     expect(res.status).toBe(401);
   });
 });

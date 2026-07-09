@@ -183,6 +183,10 @@ export async function getAddresses(userId: string) {
 }
 
 export async function createAddress(userId: string, input: CreateAddressInput) {
+  // user_addresses.user_id references profiles.id — a user who hasn't filled
+  // in their profile yet has no row there, so ensure one exists first.
+  await db.insert(profiles).values({ id: userId }).onConflictDoNothing();
+
   // If isDefault, clear other defaults of same type
   if (input.isDefault) {
     await db.update(userAddresses).set({ isDefault: false })
