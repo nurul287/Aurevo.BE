@@ -48,6 +48,7 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
+    "@sentry/node": "^10.64.0",
     "@supabase/supabase-js": "^2.108.2",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.1",

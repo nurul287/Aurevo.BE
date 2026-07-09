@@ -1,4 +1,8 @@
 import { sql } from "drizzle-orm";
+import { initSentry } from "./lib/sentry";
+// Sentry must initialize before the app (and its routes) are loaded
+initSentry();
+
 import app from "./app";
 import { config } from "./app/config";
 import { client, db } from "./db";

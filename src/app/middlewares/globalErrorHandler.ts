@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { AppError } from "../errors";
 import { config } from "../config";
 import { logger } from "../../lib/logger";
+import { Sentry, sentryEnabled } from "../../lib/sentry";
 import { zodFieldErrors } from "./validateRequest";
 
 export const globalErrorHandler = (
@@ -55,6 +56,14 @@ export const globalErrorHandler = (
       },
     });
     return;
+  }
+
+  // Only unexpected errors reach this point — expected business/validation
+  // errors returned above must not pollute the error tracker.
+  if (sentryEnabled()) {
+    Sentry.captureException(err, {
+      extra: { method: req.method, path: req.path },
+    });
   }
 
   res.status(500).json({
