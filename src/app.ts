@@ -1,10 +1,14 @@
 import express, { Application } from "express";
 import helmet from "helmet";
-import morgan from "morgan";
+import compression from "compression";
+import { pinoHttp } from "pino-http";
+import { sql } from "drizzle-orm";
 import swaggerUi from "swagger-ui-express";
 import { config } from "./app/config";
 import { swaggerSpec } from "./app/config/swagger";
 import { globalErrorHandler } from "./app/middlewares";
+import { db } from "./db";
+import { logger } from "./lib/logger";
 import router from "./routes";
 
 const app: Application = express();
@@ -53,23 +57,41 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging
-app.use(morgan(config.NODE_ENV === "development" ? "dev" : "combined"));
+// Structured request logging (JSON in prod, pretty in dev via the shared logger)
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: { ignore: (req) => req.url === "/health" || req.url === "/api/health" },
+  }),
+);
 
-// Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Response compression
+app.use(compression());
+
+// Body parsing — explicit limits so oversized payloads are rejected early
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // ==================== Health Check ====================
 
-const healthHandler = (
+// Deep health check: pings the database so deploy platforms (Railway) can
+// gate rollouts on a genuinely usable instance, not just a bound port.
+const healthHandler = async (
   _req: import("express").Request,
   res: import("express").Response,
 ) => {
-  res.json({
-    success: true,
+  let dbStatus: "ok" | "down" = "ok";
+  try {
+    await db.execute(sql`SELECT 1`);
+  } catch {
+    dbStatus = "down";
+  }
+
+  res.status(dbStatus === "ok" ? 200 : 503).json({
+    success: dbStatus === "ok",
     data: {
-      status: "ok",
+      status: dbStatus === "ok" ? "ok" : "degraded",
+      db: dbStatus,
       timestamp: new Date().toISOString(),
       environment: config.NODE_ENV,
     },

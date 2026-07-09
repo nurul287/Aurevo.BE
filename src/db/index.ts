@@ -4,7 +4,9 @@ import { config } from "../app/config";
 import * as schema from "./schema";
 
 const isProduction = config.NODE_ENV === "production";
-const client = postgres(config.DATABASE_URL, {
+
+/** Raw postgres client — exported so the server can close it on shutdown. */
+export const client = postgres(config.DATABASE_URL, {
   max: 10,
   ssl: isProduction ? "require" : false,
 });

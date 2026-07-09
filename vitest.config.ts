@@ -11,5 +11,11 @@ export default defineConfig({
     // Run test files one at a time — prevents FK violations on shared local DB
     fileParallelism: false,
     testTimeout: 15000,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.test.ts", "src/test/**", "src/db/schema.ts", "src/db/relations.ts"],
+    },
   },
 });
