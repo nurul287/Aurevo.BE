@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "../../../db";
 import { profiles, userAddresses } from "../../../db/schema";
 import { NotFoundError, ForbiddenError, AppError } from "../../errors/AppError";
@@ -179,7 +179,14 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
 }
 
 export async function getAddresses(userId: string) {
-  return db.select().from(userAddresses).where(eq(userAddresses.userId, userId));
+  // Stable order by creation time — without an ORDER BY, Postgres may return
+  // rows in a different physical order after an UPDATE (e.g. toggling
+  // isDefault), which made cards visibly swap position in the FE grid.
+  return db
+    .select()
+    .from(userAddresses)
+    .where(eq(userAddresses.userId, userId))
+    .orderBy(asc(userAddresses.createdAt));
 }
 
 export async function createAddress(userId: string, input: CreateAddressInput) {
