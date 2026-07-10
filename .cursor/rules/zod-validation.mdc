@@ -1,0 +1,55 @@
+﻿---
+description: Zod request validation — required schemas, coerce, infer types, industry practices
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Zod Validation (Required)
+
+Every new or changed HTTP endpoint must validate `body` / `query` / `params` with Zod via the shared `validate()` middleware. Do not trust raw `req.body` in services.
+
+## Placement
+
+```typescript
+// {domain}.schema.ts — schemas + z.infer types
+export const createXSchema = z.object({
+  body: z.object({ /* ... */ }),
+  params: z.object({ id: z.string().uuid() }).optional(), // only if needed
+  query: z.object({ /* ... */ }).optional(),
+});
+export type CreateXInput = z.infer<typeof createXSchema>["body"];
+
+// {domain}.routes.ts
+router.post("/", authenticate, authLimiter, validate(createXSchema), createX);
+```
+
+Wire order: rate limit → auth → **validate** → controller.
+
+## Best practices
+
+- **Schema is the contract** — use `z.infer<>` for service inputs; do not duplicate interfaces by hand.
+- **Bounds everywhere** — `.min()` / `.max()` on strings; `.int()` / `.positive()` / ranges on numbers; `.uuid()` for IDs; `.email()` for emails; enums for closed sets.
+- **Coerce query/params** — query strings are strings: `z.coerce.number()`, `z.coerce.boolean()` (or explicit `"true"|"false"` enums when that matches existing APIs).
+- **PATCH vs POST** — create schemas require fields; update schemas make fields `.optional()` and `.refine` that at least one key is present when appropriate.
+- **Defaults in Zod** — prefer `.default(...)` so controllers receive normalized data after `validate()` replaces `req.body` / `req.query`.
+- **Nullability** — use `.nullable()` only when the API intentionally clears a field; otherwise omit or `.optional()`.
+- **No business rules in Zod** — stock checks, ownership, uniqueness belong in the service (`BusinessRuleError` / `ConflictError`). Zod = shape + type + bounds only.
+- **Fail closed** — unknown keys: strip via Zod object defaults (do not use passthrough unless explicitly required). Reject invalid UUIDs/enums early with 400.
+- **Tests** — cover 400 validation failures (missing required, bad UUID, out-of-range) in addition to happy paths.
+
+## Examples
+
+```typescript
+// GOOD
+page: z.coerce.number().int().positive().default(1),
+limit: z.coerce.number().int().min(1).max(100).default(12),
+slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/),
+id: z.string().uuid(),
+
+// BAD — unvalidated / unbounded
+name: z.string(),           // no min/max
+page: z.number(),           // query is a string — will fail or be wrong
+id: z.string(),             // accept any string as id
+```
+
+Never parse with ad-hoc `if (!body.x)` in controllers when a Zod schema should own it.

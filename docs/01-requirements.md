@@ -48,8 +48,8 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 
 **Profile & Addresses**
 - View and update profile (name, phone, date of birth, gender, avatar)
-- Save multiple billing/shipping addresses
-- Set a default address per type
+- Save multiple billing/shipping addresses in Bangladesh checkout shape (`name`, `phone`, `address`, `district`, `upazila`, optional `label`)
+- Set a default address per type; reuse saved addresses at checkout without remapping fields
 
 **AI Shopping Assistant**
 - Chat interface powered by Claude
