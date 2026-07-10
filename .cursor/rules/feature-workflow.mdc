@@ -23,6 +23,7 @@ If anything is unclear, conflicting with existing code/docs, or has more than on
 - Prefer small, focused changes; keep code human-readable and organized.
 - Error handling is required (typed `AppError` subclasses, no silent catches).
 - **Zod validation is required** for every new/changed endpoint (`*.schema.ts` + `validate()` on the route). Follow `zod-validation` rule.
+- **Swagger docs are required** for every new/changed endpoint (`@swagger` JSDoc on the route). Follow `swagger-docs` rule.
 
 ## 4. Verify it works
 

@@ -1,0 +1,64 @@
+﻿---
+description: Require OpenAPI/Swagger JSDoc on every new or changed API route
+globs: src/**/*.routes.ts
+alwaysApply: false
+---
+
+# Swagger Documentation (Required)
+
+Every new or changed HTTP endpoint must have an `@swagger` JSDoc block on the route in `*.routes.ts`, kept in sync with the Zod schema and actual response. Swagger UI is served at `/api/docs`.
+
+## Required fields
+
+- Path matching the mounted route (e.g. `/api/products/{id}`)
+- HTTP method (`get` / `post` / `patch` / `put` / `delete`)
+- `summary` — one clear sentence
+- `tags` — module tag already used in the codebase (`[Products]`, `[Auth]`, etc.)
+- `security` — `bearerAuth: []` when the route uses `authenticate` / `requireAdmin`
+- `parameters` — path/query params (types, required, enums) matching Zod
+- `requestBody` — for POST/PATCH/PUT; `required` fields and property types matching Zod
+- `responses` — at least success (`200`/`201`) plus expected errors (`400`, `401`, `403`, `404`, `409`, `422` as applicable)
+
+## Placement
+
+Put the `@swagger` block **immediately above** the `router.<method>(...)` that registers the endpoint. Do not leave orphaned docs above unrelated handlers.
+
+```typescript
+/**
+ * @swagger
+ * /api/auth/addresses:
+ *   post:
+ *     summary: Add a saved address
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, phone, address, district, upazila]
+ *             properties:
+ *               name: { type: string }
+ *               phone: { type: string }
+ *               address: { type: string }
+ *               district: { type: string }
+ *               upazila: { type: string }
+ *     responses:
+ *       201:
+ *         description: Address created
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/addresses", authenticate, authLimiter, validate(createAddressSchema), createAddress);
+```
+
+## Rules
+
+- Zod schema and Swagger must describe the **same** contract — if you change validation, update Swagger in the same change.
+- Use `{id}` path syntax in Swagger, not Express `:id`.
+- Do not invent response shapes that the controller does not return.
+- Prefer matching existing tag names and security scheme (`bearerAuth`) already configured for this project.
