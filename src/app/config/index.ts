@@ -23,6 +23,9 @@ const envSchema = z.object({
   // Anthropic AI
   ANTHROPIC_API_KEY: z.string().min(1),
   ANTHROPIC_MODEL: z.string().default("claude-haiku-4-5-20251001"),
+
+  // Error tracking — optional; Sentry is a no-op when unset
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
