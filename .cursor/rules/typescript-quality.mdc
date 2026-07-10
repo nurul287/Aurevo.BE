@@ -1,0 +1,33 @@
+﻿---
+description: TypeScript error handling and readability for Aurevo.BE modules
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# TypeScript & Error Handling
+
+## Errors
+
+```typescript
+// BAD — swallow or throw raw Error
+try {
+  await db.insert(...)
+} catch (e) {}
+
+// GOOD — typed domain errors
+import { NotFoundError, ConflictError, BusinessRuleError } from "../../errors/AppError";
+
+if (!product) throw new NotFoundError("Product not found");
+if (stock < qty) throw new BusinessRuleError("Insufficient stock");
+```
+
+- Validate **all** inputs with Zod in ``*.schema.ts`` and wire ``validate(...)`` on routes — see ``zod-validation`` rule. Never trust raw ``req.body`` in services.
+- Never return 500 for expected business failures.
+- Use `logger.error({ err }, message)` for unexpected failures; let `globalErrorHandler` map the rest.
+
+## Structure & readability
+
+- Keep the 4-file module layout: `*.schema.ts`, `*.service.ts`, `*.controller.ts`, `*.routes.ts`, `*.test.ts`.
+- Services: no Express types. Controllers: no business logic.
+- Prefer clear names over abbreviations; group related helpers near their callers.
+- After edits, ensure `pnpm build` (`tsc`) passes for touched code.

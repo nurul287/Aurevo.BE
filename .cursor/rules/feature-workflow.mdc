@@ -1,0 +1,59 @@
+---
+description: Feature delivery workflow — analyze, confirm, implement, verify, test, commit (no deploy)
+alwaysApply: true
+---
+
+# Feature Workflow
+
+When the user asks to start or build a feature, follow this order. Do not skip steps.
+
+## 1. Understand before coding
+
+- Read relevant modules, routes, schemas, and docs first.
+- Restate the goal, scope, and affected files briefly.
+- Break the work into a short step-by-step plan, then implement one step at a time.
+
+## 2. Confirm ambiguity
+
+If anything is unclear, conflicting with existing code/docs, or has more than one reasonable approach — **stop and ask the user** before implementing. Do not guess on product or API contract decisions.
+
+## 3. Implement
+
+- Match existing module patterns (`schema` -> `service` -> `controller` -> `routes` -> `test`).
+- Prefer small, focused changes; keep code human-readable and organized.
+- Error handling is required (typed `AppError` subclasses, no silent catches).
+- **Zod validation is required** for every new/changed endpoint (`*.schema.ts` + `validate()` on the route). Follow `zod-validation` rule.
+- **Swagger docs are required** for every new/changed endpoint (`@swagger` JSDoc on the route). Follow `swagger-docs` rule.
+
+## 4. Verify it works
+
+After implementation, run the feature path (manual request and/or targeted integration test) and confirm behavior before calling the task done.
+
+## 5. Add tests
+
+Once the feature works, add/update Vitest + Supertest coverage for the new behavior (happy path + important failure cases).
+
+## 6. Check for errors
+
+Before finishing:
+
+```bash
+pnpm build    # tsc — no TypeScript errors
+pnpm lint     # when touched files warrant it
+pnpm test     # or a focused vitest file for the module
+```
+
+Fix type errors and obvious runtime issues before commit.
+
+## 7. Commit — never deploy
+
+- Create a commit when the feature is complete (or when the user asks).
+- **Do not deploy** (`firebase deploy`, Railway push-for-prod, etc.) unless the user explicitly asks.
+
+---
+
+# Code quality
+
+- Readable names; avoid clever one-liners that hide intent.
+- Controllers stay thin; business logic lives in services.
+- Log unexpected failures with `logger`; map expected failures to `AppError`.

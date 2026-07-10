@@ -275,6 +275,42 @@ cors({
 
 ---
 
+### Structured Logging (pino)
+
+`src/lib/logger.ts` is the single logger. Production emits JSON lines (Railway parses them); development uses `pino-pretty`. Tests set level to `silent`.
+
+Request logging uses `pino-http` with `/health` and `/api/health` ignored so platform probes do not flood logs. Prefer `logger.info/error` over `console.*`.
+
+---
+
+### Sentry Error Tracking
+
+`initSentry()` runs in `src/server.ts` **before** the Express app is imported, so the SDK can instrument the process. When `SENTRY_DSN` is unset (local + CI), init is a no-op.
+
+Only unexpected errors that fall through to the 500 branch of `globalErrorHandler` call `Sentry.captureException`. Expected `AppError` / Zod / Postgres `23505` responses are not reported.
+
+---
+
+### Fail-Fast Boot + Graceful Shutdown
+
+On start, the server runs `SELECT 1` against Postgres. If that fails, it exits with code 1 so Railway keeps the previous deploy live instead of advertising a broken instance.
+
+On `SIGTERM` / `SIGINT`: stop accepting connections → close the DB pool (5s timeout) → exit. A 10s force-exit timer covers hung drains.
+
+---
+
+### Deep Health Check
+
+`GET /health` and `GET /api/health` ping the database. Response is `200` with `{ db: "ok" }` or `503` with `{ db: "down", status: "degraded" }`. Railway's `healthcheckPath` is `/api/health`.
+
+---
+
+### BD-Shaped Saved Addresses
+
+`user_addresses` matches checkout shipping fields (`name`, `phone`, `address`, `district`, `upazila`) plus optional `label` (Home / Work). Creating an address ensures a `profiles` row exists first — `user_addresses.user_id` FKs to `profiles.id`, and OAuth users may not have patched `/profile` yet.
+
+---
+
 ### Server-Side XLSX Export
 
 Inventory export runs entirely on the server to avoid sending thousands of rows to the browser:

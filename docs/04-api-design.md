@@ -61,6 +61,17 @@ X-Guest-Session: <uuid>
 
 ## Endpoint Reference
 
+### Health — `/health` · `/api/health`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | Public | Deep health check (DB ping) |
+| GET | `/api/health` | Public | Same handler — used by Railway |
+
+**Response:** `200` when Postgres answers `SELECT 1`; `503` when the DB is unreachable (`status: "degraded"`, `db: "down"`). Not rate-limited; excluded from request access logs.
+
+---
+
 ### Categories — `/api/categories`
 
 | Method | Path | Auth | Description |
@@ -172,7 +183,7 @@ X-Guest-Session: <uuid>
 | PATCH | `/:id/tracking` | Admin | Set tracking number |
 | PATCH | `/:id/fulfillment` | Admin | Update fulfillment status |
 
-**Order creation:** Validates all variants exist and have sufficient stock. Runs in a single transaction: inserts order + line items (with `productName`, `variantName`, `sku`, `unitPrice`, `totalPrice`) + decrements `stock` + increments `reserved_stock` on each variant. Price resolution: `variant.price ?? product.basePrice`. Accepts optional `shippingAmount`.
+**Order creation:** Validates all variants exist and have sufficient stock. Runs in a single transaction: inserts order + line items (with `productName`, `variantName`, `sku`, `unitPrice`, `totalPrice`) + decrements `stock` + increments `reserved_stock` on each variant. Price resolution: `variant.price ?? product.basePrice`. Accepts optional `shippingAmount`. `shippingAddress` is BD-shaped: `{ name, phone, address, district, upazila }`.
 
 **Stats endpoint:** `GET /stats` must be registered before `/:id` in the router to avoid the UUID validator matching the literal string "stats".
 
@@ -222,6 +233,8 @@ X-Guest-Session: <uuid>
 
 **Profile upsert:** First `PATCH /profile` creates the profile row if it doesn't exist yet.
 
+**Address body (BD checkout shape):** `{ type?, isDefault?, label?, name, phone, address, district, upazila }`. Same fields as order `shippingAddress`, plus optional `label`. Creating an address ensures a `profiles` row exists (FK to `profiles.id`).
+
 **Default address:** When `isDefault: true` is sent on create/update, all other addresses of the same type are set to `isDefault: false` in the same operation.
 
 ---
@@ -265,7 +278,7 @@ Rate limited: 10 requests/minute per IP.
 | 401 | Unauthorized | Missing or invalid JWT |
 | 403 | Forbidden | Valid JWT but insufficient role |
 | 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Duplicate slug, already-cancelled order |
+| 409 | Conflict | Duplicate slug/SKU, Postgres unique violation (`23505`), already-cancelled order |
 | 422 | Unprocessable | Business rule violation (negative stock, etc.) |
 | 429 | Too Many Requests | Rate limit exceeded |
 | 500 | Internal Server Error | Unhandled exception |

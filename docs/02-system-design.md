@@ -111,10 +111,13 @@ Browser (React SPA)
 HTTP Request
     │
     ▼
-cors() + helmet() + morgan()       ← security + logging
+cors() + helmet() + pino-http()    ← security + structured request logging
     │
     ▼
-express.json()                     ← body parsing
+compression() + express.json(1mb)  ← body parsing with explicit size limits
+    │
+    ▼
+/health · /api/health              ← deep check (DB ping) before API routes
     │
     ▼
 Router (/api/...)
@@ -137,7 +140,8 @@ PostgreSQL (Supabase)
 Controller                         ← { success: true, data: ... }
     │
     ▼ (on error)
-globalErrorHandler                 ← AppError → JSON { success: false, error: { code, message } }
+globalErrorHandler                 ← AppError/Zod/23505 → typed JSON;
+                                   ← unexpected → Sentry (if DSN set) + 500
 ```
 
 ---
@@ -175,7 +179,7 @@ AppError (base)
 └── BusinessRuleError  → 422  BUSINESS_RULE
 ```
 
-All errors are caught by `globalErrorHandler`. Unhandled errors return 500 `INTERNAL_ERROR` with no stack trace in production.
+All errors are caught by `globalErrorHandler`. Postgres unique violations (`23505`) map to 409 `CONFLICT`. Unhandled errors return 500 `INTERNAL_ERROR` (message redacted in production) and are reported to Sentry when `SENTRY_DSN` is set.
 
 ---
 

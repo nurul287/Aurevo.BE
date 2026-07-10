@@ -45,9 +45,10 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 - **Guest + Auth Cart** — dual-owner cart (session-based for guests, user-based for logged-in), cart migration on sign-in
 - **Order Management** — transactional stock reservation, full order lifecycle (pending → shipped → delivered), admin status/payment/tracking/fulfillment controls
 - **Inventory System** — per-variant stock tracking, audit log of every movement (`inventoryMovements`), low-stock alerts
-- **Auth & Profiles** — BE-proxied email/password auth via `supabaseAdmin`; Google/Facebook OAuth via Supabase SDK on FE; JWT stored in localStorage; auto-refresh on 401; user profiles and address book
+- **Auth & Profiles** — BE-proxied email/password auth via `supabaseAdmin`; Google/Facebook OAuth via Supabase SDK on FE; JWT stored in localStorage; auto-refresh on 401; user profiles and BD-shaped address book (aligned with checkout)
 - **AI Shopping Assistant** — SSE-streamed responses via Claude API with tool use (product search, detail lookup, category listing)
 - **Admin Dashboard** — product/order/inventory management, bulk operations, analytics
+- **Observability** — structured pino logs, deep `/api/health` (DB ping), optional Sentry capture of unexpected 500s, graceful shutdown
 
 ---
 
@@ -121,7 +122,9 @@ pnpm db:studio         # Drizzle Studio (read-only introspection)
 
 Railway deploys automatically via the native **"Wait for CI"** setting — it triggers only after all CI checks on `main` pass, ensuring tests and DB migrations succeed before the new server goes live. No `RAILWAY_TOKEN` or `railway up` needed.
 
-Required GitHub Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PROJECT_ID`, `ANTHROPIC_API_KEY`
+Required GitHub Secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PROJECT_ID`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `SUPABASE_PUBLISHABLE_KEY`, `BACKEND_URL`, `ANTHROPIC_API_KEY`
+
+Production Railway env should also set `SENTRY_DSN` (optional locally — Sentry is a no-op when unset). After merges to `main`, `.github/workflows/merge-back.yml` fast-forwards `dev` so the branches stay aligned.
 
 ---
 

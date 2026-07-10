@@ -25,6 +25,16 @@ export const authLimiter = rateLimit({
   message: rateLimitResponse("RATE_LIMIT", "Too many auth requests, please try again later"),
 });
 
+// Cart writes (add/update/remove) are routine shopper actions, not brute-force
+// targets like login/register — authLimiter's 20-per-15-min was throttling
+// normal browsing (e.g. adding several items back-to-back).
+export const cartLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 60 * 1000,
+  max: 60,
+  message: rateLimitResponse("RATE_LIMIT", "Too many cart requests, please slow down"),
+});
+
 export const chatLimiter = rateLimit({
   ...baseOptions,
   windowMs: 60 * 1000,

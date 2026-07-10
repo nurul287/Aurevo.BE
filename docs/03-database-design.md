@@ -196,17 +196,20 @@ Extends `auth.users` in a 1:1 relationship. Supabase manages `auth.users`; `prof
 ---
 
 ### `user_addresses`
+Aligned with Bangladesh checkout shipping fields so a saved address can fill the order form directly (migration `038_reshape_user_addresses_bd.sql`).
+
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid PK | |
-| user_id | uuid | FK → profiles.id |
+| user_id | uuid | FK → profiles.id (cascade delete) |
 | type | address_type enum | billing or shipping |
 | is_default | boolean | one default per type per user (enforced in app) |
-| first_name, last_name | text | NOT NULL |
-| address_line_1 | text | NOT NULL |
-| city, state, postal_code | text | NOT NULL |
-| country | text | default 'US' |
-| company, address_line_2, phone | text | optional |
+| label | text | optional display name (Home / Work) |
+| name | text | NOT NULL — recipient full name |
+| address | text | NOT NULL — street / house line |
+| district | text | NOT NULL |
+| upazila | text | NOT NULL |
+| phone | text | optional at DB; required by API create schema |
 
 ---
 
@@ -236,13 +239,16 @@ Dual-owner design — items belong to either a logged-in user OR a guest session
 | id | uuid PK | |
 | order_number | text | unique, format: `ORD-{timestamp}-{random}` |
 | user_id | uuid | FK → profiles.id (nullable — guests allowed) |
-| guest_email | text | for guest orders |
-| guest_token | text | for guest order lookup |
+| email, phone | text | contact on the order |
+| guest_token | text | for guest order lookup (with expiry) |
 | status | order_status enum | full lifecycle |
 | payment_status | payment_status enum | |
 | fulfillment_status | fulfillment_status enum | |
+| payment_method | text | default `cash` |
 | subtotal, tax_amount, shipping_amount, discount_amount, total_amount | numeric(10,2) | |
-| billing_address, shipping_address | jsonb | snapshot at time of order |
+| billing_address, shipping_address | jsonb | full snapshot at order time (BD shape) |
+| shipping_name, shipping_phone, shipping_email | text | denormalized for admin search |
+| shipping_district, shipping_upazila | text | denormalized BD locality fields |
 | notes | text | customer notes |
 | internal_notes | text | admin notes (not shown to customer) |
 | tracking_number | text | |

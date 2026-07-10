@@ -77,7 +77,7 @@ Creates a valid JWT signed with the local `SUPABASE_JWT_SECRET` — identical to
 | Cart | 22 | Auth + guest dual paths, upsert on re-add, 422 insufficient stock, 422 inactive variant, cart migration with quantity merge |
 | Orders | 27 | Stock decremented on create, guest order, 422 insufficient stock, user isolation (can't see others' orders), cancel + stock restore, 409 already-cancelled, admin cancel any, admin status/payment/tracking/fulfillment patches |
 | Inventory | 19 | Upsert, adjust (transaction integrity), low-stock filter, 422 negative adjustment, movement audit log entries |
-| Auth/Profile | 21 | Profile upsert (creates on first call), default address clearing, cross-user address 404, gender enum validation |
+| Auth/Profile | 21 | Profile upsert (creates on first call), BD address create (district/upazila), default address clearing, cross-user address 404, gender enum validation |
 | AI Chat | 8 | SSE headers, stream contains [DONE], 400 empty message, 400 too long, invalid sessionId, optional sessionId — service mocked |
 
 **Total: 216 tests**

@@ -113,7 +113,26 @@ router.get("/addresses", authenticate, getAddresses);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [firstName, lastName, addressLine1, city, state, postalCode]
+ *             required: [name, phone, address, district, upazila]
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [billing, shipping]
+ *               isDefault:
+ *                 type: boolean
+ *               label:
+ *                 type: string
+ *                 description: Display name (e.g. Home, Work)
+ *               name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               district:
+ *                 type: string
+ *               upazila:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Address created
