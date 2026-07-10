@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   authenticate,
-  authLimiter,
+  cartLimiter,
   optionalAuth,
   publicLimiter,
   validate,
@@ -79,7 +79,7 @@ router.get("/", optionalAuth, getCart);
 router.post(
   "/items",
   optionalAuth,
-  authLimiter,
+  cartLimiter,
   validate(addItemSchema),
   addItem,
 );
