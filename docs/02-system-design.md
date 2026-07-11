@@ -9,7 +9,7 @@ The backend is a **modular monolith** — a single deployable Express applicatio
 - Easy to extract a module to a service later if scale demands it
 - Sufficient for an e-commerce store at realistic traffic
 
-The frontend talks to Supabase directly for auth and storage, and will call the Express BE for all business logic (cart, orders, products, AI chat).
+The frontend has no Supabase SDK at all — every auth flow (including OAuth) and all business logic (cart, orders, products, AI chat) goes through the Express BE. `VITE_SUPABASE_URL` is only used to build storage image-transform URLs on the client.
 
 ---
 
@@ -185,7 +185,7 @@ All errors are caught by `globalErrorHandler`. Postgres unique violations (`2350
 
 ## Auth Design
 
-Supabase issues JWTs signed with `SUPABASE_JWT_SECRET`. The BE verifies these tokens using `jsonwebtoken.verify()` — no Supabase SDK call needed per request, so auth is stateless and fast.
+Supabase now signs JWTs with an asymmetric key (ES256) by default, not the static `SUPABASE_JWT_SECRET`. A `jsonwebtoken.verify(token, SUPABASE_JWT_SECRET)` check (the original approach) rejects every such token as invalid. The BE instead calls `supabaseAdmin.auth.getClaims(token)`, which fetches and caches the project's JWKS and validates locally — still no per-request round-trip to Supabase, so auth stays stateless and fast.
 
 ```
 User signs in → Supabase Auth → JWT (sub = userId, app_metadata.role = "admin"|"user")
@@ -194,9 +194,11 @@ User signs in → Supabase Auth → JWT (sub = userId, app_metadata.role = "admi
                                      │
                               authenticate middleware
                                      │
-                              jsonwebtoken.verify(token, SUPABASE_JWT_SECRET)
+                              supabaseAdmin.auth.getClaims(token)  (JWKS, cached)
                                      │
                               req.user = { id, email, role }
 ```
+
+**Frontend has no Supabase SDK at all.** Every auth flow — email/password, Google/Facebook OAuth (server-side PKCE), logout — is initiated and completed through Aurevo.BE's `/api/auth/*` endpoints. The browser never holds a Supabase session; this is what makes logout reliable (`supabaseAdmin.auth.admin.signOut` runs server-side, where the token unambiguously exists).
 
 Guest users are identified by a UUID stored in localStorage, sent as `X-Guest-Session` header. The BE extracts this and uses it as a `sessionId` for cart lookups.

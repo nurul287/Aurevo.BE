@@ -89,7 +89,7 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 |---------|-------------|
 | **Security** | JWT auth on all protected routes; Helmet headers; CORS locked to frontend origin; RLS on Supabase tables |
 | **Validation** | All API inputs validated with Zod schemas; errors returned in a consistent machine-readable format |
-| **Rate Limiting** | Tiered limits: 100/15min public, 20/15min auth, 10/min AI chat, 20/min uploads |
+| **Rate Limiting** | Tiered limits: 100/15min public, 20/15min auth (login/register), 60/min cart writes, 10/min AI chat, 20/min uploads, 5/min sensitive writes |
 | **Error Handling** | Global typed error hierarchy (NotFoundError, ValidationError, etc.); no stack traces leaked to clients |
 | **Data Integrity** | Stock changes run in DB transactions; FK constraints enforced at DB level |
 | **Testability** | Integration tests against real local DB; no mocked data layer; tests run sequentially to avoid FK conflicts |
@@ -104,5 +104,12 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Product reviews — table exists in DB, API module not built yet
 - Wishlists — table exists in DB, API module not built yet
 - Real-time inventory sync — polling-based for now
-- Multi-language / i18n
 - Mobile app
+- Separate staging environment — see Decisions Log below
+
+---
+
+## Decisions Log
+
+- **i18n was implemented**, not deferred (originally listed under Out of Scope). English/বাংলা via i18next; English is the default for every visitor, Bangla is opt-in via a header toggle and persists per user. No location/timezone-based auto-switching — an earlier version defaulted to Bangla for Asia/Dhaka timezones, but this was deliberately removed in favor of an explicit, predictable default.
+- **No dedicated staging Supabase project.** Considered and rejected — the two-environment model (local Docker Supabase for dev/test, one production Supabase) is what the team can afford to operate. CI already runs every migration against a fresh, disposable local Postgres and the full test suite before anything reaches `main`, which covers most of what a staging environment would catch for schema/logic bugs. The gap this leaves: no free-tier backups on production Supabase — a real data-loss incident (not a schema bug) has no undo today. Upgrading to Supabase Pro (daily backups) is the recommended next step once real order volume makes the data irreplaceable.
