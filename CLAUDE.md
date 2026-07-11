@@ -64,3 +64,13 @@ Config validated by Zod in `src/app/config/index.ts` — invalid/missing env var
 - The dev server (`tsx watch`) doesn't always pick up an edit reliably — if behavior doesn't match a just-saved change, kill whatever process holds port 5000 and restart rather than assuming the fix is wrong.
 - `pnpm test` truncates most tables between files, **including `user_addresses`** — running the full suite against your local dev DB while manually testing addresses in the browser will wipe your test data.
 - CI's `test` job is the only required check on `main`; the `migrate` and `deploy-functions` stages only run on push to `main` (never on PRs) and only touch prod after `test` passes.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
