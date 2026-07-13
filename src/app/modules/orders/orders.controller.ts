@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as OrderService from "./orders.service";
+import { sendOrderConfirmationEmail } from "../../../lib/email";
+import { logger } from "../../../lib/logger";
 import type {
   CreateOrderInput,
   GetOrdersInput,
@@ -18,6 +20,9 @@ export const createOrder = async (
     const data = await OrderService.createOrder(
       req.body as CreateOrderInput,
       req.user?.id,
+    );
+    void sendOrderConfirmationEmail(data).catch((err) =>
+      logger.error({ err }, "order confirmation email failed"),
     );
     res.status(201).json({ success: true, data });
   } catch (err) {

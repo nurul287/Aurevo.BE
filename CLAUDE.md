@@ -53,6 +53,8 @@ Tests run with `fileParallelism: false` — test files share one local Postgres 
 
 **Products visibility** — `GET /products` (and by-id/by-slug) force `isActive: true` for non-admin callers regardless of query params; only requests with an admin JWT (`optionalAuth` + role check) can see inactive/draft products.
 
+**Order confirmation email** — `src/lib/email.ts` mirrors `sentry.ts`'s no-op-if-unconfigured pattern: sends via Gmail SMTP (`smtp.gmail.com`, `nodemailer`) only if `GMAIL_APP_PASSWORD` is set, otherwise logs and returns. Triggered fire-and-forget in `orders.controller.ts` right after `createOrder` resolves — the `.catch()` there must never be removed, since a slow/failed email must not fail the order response. `GMAIL_APP_PASSWORD` is a Google **App Password** (requires 2-Step Verification on the account), not the account's login password.
+
 ## Environment
 
 Config validated by Zod in `src/app/config/index.ts` — invalid/missing env vars crash on boot with a clear error, not a runtime surprise. See `.env.example` for every var with placeholders. `SENTRY_DSN` is optional (Sentry no-ops without it).
