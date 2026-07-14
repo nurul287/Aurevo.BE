@@ -69,6 +69,11 @@ export const refreshTokenSchema = z.object({
 export const forgotPasswordSchema = z.object({
   body: z.object({
     email: z.string().email(),
+    // Without this, Zod silently strips the field (schemas drop unknown
+    // keys by default) and the FE's redirectTo never reaches the service —
+    // every reset link then falls back to Supabase's bare site_url instead
+    // of /reset-password, stranding the recovery tokens on the homepage.
+    redirectTo: z.string().url().optional(),
   }),
 });
 
