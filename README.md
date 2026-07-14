@@ -46,7 +46,7 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 
 - **Product Catalog** — categories, brands, products with variants (size/color/SKU), image management
 - **Guest + Auth Cart** — dual-owner cart (session-based for guests, user-based for logged-in), cart migration on sign-in
-- **Order Management** — atomic, race-safe stock decrement at checkout (guarded by available quantity, so concurrent orders can't oversell), full order lifecycle (pending → shipped → delivered), admin status/payment/tracking/fulfillment controls
+- **Order Management** — atomic, race-safe stock decrement at checkout (guarded by available quantity, so concurrent orders can't oversell), full order lifecycle (pending → shipped → delivered), admin status/payment/tracking/fulfillment controls, order confirmation email via Resend (`orders@aurevofashion.store`)
 - **Inventory System** — per-variant stock tracking, audit log of every movement (`inventoryMovements`), low-stock alerts
 - **Auth & Profiles** — backend-driven auth (email/password + Google/Facebook OAuth, all via Aurevo.BE — no Supabase SDK on the client), user profiles, saved address book with checkout autofill
 - **Internationalization** — English/বাংলা (Bangla) via i18next; English by default, user-selected and persisted via a header toggle

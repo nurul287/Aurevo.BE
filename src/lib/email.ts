@@ -1,28 +1,20 @@
-import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import { config } from "../app/config";
 import { logger } from "./logger";
 
 /**
- * Order confirmation email. No-op unless GMAIL_APP_PASSWORD is set (Railway
+ * Order confirmation email. No-op unless RESEND_API_KEY is set (Railway
  * prod) — local dev and CI send nothing, same convention as sentry.ts.
  */
-export const emailEnabled = () => Boolean(config.GMAIL_APP_PASSWORD);
+export const emailEnabled = () => Boolean(config.RESEND_API_KEY);
 
-let _transporter: Transporter | null = null;
+let _resend: Resend | null = null;
 
-function getTransporter(): Transporter {
-  if (!_transporter) {
-    _transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: config.GMAIL_USER,
-        pass: config.GMAIL_APP_PASSWORD,
-      },
-    });
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(config.RESEND_API_KEY);
   }
-  return _transporter;
+  return _resend;
 }
 
 type OrderLineItem = {
@@ -170,10 +162,14 @@ export async function sendOrderConfirmationEmail(
     return;
   }
 
-  await getTransporter().sendMail({
-    from: `Aurevo Fashion <${config.GMAIL_USER}>`,
+  const { error } = await getResend().emails.send({
+    from: config.EMAIL_FROM,
     to: order.email,
     subject: `Order confirmed — ${order.orderNumber}`,
     html: renderOrderConfirmationHtml(order),
   });
+
+  if (error) {
+    throw new Error(`Resend send failed: ${error.message}`);
+  }
 }

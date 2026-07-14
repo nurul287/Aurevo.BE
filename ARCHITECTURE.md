@@ -90,6 +90,8 @@ cors + helmet + pino-http → compression + express.json(1mb) → /health
 
 **AI Shopping Assistant** — SSE-streamed Claude responses with tool use (`search_products`, `get_product_details`, `get_categories`), agentic loop until `stop_reason === "end_turn"`.
 
+**Order confirmation email** — sent via Resend (`src/lib/email.ts`) from `orders@aurevofashion.store`, fire-and-forget right after order creation so a slow/failed send never blocks the order response. No-op unless `RESEND_API_KEY` is set, same convention as Sentry.
+
 Full detail: [`docs/02-system-design.md`](docs/02-system-design.md), [`docs/04-api-design.md`](docs/04-api-design.md), [`docs/05-implementation.md`](docs/05-implementation.md).
 
 ---

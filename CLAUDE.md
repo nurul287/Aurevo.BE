@@ -53,7 +53,7 @@ Tests run with `fileParallelism: false` — test files share one local Postgres 
 
 **Products visibility** — `GET /products` (and by-id/by-slug) force `isActive: true` for non-admin callers regardless of query params; only requests with an admin JWT (`optionalAuth` + role check) can see inactive/draft products.
 
-**Order confirmation email** — `src/lib/email.ts` mirrors `sentry.ts`'s no-op-if-unconfigured pattern: sends via Gmail SMTP (`smtp.gmail.com`, `nodemailer`) only if `GMAIL_APP_PASSWORD` is set, otherwise logs and returns. Triggered fire-and-forget in `orders.controller.ts` right after `createOrder` resolves — the `.catch()` there must never be removed, since a slow/failed email must not fail the order response. `GMAIL_APP_PASSWORD` is a Google **App Password** (requires 2-Step Verification on the account), not the account's login password.
+**Order confirmation email** — `src/lib/email.ts` mirrors `sentry.ts`'s no-op-if-unconfigured pattern: sends via Resend only if `RESEND_API_KEY` is set, otherwise logs and returns. Triggered fire-and-forget in `orders.controller.ts` right after `createOrder` resolves — the `.catch()` there must never be removed, since a slow/failed email must not fail the order response. Sends from `orders@aurevofashion.store` (`EMAIL_FROM`), which requires the domain to stay verified in Resend (SPF/DKIM DNS records on Vercel). An earlier version used Gmail SMTP before the team owned a real domain — switched to Resend once `aurevofashion.store` was purchased and verified, since Gmail's 500/day cap and generic sender address were only ever a stopgap.
 
 ## Environment
 

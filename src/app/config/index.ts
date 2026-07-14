@@ -27,9 +27,9 @@ const envSchema = z.object({
   // Error tracking — optional; Sentry is a no-op when unset
   SENTRY_DSN: z.string().url().optional(),
 
-  // Email (Gmail SMTP) — optional; no-op when unset
-  GMAIL_USER: z.string().email().optional().default("aurevofashion88@gmail.com"),
-  GMAIL_APP_PASSWORD: z.string().min(1).optional(),
+  // Email (Resend) — optional; no-op when unset
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().default("Aurevo Fashion <orders@aurevofashion.store>"),
 });
 
 const parsed = envSchema.safeParse(process.env);
