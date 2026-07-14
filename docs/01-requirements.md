@@ -114,3 +114,16 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - **i18n was implemented**, not deferred (originally listed under Out of Scope). English/বাংলা via i18next; English is the default for every visitor, Bangla is opt-in via a header toggle and persists per user. No location/timezone-based auto-switching — an earlier version defaulted to Bangla for Asia/Dhaka timezones, but this was deliberately removed in favor of an explicit, predictable default.
 - **No dedicated staging Supabase project.** Considered and rejected — the two-environment model (local Docker Supabase for dev/test, one production Supabase) is what the team can afford to operate. CI already runs every migration against a fresh, disposable local Postgres and the full test suite before anything reaches `main`, which covers most of what a staging environment would catch for schema/logic bugs. The gap this leaves: no free-tier backups on production Supabase — a real data-loss incident (not a schema bug) has no undo today. Upgrading to Supabase Pro (daily backups) is the recommended next step once real order volume makes the data irreplaceable.
 - **Order confirmation email ships via Resend**, sending from `orders@aurevofashion.store`. An earlier version used Gmail SMTP as a zero-cost stopgap before the team owned a domain (Resend/Brevo/SendGrid all need a verified sending domain to email arbitrary customer addresses, which a personal Gmail account can't provide). Once `aurevofashion.store` was purchased and DNS-verified with Resend (SPF/DKIM records via Vercel DNS), the team switched to Resend to drop Gmail's 500/day cap and get real transactional-email deliverability infrastructure.
+
+---
+
+## Backlog
+
+- Third-party courier API integration
+- Load testing — design doc parked at [`08-load-testing-plan.md`](08-load-testing-plan.md) (k6, full user journey, production safeguards); not started
+- Full authentication E2E testing — login, logout, reset password, full checkout flow
+- Role-based access control — additional roles beyond admin/user (order management role, product management role)
+- Security audit
+- Bulk data processing pipeline
+- Execute the go-live checklist, switch DNS records, and monitor system health
+- Payment gateway integration
