@@ -74,8 +74,12 @@ function renderOrderConfirmationHtml(order: OrderForEmail): string {
   <div style="background:#f4f4f4;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
     <table role="presentation" width="100%" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border-collapse:collapse;">
       <tr>
-        <td style="background:#111111;padding:28px 32px;">
-          <span style="color:#ffffff;font-size:20px;font-weight:600;letter-spacing:0.5px;">AUREVO FASHION</span>
+        <td style="background:#111111;padding:24px 32px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td style="width:34px;vertical-align:middle;"><img src="https://bwcbcmeftplyljgcacvr.supabase.co/storage/v1/object/public/Logo/aurevoLogoWhite.png" width="34" height="32" alt="Aurevo Fashion" style="display:block;"></td>
+            <td style="text-align:center;vertical-align:middle;"><span style="color:#ffffff;font-size:20px;font-weight:600;letter-spacing:0.5px;">AUREVO FASHION</span></td>
+            <td style="width:34px;"></td>
+          </tr></table>
         </td>
       </tr>
       <tr>
