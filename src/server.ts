@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { initSentry } from "./lib/sentry";
+import { initSentry, Sentry, sentryEnabled } from "./lib/sentry";
 // Sentry must initialize before the app (and its routes) are loaded
 initSentry();
 
@@ -9,6 +9,24 @@ import { client, db } from "./db";
 import { logger } from "./lib/logger";
 
 const PORT = parseInt(config.PORT, 10);
+
+// A single unhandled rejection anywhere in the app (a stray async call
+// missing a .catch, a third-party client throwing) crashes the whole process
+// on Node 15+ by default — this was previously unguarded, so any transient
+// failure (e.g. a Voyage/Anthropic API blip) could take the whole server
+// down. Log it and keep running; don't compound one bad promise into an
+// outage. uncaughtException means state may be genuinely corrupted, so that
+// one still exits — but only after flushing to Sentry first.
+process.on("unhandledRejection", (reason) => {
+  logger.error({ err: reason }, "Unhandled promise rejection");
+  if (sentryEnabled()) Sentry.captureException(reason);
+});
+
+process.on("uncaughtException", (err) => {
+  logger.fatal({ err }, "Uncaught exception — exiting");
+  if (sentryEnabled()) Sentry.captureException(err);
+  process.exit(1);
+});
 
 async function start() {
   // Fail fast: a server that cannot reach its database should not report
