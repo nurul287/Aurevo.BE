@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "ingest:knowledge": "tsx src/scripts/ingest-knowledge.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest run",
