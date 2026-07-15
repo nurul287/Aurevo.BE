@@ -1,0 +1,120 @@
+<svg viewBox="0 0 1040 720" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Aurevo RAG chatbot architecture</title>
+<desc>Two-phase diagram: an offline ingestion pipeline that embeds products and policy docs into a pgvector store, and a runtime chat flow where the storefront widget talks to a Claude-powered chat service that calls three tools — semantic knowledge retrieval, live product lookup, and an auth-gated order lookup — before streaming a response back and persisting the conversation.</desc>
+<style>
+  text { font-family: -apple-system, "Segoe UI", Inter, sans-serif; fill: #16181d; }
+  .lane-label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; fill: #9095a1; text-transform: uppercase; }
+  .box-title { font-size: 13.5px; font-weight: 600; }
+  .box-sub { font-size: 11px; fill: #6b7280; }
+  .edge { stroke: #d7dbe1; stroke-width: 1.5; fill: none; }
+  .edge-guard { stroke: #6366f1; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+  .lane-box { fill: none; stroke: #d7dbe1; stroke-width: 1; stroke-dasharray: 3 3; }
+</style>
+
+<rect width="1040" height="720" fill="#ffffff"/>
+
+<rect x="24" y="44" width="992" height="190" class="lane-box" rx="12"/>
+<text x="44" y="34" class="lane-label">Ingestion pipeline &#183; offline, re-run after catalog changes</text>
+
+<rect x="24" y="270" width="992" height="420" class="lane-box" rx="12"/>
+<text x="44" y="260" class="lane-label">Runtime chat flow &#183; every customer message</text>
+
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#d7dbe1"/>
+  </marker>
+  <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/>
+  </marker>
+</defs>
+
+<g>
+  <rect x="56" y="90" width="150" height="60" rx="10" fill="#f3f4f6" stroke="#c7cbd3"/>
+  <text x="131" y="115" text-anchor="middle" class="box-title">Products DB</text>
+  <text x="131" y="132" text-anchor="middle" class="box-sub">Postgres (existing)</text>
+</g>
+<g>
+  <rect x="56" y="165" width="150" height="60" rx="10" fill="#f3f4f6" stroke="#c7cbd3"/>
+  <text x="131" y="190" text-anchor="middle" class="box-title">Policy &amp; FAQ docs</text>
+  <text x="131" y="207" text-anchor="middle" class="box-sub">Markdown, new content</text>
+</g>
+
+<path class="edge" d="M206,120 C260,120 260,140 300,140" marker-end="url(#arrow)"/>
+<path class="edge" d="M206,195 C260,195 260,150 300,150" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="304" y="110" width="160" height="60" rx="10" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="384" y="135" text-anchor="middle" class="box-title" fill="#4338ca">Chunk + embed</text>
+  <text x="384" y="152" text-anchor="middle" class="box-sub">Voyage AI</text>
+</g>
+
+<path class="edge" d="M464,140 L536,140" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="540" y="105" width="170" height="68" rx="10" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="625" y="130" text-anchor="middle" class="box-title" fill="#4338ca">kb_chunks</text>
+  <text x="625" y="147" text-anchor="middle" class="box-sub">pgvector store</text>
+  <text x="625" y="162" text-anchor="middle" class="box-sub">products + policies</text>
+</g>
+
+<g>
+  <rect x="56" y="320" width="150" height="64" rx="10" fill="#f3f4f6" stroke="#c7cbd3"/>
+  <text x="131" y="346" text-anchor="middle" class="box-title">Chat widget</text>
+  <text x="131" y="363" text-anchor="middle" class="box-sub">Storefront, SSE stream</text>
+</g>
+
+<path class="edge" d="M206,352 L268,352" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="272" y="310" width="180" height="84" rx="10" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="362" y="338" text-anchor="middle" class="box-title" fill="#4338ca">Chat service</text>
+  <text x="362" y="355" text-anchor="middle" class="box-sub">Claude, tool-use loop</text>
+  <text x="362" y="370" text-anchor="middle" class="box-sub">true token streaming</text>
+</g>
+
+<path class="edge" d="M272,375 C240,400 200,400 131,388" marker-end="url(#arrow)"/>
+<text x="150" y="405" class="box-sub">streamed reply</text>
+
+<path class="edge" d="M362,394 L362,430" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="176" y="434" width="176" height="66" rx="10" fill="#f3f4f6" stroke="#c7cbd3"/>
+  <text x="264" y="460" text-anchor="middle" class="box-title">search_knowledge</text>
+  <text x="264" y="477" text-anchor="middle" class="box-sub">semantic retrieval</text>
+  <text x="264" y="491" text-anchor="middle" class="box-sub">topK = 5, kb_chunks</text>
+</g>
+<path class="edge" d="M362,394 C300,410 264,415 264,434" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="372" y="434" width="176" height="66" rx="10" fill="#f3f4f6" stroke="#c7cbd3"/>
+  <text x="460" y="460" text-anchor="middle" class="box-title">get_product_details</text>
+  <text x="460" y="477" text-anchor="middle" class="box-sub">live DB lookup</text>
+  <text x="460" y="491" text-anchor="middle" class="box-sub">current stock &amp; price</text>
+</g>
+<path class="edge" d="M362,394 C420,410 460,415 460,434" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="568" y="434" width="188" height="66" rx="10" fill="none" stroke="#6366f1" stroke-dasharray="4 3"/>
+  <text x="662" y="460" text-anchor="middle" class="box-title" fill="#4338ca">get_my_orders</text>
+  <text x="662" y="477" text-anchor="middle" class="box-sub">auth-gated only</text>
+  <text x="662" y="491" text-anchor="middle" class="box-sub">scoped to req.user.id</text>
+</g>
+<path class="edge-guard" d="M452,340 C560,340 662,370 662,434" marker-end="url(#arrow-accent)"/>
+
+<path class="edge" d="M625,173 C625,300 300,420 264,434" marker-end="url(#arrow)"/>
+
+<g>
+  <rect x="272" y="540" width="180" height="66" rx="10" fill="#f3f4f6" stroke="#c7cbd3"/>
+  <text x="362" y="566" text-anchor="middle" class="box-title">conversations</text>
+  <text x="362" y="583" text-anchor="middle" class="box-sub">+ messages</text>
+  <text x="362" y="597" text-anchor="middle" class="box-sub">multi-turn history</text>
+</g>
+<path class="edge" d="M362,500 L362,540" marker-end="url(#arrow)"/>
+
+<g>
+  <line x1="56" y1="650" x2="86" y2="650" class="edge"/>
+  <text x="94" y="654" class="box-sub">always available to the model</text>
+  <line x1="56" y1="672" x2="86" y2="672" class="edge-guard"/>
+  <text x="94" y="676" class="box-sub">tool offered only when the request is authenticated</text>
+</g>
+</svg>

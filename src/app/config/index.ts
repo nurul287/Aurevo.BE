@@ -24,8 +24,20 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1),
   ANTHROPIC_MODEL: z.string().default("claude-haiku-4-5-20251001"),
 
+  // Voyage AI embeddings — powers the RAG chatbot's knowledge base
+  VOYAGE_API_KEY: z.string().min(1),
+  VOYAGE_EMBEDDING_MODEL: z.string().default("voyage-3"),
+
+  // Shared secret for internal, non-user machine-to-machine routes
+  // (e.g. the chat-history cleanup cron) — no JWT/session auth applies to these.
+  INTERNAL_TASK_TOKEN: z.string().min(1),
+
   // Error tracking — optional; Sentry is a no-op when unset
   SENTRY_DSN: z.string().url().optional(),
+
+  // Email (Resend) — optional; no-op when unset
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().default("Aurevo Fashion <orders@aurevofashion.store>"),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -1,8 +1,10 @@
-import { pgTable, index, foreignKey, unique, pgPolicy, check, uuid, integer, text, boolean, timestamp, numeric, uniqueIndex, jsonb, date, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, index, foreignKey, unique, pgPolicy, check, uuid, integer, text, boolean, timestamp, numeric, uniqueIndex, jsonb, date, pgEnum, vector } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const addressType = pgEnum("address_type", ['billing', 'shipping'])
+export const chatRole = pgEnum("chat_role", ['user', 'assistant'])
 export const fulfillmentStatus = pgEnum("fulfillment_status", ['unfulfilled', 'partial', 'fulfilled'])
+export const kbSourceType = pgEnum("kb_source_type", ['product', 'policy', 'faq'])
 export const movementReason = pgEnum("movement_reason", ['purchase_order', 'customer_order', 'checkout_reserve', 'payment_failed', 'order_cancelled', 'customer_return', 'damaged_goods', 'inventory_count', 'theft_loss', 'location_transfer', 'manual_adjustment'])
 export const movementType = pgEnum("movement_type", ['restock', 'sale', 'reserve', 'unreserve', 'cancel', 'return', 'adjustment', 'damage', 'theft', 'transfer'])
 export const orderStatus = pgEnum("order_status", ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'])
@@ -557,4 +559,53 @@ export const inventory = pgTable("inventory", {
 	unique("inventory_variant_location_unique").on(table.variantId, table.location),
 	pgPolicy("Anyone can view inventory", { as: "permissive", for: "select", to: ["public"], using: sql`true` }),
 	pgPolicy("Admins can manage inventory", { as: "permissive", for: "all", to: ["authenticated"] }),
+]);
+
+export const kbChunks = pgTable("kb_chunks", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	sourceType: kbSourceType("source_type").notNull(),
+	sourceId: text("source_id"),
+	title: text(),
+	content: text().notNull(),
+	embedding: vector({ dimensions: 1024 }).notNull(),
+	metadata: jsonb().default({}).notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_kb_chunks_embedding").using("hnsw", table.embedding.op("vector_cosine_ops")),
+	uniqueIndex("idx_kb_chunks_product_source").using("btree", table.sourceId.asc().nullsLast().op("text_ops")).where(sql`(source_type = 'product'::kb_source_type)`),
+]);
+
+export const conversations = pgTable("conversations", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	userId: uuid("user_id"),
+	sessionId: uuid("session_id").notNull(),
+	intentSummary: text("intent_summary"),
+	lastActivityAt: timestamp("last_activity_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_conversations_last_activity").using("btree", table.lastActivityAt.asc().nullsLast().op("timestamptz_ops")),
+	index("idx_conversations_session").using("btree", table.sessionId.asc().nullsLast().op("uuid_ops")),
+	index("idx_conversations_user").using("btree", table.userId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [profiles.id],
+			name: "conversations_user_id_fkey"
+		}).onDelete("cascade"),
+]);
+
+export const messages = pgTable("messages", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	conversationId: uuid("conversation_id").notNull(),
+	role: chatRole().notNull(),
+	content: text().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_messages_conversation").using("btree", table.conversationId.asc().nullsLast().op("timestamptz_ops"), table.createdAt.asc().nullsLast().op("uuid_ops")),
+	foreignKey({
+			columns: [table.conversationId],
+			foreignColumns: [conversations.id],
+			name: "messages_conversation_id_fkey"
+		}).onDelete("cascade"),
 ]);

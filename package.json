@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "ingest:knowledge": "tsx src/scripts/ingest-knowledge.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest run",
@@ -62,6 +63,7 @@
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "postgres": "^3.4.9",
+    "resend": "^6.17.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^11.0.3",

@@ -85,8 +85,8 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const redirectTo = typeof req.body.redirectTo === "string" ? req.body.redirectTo : undefined;
-    await AuthService.forgotPassword(req.body as ForgotPasswordInput, redirectTo);
+    const { redirectTo, ...input } = req.body as ForgotPasswordInput;
+    await AuthService.forgotPassword(input, redirectTo);
     res.status(200).json({ success: true, message: "If that email is registered you will receive a reset link" });
   } catch (err) { next(err); }
 };

@@ -4,15 +4,19 @@ import { createTestApp } from "../../../test/app";
 import chatRoutes from "./chat.routes";
 
 const MOCK_REPLY = "Hello! I'm your Aurevo fashion assistant. How can I help you today?";
+const MOCK_CONVERSATION_ID = "00000000-0000-0000-0000-0000000000c1";
 
 // Mock the service module so no real Anthropic API calls are made
 vi.mock("./chat.service", () => ({
   streamChat: vi.fn(async function* () {
-    yield MOCK_REPLY;
+    yield { type: "conversation", conversationId: MOCK_CONVERSATION_ID };
+    yield { type: "text", text: MOCK_REPLY };
+    yield { type: "done" };
   }),
 }));
 
 const app = createTestApp(chatRoutes);
+const SESSION_ID = "00000000-0000-0000-0000-000000000001";
 
 // ─── GET /health ──────────────────────────────────────────────────────────────
 
@@ -31,45 +35,50 @@ describe("POST /chat", () => {
   it("returns SSE stream with AI response", async () => {
     const res = await request(app)
       .post("/")
-      .send({ message: "What products do you have?" });
+      .send({ message: "What products do you have?", sessionId: SESSION_ID });
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toMatch(/text\/event-stream/);
-    // SSE response contains data events
     expect(res.text).toContain("data:");
     expect(res.text).toContain("[DONE]");
+  });
+
+  it("includes the conversationId as the first event", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ message: "Hello", sessionId: SESSION_ID });
+
+    expect(res.text).toContain(MOCK_CONVERSATION_ID);
   });
 
   it("includes the AI response text in stream", async () => {
     const res = await request(app)
       .post("/")
-      .send({ message: "Show me sneakers" });
+      .send({ message: "Show me sneakers", sessionId: SESSION_ID });
 
     expect(res.status).toBe(200);
     expect(res.text).toContain("fashion assistant");
   });
 
   it("returns 400 for empty message", async () => {
-    const res = await request(app).post("/").send({ message: "" });
+    const res = await request(app).post("/").send({ message: "", sessionId: SESSION_ID });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns 400 for message exceeding 2000 chars", async () => {
-    const res = await request(app).post("/").send({ message: "a".repeat(2001) });
+    const res = await request(app).post("/").send({ message: "a".repeat(2001), sessionId: SESSION_ID });
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when no message body", async () => {
-    const res = await request(app).post("/").send({});
+    const res = await request(app).post("/").send({ sessionId: SESSION_ID });
     expect(res.status).toBe(400);
   });
 
-  it("accepts optional sessionId", async () => {
-    const res = await request(app)
-      .post("/")
-      .send({ message: "Hello", sessionId: "00000000-0000-0000-0000-000000000001" });
-    expect(res.status).toBe(200);
+  it("requires sessionId", async () => {
+    const res = await request(app).post("/").send({ message: "Hello" });
+    expect(res.status).toBe(400);
   });
 
   it("rejects invalid sessionId (not uuid)", async () => {

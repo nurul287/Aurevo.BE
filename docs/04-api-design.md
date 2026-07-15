@@ -52,10 +52,13 @@ X-Guest-Session: <uuid>
 | Limiter | Limit | Applied to |
 |---------|-------|-----------|
 | `publicLimiter` | 100 req / 15 min | Public GET endpoints |
-| `authLimiter` | 20 req / 15 min | Auth-required mutations |
+| `authLimiter` | 20 req / 15 min | Login/register/password reset — brute-force protection |
+| `cartLimiter` | 60 req / min | Cart writes (add item) — routine shopper actions, not brute-force targets |
 | `strictLimiter` | 5 req / min | Sensitive write operations |
 | `uploadLimiter` | 20 req / min | File upload endpoints |
 | `chatLimiter` | 10 req / min | AI chat (expensive) |
+
+`POST /cart/items` used to share `authLimiter` with login/register, so a shopper adding several items back-to-back could plausibly trip a limiter meant for brute-force protection. Moved to its own `cartLimiter`.
 
 ---
 
@@ -224,12 +227,21 @@ X-Guest-Session: <uuid>
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
+| POST | `/login` | Public | Email/password sign in |
+| POST | `/register` | Public | Email/password sign up |
+| POST | `/logout` | Auth | Revokes the Supabase session globally (`supabaseAdmin.auth.admin.signOut`) |
+| POST | `/refresh` | Public | Exchange a refresh token for a new access token |
+| GET | `/oauth/url?provider=google\|facebook` | Public | Returns the provider's authorize URL. The BE generates the PKCE pair and stores the verifier server-side, keyed by a `state` value carried inside `redirect_to` (not the top-level `state` param — GoTrue owns that for its own provider handshake) |
+| GET | `/oauth/callback` | Public | Provider redirects here with `?code=&state=`. The BE exchanges the code via Supabase's REST API, stores the resulting tokens under a one-time exchange code, and redirects the browser to `{FRONTEND_URL}/?oauth_code=...`. Never rate-limited — it's an external redirect target, not a client-initiated call |
+| GET | `/oauth/session?code=` | Public | One-time redemption of the exchange code for `{ accessToken, refreshToken, expiresAt }`. The code is deleted on first use |
 | GET | `/me` | Auth | Get current user's profile |
 | PATCH | `/profile` | Auth | Update profile (firstName, lastName, phone, gender, dateOfBirth, avatarUrl) |
 | GET | `/addresses` | Auth | List saved addresses |
 | POST | `/addresses` | Auth | Create address |
 | PATCH | `/addresses/:id` | Auth | Update address |
 | DELETE | `/addresses/:id` | Auth | Delete address |
+
+**No Supabase SDK on the frontend.** Every auth flow — email/password, Google/Facebook OAuth, logout — is initiated and completed through these BE endpoints. The frontend never talks to Supabase directly; this is what lets logout reliably kill the server session (`supabaseAdmin.auth.admin.signOut` runs on the BE, which owns the token).
 
 **Profile upsert:** First `PATCH /profile` creates the profile row if it doesn't exist yet.
 

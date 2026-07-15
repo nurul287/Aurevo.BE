@@ -29,3 +29,6 @@ coverage/
 
 # Drizzle generated SQL snapshots (schema.ts is kept, raw SQL not needed)
 src/db/*.sql
+
+# graphify build cache (content-hashed, regenerates locally, not worth committing)
+graphify-out/cache/

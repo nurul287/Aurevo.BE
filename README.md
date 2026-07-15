@@ -6,21 +6,24 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 
 ## Live Architecture
 
+📊 **[Detailed request-flow diagram (Mermaid.ai)](https://mermaid.ai/d/a656ee2d-d320-43ac-a7d0-5cae87032a5d)** — middleware chain, domain modules, and data-layer detail.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        Aurevo.UI                            │
-│         React 19 + Vite + TanStack Query + Tailwind         │
-│              Storefront  ·  Admin Panel                     │
-└──────────────────┬────────────────┬────────────────────────┘
-                   │ REST API       │ Direct (Auth + Storage)
-                   ▼                ▼
+│      React 19 + Vite + TanStack Query + Tailwind + i18n     │
+│         Storefront  ·  Admin Panel  ·  বাংলা/English         │
+│      No Supabase SDK — all auth (incl. OAuth) via REST      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ REST API (all calls, incl. auth)
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                       Aurevo.BE                             │
 │          Express + TypeScript + Drizzle ORM                 │
 │   Categories · Products · Cart · Orders · Inventory · Chat  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ PostgreSQL + Storage + Auth
-                               ▼
+└──────────────────────────┬──────────────────────────────────┘
+                           │ PostgreSQL + Storage + Auth Admin
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                        Supabase                             │
 │        PostgreSQL 15  ·  Auth (JWT)  ·  Storage             │
@@ -43,12 +46,13 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 
 - **Product Catalog** — categories, brands, products with variants (size/color/SKU), image management
 - **Guest + Auth Cart** — dual-owner cart (session-based for guests, user-based for logged-in), cart migration on sign-in
-- **Order Management** — transactional stock reservation, full order lifecycle (pending → shipped → delivered), admin status/payment/tracking/fulfillment controls
+- **Order Management** — atomic, race-safe stock decrement at checkout (guarded by available quantity, so concurrent orders can't oversell), full order lifecycle (pending → shipped → delivered), admin status/payment/tracking/fulfillment controls, order confirmation email via Resend (`orders@aurevofashion.store`)
 - **Inventory System** — per-variant stock tracking, audit log of every movement (`inventoryMovements`), low-stock alerts
-- **Auth & Profiles** — BE-proxied email/password auth via `supabaseAdmin`; Google/Facebook OAuth via Supabase SDK on FE; JWT stored in localStorage; auto-refresh on 401; user profiles and BD-shaped address book (aligned with checkout)
+- **Auth & Profiles** — backend-driven auth (email/password + Google/Facebook OAuth, all via Aurevo.BE — no Supabase SDK on the client), user profiles, saved address book with checkout autofill
+- **Internationalization** — English/বাংলা (Bangla) via i18next; English by default, user-selected and persisted via a header toggle
 - **AI Shopping Assistant** — SSE-streamed responses via Claude API with tool use (product search, detail lookup, category listing)
 - **Admin Dashboard** — product/order/inventory management, bulk operations, analytics
-- **Observability** — structured pino logs, deep `/api/health` (DB ping), optional Sentry capture of unexpected 500s, graceful shutdown
+- **Observability** — structured pino logs, Sentry error tracking (FE + BE, optional/no-op unless configured), deep health check, graceful shutdown
 
 ---
 

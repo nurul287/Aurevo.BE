@@ -2,7 +2,17 @@ import { eq, ne, ilike, and, or, asc, desc, count, gte, lte, inArray, SQL } from
 import { db } from "../../../db";
 import { products, productVariants, productImages, categories, brands } from "../../../db/schema";
 import { NotFoundError, ConflictError } from "../../errors";
+import { logger } from "../../../lib/logger";
+import { deleteProductChunk, upsertProductChunk } from "../knowledge/knowledge.service";
 import type { CreateProductInput, UpdateProductInput, GetProductsInput, BulkStatusInput, BulkDeleteInput } from "./products.schema";
+
+// Fire-and-forget — a slow/failed embed must never block the product write.
+// Keeps kb_chunks fresh without full CDC infra at this catalog's current scale.
+function reembedProduct(productId: string) {
+  void upsertProductChunk(productId).catch((err) =>
+    logger.error({ err, productId }, "kb_chunks re-embed failed"),
+  );
+}
 
 export async function getProducts(filters: GetProductsInput, isAdmin = false) {
   const conditions: SQL[] = [];
@@ -178,6 +188,7 @@ export async function createProduct(input: CreateProductInput) {
     tags: input.tags,
   }).returning();
 
+  reembedProduct(created!.id);
   return created!;
 }
 
@@ -207,6 +218,7 @@ export async function updateProduct(id: string, input: UpdateProductInput) {
     .where(eq(products.id, id))
     .returning();
 
+  reembedProduct(id);
   return updated!;
 }
 
@@ -214,6 +226,9 @@ export async function deleteProduct(id: string) {
   await getProductById(id);
   // Variants + images cascade-delete via FK constraints
   await db.delete(products).where(eq(products.id, id));
+  void deleteProductChunk(id).catch((err) =>
+    logger.error({ err, productId: id }, "kb_chunks delete failed"),
+  );
 }
 
 export async function bulkUpdateStatus(input: BulkStatusInput) {
@@ -221,11 +236,15 @@ export async function bulkUpdateStatus(input: BulkStatusInput) {
     .set({ isActive: input.isActive, updatedAt: new Date().toISOString() })
     .where(inArray(products.id, input.ids))
     .returning({ id: products.id });
+  updated.forEach((p) => reembedProduct(p.id));
   return updated;
 }
 
 export async function bulkDelete(input: BulkDeleteInput) {
   await db.delete(products).where(inArray(products.id, input.ids));
+  input.ids.forEach((id) =>
+    deleteProductChunk(id).catch((err) => logger.error({ err, productId: id }, "kb_chunks delete failed")),
+  );
 }
 
 export async function getFeaturedProducts(limit = 8) {

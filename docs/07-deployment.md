@@ -52,6 +52,7 @@ BACKEND_URL=http://localhost:5000
 ANTHROPIC_API_KEY=<your key>
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 # SENTRY_DSN=   # leave unset locally — Sentry is a no-op without it
+# RESEND_API_KEY=   # leave unset locally — order confirmation email is a no-op without it
 ```
 
 ### Step 4 — Configure frontend
@@ -135,9 +136,13 @@ BACKEND_URL=https://<railway-app>.railway.app
 ANTHROPIC_API_KEY=<prod key>
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 SENTRY_DSN=https://xxx@oXXXX.ingest.de.sentry.io/XXXX
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
+EMAIL_FROM=Aurevo Fashion <orders@aurevofashion.store>
 ```
 
 `SENTRY_DSN` is optional in config validation but required in production for error tracking. Leave it unset in local/CI so nothing is sent.
+
+`RESEND_API_KEY` is optional in config validation but required in production for order confirmation emails to actually send; `aurevofashion.store` must stay DNS-verified in Resend (SPF/DKIM records live on Vercel DNS) or sends will fail.
 
 Build: `pnpm build` (`tsc`). A multi-stage `Dockerfile` (Node 22 Alpine) is also available if Railway is switched to Docker builds.
 
@@ -162,6 +167,7 @@ VITE_API_URL=https://<railway-app>.railway.app
 | `SUPABASE_JWT_SECRET` | local secret | prod secret | Used to verify all auth tokens |
 | `ANTHROPIC_API_KEY` | real key | real key | Rate limited at account level |
 | `SENTRY_DSN` | unset | set | No-op when unset; only unexpected 500s are captured |
+| `RESEND_API_KEY` | unset | set | No-op when unset; requires `aurevofashion.store` to stay DNS-verified in Resend |
 | `VITE_*` | local | prod | Bundled into client JS — anon key only (public by design) |
 
 **Critical rule:** `SYNC_PROD_DATABASE_URL` (if it exists in `.env.local`) must **never** be used in migrations or seeding scripts. All local DB work goes to the Docker instance only.

@@ -22,7 +22,7 @@ const router: Router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [message]
+ *             required: [message, sessionId]
  *             properties:
  *               message:
  *                 type: string
@@ -30,9 +30,13 @@ const router: Router = Router();
  *               sessionId:
  *                 type: string
  *                 format: uuid
+ *                 description: Client-generated, persisted in localStorage — keys the conversation for history/retention.
  *     responses:
  *       200:
- *         description: SSE stream of text chunks. Each event is `data: {"text":"..."}`. Stream ends with `data: [DONE]`
+ *         description: >
+ *           SSE stream. First event is `data: {"conversationId":"..."}`, then zero or more
+ *           `data: {"status":"thinking"}` events during tool calls, then `data: {"text":"..."}`
+ *           chunks. Stream ends with `data: [DONE]`.
  *         content:
  *           text/event-stream:
  *             schema:

@@ -42,10 +42,10 @@ Used by the images module. The BE uploads via service role key (full access, no 
 
 ### `src/app/middlewares/auth.ts` — JWT verification
 ```ts
-const decoded = jsonwebtoken.verify(token, config.SUPABASE_JWT_SECRET);
-req.user = { id: decoded.sub, email: decoded.email, role: decoded.app_metadata?.role };
+const { data, error } = await supabaseAdmin.auth.getClaims(token);
+req.user = { id: data.claims.sub, email: data.claims.email, role: data.claims.app_metadata?.role };
 ```
-No Supabase SDK call per request — stateless, fast.
+Supabase signs JWTs with an asymmetric key (ES256) by default now, not the static `SUPABASE_JWT_SECRET` — `jsonwebtoken.verify(token, SUPABASE_JWT_SECRET)` rejects every such token. `getClaims` fetches and caches the project's JWKS and validates locally, so there's still no per-request round-trip to Supabase — auth stays stateless and fast.
 
 ### `src/app/middlewares/validate.ts` — Zod middleware
 ```ts
