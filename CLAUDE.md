@@ -17,7 +17,7 @@ These apply across both Aurevo repos (this one and [`../Aurevo.UI`](../Aurevo.UI
 ## Development workflow (always apply)
 
 1. **Build** — `pnpm build` (runs `tsc`); fix all type errors.
-2. **Test** — `pnpm test` against local Supabase (see Commands below). Update the sibling `*.test.ts` whenever you change a module file.
+2. **Test — mandatory before every push, not just typecheck/build.** Run `pnpm test` against local Supabase (see Commands below) and confirm it actually passes; don't push on typecheck/build passing alone. Update the sibling `*.test.ts` whenever you change a module file. **If you add a new required (non-optional) env var to `src/app/config/index.ts`, every test file fails config validation until it's also added to `.github/workflows/ci.yml`'s `test` job env block** — update both in the same change, and re-run `pnpm test` locally to confirm before pushing, since a passing local build/typecheck does not catch this.
 3. **Micro-commit** — small, one-concern commits with conventional messages. Never bundle unrelated changes.
 4. **Never deploy until told** — push only when asked. CI applies migrations and deploys automatically on merge to `main`; no manual `railway up`.
 
