@@ -17,7 +17,7 @@ function getResend(): Resend {
   return _resend;
 }
 
-type OrderLineItem = {
+export type OrderLineItem = {
   productName: string | null;
   variantName: string | null;
   sku: string | null;
@@ -26,7 +26,7 @@ type OrderLineItem = {
   totalPrice: string;
 };
 
-type OrderForEmail = {
+export type OrderForEmail = {
   email: string | null;
   orderNumber: string;
   subtotal: string | null;
@@ -153,7 +153,7 @@ export async function sendOrderConfirmationEmail(
   if (!emailEnabled()) {
     logger.info(
       { orderNumber: order.orderNumber },
-      "GMAIL_APP_PASSWORD unset — skipping order confirmation email",
+      "RESEND_API_KEY unset — skipping order confirmation email",
     );
     return;
   }
@@ -166,7 +166,17 @@ export async function sendOrderConfirmationEmail(
     return;
   }
 
-  const { error } = await getResend().emails.send({
+  // The send path was previously silent on success — the only way to tell
+  // "sent fine" apart from "never ran" was to grep Resend's own dashboard,
+  // which made a real production gap (an order with no confirmation email
+  // and nothing in the app logs either way) unresolvable from Railway logs
+  // alone. Log both the attempt and the outcome explicitly.
+  logger.info(
+    { orderNumber: order.orderNumber, to: order.email },
+    "sending order confirmation email",
+  );
+
+  const { data, error } = await getResend().emails.send({
     from: config.EMAIL_FROM,
     to: order.email,
     subject: `Order confirmed — ${order.orderNumber}`,
@@ -176,4 +186,9 @@ export async function sendOrderConfirmationEmail(
   if (error) {
     throw new Error(`Resend send failed: ${error.message}`);
   }
+
+  logger.info(
+    { orderNumber: order.orderNumber, to: order.email, resendId: data?.id },
+    "order confirmation email sent",
+  );
 }
