@@ -5,6 +5,7 @@ import brandRoutes from "../app/modules/brands/brands.routes";
 import cartRoutes from "../app/modules/cart/cart.routes";
 import categoryRoutes from "../app/modules/categories/categories.routes";
 import chatRoutes from "../app/modules/chat/chat.routes";
+import chatInternalRoutes from "../app/modules/chat/chat.internal.routes";
 import imageRoutes from "../app/modules/images/images.routes";
 import imageAdminRoutes from "../app/modules/images/images-admin.routes";
 import inventoryRoutes from "../app/modules/inventory/inventory.routes";
@@ -28,5 +29,6 @@ router.use("/inventory", inventoryRoutes);
 router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
 router.use("/chat", chatRoutes);
+router.use("/internal/chat", chatInternalRoutes);
 
 export default router;
