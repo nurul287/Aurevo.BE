@@ -52,9 +52,11 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Set a default address per type; reuse saved addresses at checkout without remapping fields
 
 **AI Shopping Assistant**
-- Chat interface powered by Claude
-- Searches real product catalog via tool use
-- Streaming responses (SSE)
+- Full RAG chatbot (Claude + Voyage AI embeddings + pgvector) — full architecture in [`09-ai-chatbot-rag.md`](09-ai-chatbot-rag.md)
+- Semantic search over products, shipping/returns/sizing/payment policies, and FAQs (`kb_chunks`)
+- Logged-in customers can ask about their own orders (auth-gated tool, never offered to guests)
+- True token streaming (SSE), multi-turn conversation history with retention/cleanup
+- Storefront widget (`ai-chat-widget.tsx`) — the earlier Messenger deep-link button was removed in favor of this
 
 ### Admin Panel
 
@@ -114,6 +116,7 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - **i18n was implemented**, not deferred (originally listed under Out of Scope). English/বাংলা via i18next; English is the default for every visitor, Bangla is opt-in via a header toggle and persists per user. No location/timezone-based auto-switching — an earlier version defaulted to Bangla for Asia/Dhaka timezones, but this was deliberately removed in favor of an explicit, predictable default.
 - **No dedicated staging Supabase project.** Considered and rejected — the two-environment model (local Docker Supabase for dev/test, one production Supabase) is what the team can afford to operate. CI already runs every migration against a fresh, disposable local Postgres and the full test suite before anything reaches `main`, which covers most of what a staging environment would catch for schema/logic bugs. The gap this leaves: no free-tier backups on production Supabase — a real data-loss incident (not a schema bug) has no undo today. Upgrading to Supabase Pro (daily backups) is the recommended next step once real order volume makes the data irreplaceable.
 - **Order confirmation email ships via Resend**, sending from `orders@aurevofashion.store`. An earlier version used Gmail SMTP as a zero-cost stopgap before the team owned a domain (Resend/Brevo/SendGrid all need a verified sending domain to email arbitrary customer addresses, which a personal Gmail account can't provide). Once `aurevofashion.store` was purchased and DNS-verified with Resend (SPF/DKIM records via Vercel DNS), the team switched to Resend to drop Gmail's 500/day cap and get real transactional-email deliverability infrastructure.
+- **AI chat rebuilt as a full RAG pipeline** (previously a bare Anthropic tool-use bot with no retrieval, no persistence, and no real streaming). Voyage AI embeddings + pgvector (`kb_chunks`) power semantic search over products and a small set of policy/FAQ markdown docs (`content/policies/`); Anthropic's real `stream: true` API replaces the earlier simulated-streaming loop. Auto-embedding on product create/update/delete is a lightweight fire-and-forget hook, not full CDC — deliberately, given the catalog's current small scale (see Backlog for the CDC follow-up if that changes). Conversation history persists per `sessionId` with a 90-day retention window for logged-in users and 48 hours for guests, cleaned up by a secret-gated internal route (`POST /internal/chat/cleanup`) triggered by a daily Railway cron — no new job-runner infra. The order-lookup tool is only ever offered to the model on an authenticated request, enforced in code (not just prompted), so a guest session or a prompt-injection attempt has no path to another customer's order data.
 
 ---
 
@@ -127,3 +130,6 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Bulk data processing pipeline
 - Execute the go-live checklist, switch DNS records, and monitor system health
 - Payment gateway integration
+- CDC/delta indexing for the RAG knowledge base — current auto-embed hook re-embeds one product per mutation, which is fine at today's catalog size but doesn't scale to high write volume; revisit if that changes
+- Self-service "clear my chat history" action for logged-in users (currently only the 90-day automatic retention window applies)
+- Clean up messy product title data in the catalog (e.g. stray `{shoe1:1}`-style annotations, glued-on `"1.1"` version suffixes, inconsistent spacing) — currently worked around in the chat product-card matching logic (`chat.service.ts`) rather than fixed at the source
