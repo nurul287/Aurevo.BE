@@ -13,7 +13,16 @@ jobs:
     outputs:
       migrations_changed: ${{ steps.filter.outputs.migrations }}
     steps:
+      # fetch-depth: 0 (full history) is required here — with the default
+      # shallow clone, dorny/paths-filter can't always diff a push event
+      # against its previous commit (especially after a squash-merged branch
+      # with many commits behind it), and silently evaluates to "no changes"
+      # instead of erroring. That's exactly what caused migration 039 to
+      # never apply to production: the migrate job below depends on this
+      # output and was silently skipped, twice, with no CI failure to notice.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for migration file changes
         uses: dorny/paths-filter@v3
