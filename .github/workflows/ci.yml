@@ -13,21 +13,33 @@ jobs:
     outputs:
       migrations_changed: ${{ steps.filter.outputs.migrations }}
     steps:
-      # fetch-depth: 0 (full history) is required here — with the default
-      # shallow clone, dorny/paths-filter can't always diff a push event
-      # against its previous commit (especially after a squash-merged branch
-      # with many commits behind it), and silently evaluates to "no changes"
-      # instead of erroring. That's exactly what caused migration 039 to
-      # never apply to production: the migrate job below depends on this
-      # output and was silently skipped, twice, with no CI failure to notice.
+      # fetch-depth: 0 (full history) so the explicit base/ref diff below always
+      # has the commit objects it needs, regardless of history depth.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # base/ref MUST be pinned to the push event's exact before/after SHAs.
+      # Without them, paths-filter's default for a *merge-commit* push falls
+      # back to comparing the live tips of the source/target branch names
+      # (logged as "Changes will be detected between dev and main") instead of
+      # the event's fixed before/after SHAs. That default races
+      # merge-back.yml, which fast-forwards dev to match main within seconds
+      # of the same push — if it wins the race, dev and main are already
+      # identical by the time this step runs, so the branch-tip diff is empty
+      # and "0 changed files" is reported even though the merge genuinely
+      # touched supabase/migrations/. This is what actually caused migration
+      # 039 to be silently skipped twice (the earlier fetch-depth-only fix
+      # addressed a real but different risk and did not fix this one — verified
+      # by replaying run 29450921051's log, which still showed 0 changed files
+      # even with full history). Pinning base/ref removes the live-branch
+      # lookup entirely, so the race can't affect the result.
       - name: Check for migration file changes
         uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ github.event.before }}
+          ref: ${{ github.sha }}
           filters: |
             migrations:
               - 'supabase/migrations/**'

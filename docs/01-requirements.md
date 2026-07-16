@@ -133,3 +133,4 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - CDC/delta indexing for the RAG knowledge base — current auto-embed hook re-embeds one product per mutation, which is fine at today's catalog size but doesn't scale to high write volume; revisit if that changes
 - Self-service "clear my chat history" action for logged-in users (currently only the 90-day automatic retention window applies)
 - Clean up messy product title data in the catalog (e.g. stray `{shoe1:1}`-style annotations, glued-on `"1.1"` version suffixes, inconsistent spacing) — currently worked around in the chat product-card matching logic (`chat.service.ts`) rather than fixed at the source
+- Convert the storefront to React Native — planned once the web implementation (Aurevo.UI) is feature-complete; not started

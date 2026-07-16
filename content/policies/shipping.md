@@ -4,8 +4,9 @@
 Aurevo Fashion ships nationwide within Bangladesh. We deliver to all 64 districts.
 
 ## Delivery time
-- Inside Dhaka: 1–2 business days.
-- Outside Dhaka: 3–5 business days.
+- Inside Dhaka: 2–3 working days.
+- Outside Dhaka: 3–5 working days.
+- Remote areas: up to 7 working days.
 
 ## Shipping cost
 Shipping cost is calculated at checkout based on the delivery district and is shown before payment. There is no charge to browse or add items to your cart.

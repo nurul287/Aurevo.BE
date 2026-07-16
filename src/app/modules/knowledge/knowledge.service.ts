@@ -151,7 +151,13 @@ export async function ingestPolicyDocs(): Promise<number> {
     const sourceType = sourceId === "faq" ? "faq" : "policy";
 
     // Split on markdown headings — one chunk per section keeps retrieval focused.
-    const sections = raw.split(/\n(?=## )/).filter((s) => s.trim().length > 0);
+    // Drop heading-only sections (e.g. a lone "# Title" before the first "## "):
+    // their embedding ranks high on title alone but carries no real content,
+    // crowding out substantive chunks in topK.
+    const sections = raw
+      .split(/\n(?=## )/)
+      .map((s) => s.trim())
+      .filter((s) => s.replace(/^#{1,2}\s*.+/, "").trim().length > 0);
 
     await db.delete(kbChunks).where(and(eq(kbChunks.sourceType, sourceType), sql`metadata->>'file' = ${file}`));
 
