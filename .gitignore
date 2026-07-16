@@ -32,3 +32,6 @@ src/db/*.sql
 
 # graphify build cache (content-hashed, regenerates locally, not worth committing)
 graphify-out/cache/
+# graphify intermediate/machine-local files - deleted by Step 9 cleanup or per-machine, not build output
+graphify-out/.graphify_python
+graphify-out/.graphify_analysis.json
