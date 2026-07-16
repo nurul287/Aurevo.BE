@@ -1,6 +1,14 @@
 -- RAG knowledge base + chat persistence.
 -- All access goes through the BE's own service connection (no Supabase SDK on
 -- the frontend, same convention as meta_capi_sent) — RLS enabled, no policies.
+--
+-- Rollout note: this migration was silently skipped from reaching production
+-- twice by a CI bug — dorny/paths-filter's default push-event diff for a
+-- merge commit compared the live dev/main branch tips instead of the push
+-- event's fixed before/after SHAs, and raced merge-back.yml's fast-forward of
+-- dev to main, so the migrate job saw "0 changed files" and never ran. Fixed
+-- in .github/workflows/ci.yml by pinning base/ref to github.event.before /
+-- github.sha. See docs/09-ai-chatbot-rag.md's Rollout Checklist.
 
 -- Supabase installs extensions into the `extensions` schema, not `public` —
 -- an unqualified `vector` type reference fails with "type vector does not
