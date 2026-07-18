@@ -418,7 +418,7 @@ export async function cancelOrder(
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Puts every line item's units back into stock (atomic increments). */
-async function restoreOrderStock(tx: DbTransaction, orderId: string) {
+export async function restoreOrderStock(tx: DbTransaction, orderId: string) {
   const items = await tx
     .select({ variantId: orderItems.variantId, quantity: orderItems.quantity })
     .from(orderItems)

@@ -6,6 +6,8 @@ import cartRoutes from "../app/modules/cart/cart.routes";
 import categoryRoutes from "../app/modules/categories/categories.routes";
 import chatRoutes from "../app/modules/chat/chat.routes";
 import chatInternalRoutes from "../app/modules/chat/chat.internal.routes";
+import courierRoutes from "../app/modules/courier/courier.routes";
+import courierInternalRoutes from "../app/modules/courier/courier.internal.routes";
 import emailTestRoutes from "../app/modules/internal/email-test.routes";
 import imageRoutes from "../app/modules/images/images.routes";
 import imageAdminRoutes from "../app/modules/images/images-admin.routes";
@@ -31,6 +33,8 @@ router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
 router.use("/chat", chatRoutes);
 router.use("/internal/chat", chatInternalRoutes);
+router.use("/courier", courierRoutes);
+router.use("/internal/courier", courierInternalRoutes);
 router.use("/internal/email", emailTestRoutes);
 
 export default router;

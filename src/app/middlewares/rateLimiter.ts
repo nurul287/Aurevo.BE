@@ -55,3 +55,12 @@ export const strictLimiter = rateLimit({
   max: 5,
   message: rateLimitResponse("RATE_LIMIT", "Rate limit exceeded"),
 });
+
+// Public, unauthenticated tracking-code lookup — separate from publicLimiter
+// so someone probing tracking codes can't also eat into browsing traffic's budget.
+export const trackingLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 60 * 1000,
+  max: 30,
+  message: rateLimitResponse("RATE_LIMIT", "Too many tracking requests, please slow down"),
+});
