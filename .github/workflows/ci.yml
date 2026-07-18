@@ -86,6 +86,7 @@ jobs:
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
           # Not a real credential — a shared secret CI can hardcode safely, same as the JWT values above.
           INTERNAL_TASK_TOKEN: ci-test-internal-task-token
+          COURIER_WEBHOOK_TOKEN: ci-test-courier-webhook-token
           FRONTEND_URL: http://localhost:5173
           NODE_ENV: test
 
