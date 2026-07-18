@@ -40,8 +40,19 @@ import type {
   UpdateFulfillmentInput,
 } from "./orders.schema";
 
-function generateOrderNumber(): string {
-  return `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+/**
+ * `ORD-` + a 12-digit zero-padded sequential number (16 chars total, fixed
+ * width) — order_number_seq (migration 042) guarantees uniqueness under
+ * concurrency without a random suffix. Fixed width keeps the invoice PDF's
+ * layout predictable regardless of order volume.
+ */
+async function generateOrderNumber(
+  tx: Pick<typeof db, "execute">,
+): Promise<string> {
+  const [row] = await tx.execute<{ nextval: string }>(
+    sql`select nextval('order_number_seq') as nextval`,
+  );
+  return `ORD-${row!.nextval.padStart(12, "0")}`;
 }
 
 /** Mirrors the adminRoles list in middlewares/auth.ts requireAdmin — keep in sync. */
@@ -195,10 +206,11 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
     : null;
 
   return db.transaction(async (tx) => {
+    const orderNumber = await generateOrderNumber(tx);
     const [order] = await tx
       .insert(orders)
       .values({
-        orderNumber: generateOrderNumber(),
+        orderNumber,
         userId: userId ?? null,
         email: input.email,
         phone: input.phone,
