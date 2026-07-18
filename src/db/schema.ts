@@ -1,4 +1,4 @@
-import { pgTable, index, foreignKey, unique, pgPolicy, check, uuid, integer, text, boolean, timestamp, numeric, uniqueIndex, jsonb, date, pgEnum, vector } from "drizzle-orm/pg-core"
+import { pgTable, index, foreignKey, unique, pgPolicy, check, uuid, integer, bigint, text, boolean, timestamp, numeric, uniqueIndex, jsonb, date, pgEnum, vector } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const addressType = pgEnum("address_type", ['billing', 'shipping'])
@@ -429,7 +429,12 @@ export const orders = pgTable("orders", {
 	shippingEmail: text("shipping_email"),
 	shippingDistrict: text("shipping_district"),
 	shippingUpazila: text("shipping_upazila"),
+	courierProvider: text("courier_provider"),
+	courierConsignmentId: bigint("courier_consignment_id", { mode: "number" }),
+	courierStatus: text("courier_status"),
+	courierStatusUpdatedAt: timestamp("courier_status_updated_at", { withTimezone: true, mode: 'string' }),
 }, (table) => [
+	uniqueIndex("idx_orders_courier_consignment").using("btree", table.courierConsignmentId.asc().nullsLast()).where(sql`(courier_consignment_id IS NOT NULL)`),
 	index("idx_orders_created").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
 	index("idx_orders_guest_token").using("btree", table.guestToken.asc().nullsLast().op("text_ops")),
 	index("idx_orders_number").using("btree", table.orderNumber.asc().nullsLast().op("text_ops")),
@@ -533,6 +538,24 @@ export const metaCapiSent = pgTable("meta_capi_sent", {
 			columns: [table.orderId],
 			foreignColumns: [orders.id],
 			name: "meta_capi_sent_order_id_fkey"
+		}).onDelete("cascade"),
+]);
+
+export const courierTrackingEvents = pgTable("courier_tracking_events", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	orderId: uuid("order_id").notNull(),
+	provider: text().default('steadfast').notNull(),
+	status: text(),
+	message: text(),
+	raw: jsonb().default({}).notNull(),
+	eventAt: timestamp("event_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_courier_events_order").using("btree", table.orderId.asc().nullsLast().op("uuid_ops"), table.eventAt.asc().nullsLast().op("timestamptz_ops")),
+	foreignKey({
+			columns: [table.orderId],
+			foreignColumns: [orders.id],
+			name: "courier_tracking_events_order_id_fkey"
 		}).onDelete("cascade"),
 ]);
 
