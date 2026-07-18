@@ -8,7 +8,7 @@ The AI shopping assistant was rebuilt from a bare Anthropic tool-use bot (no ret
 - **Policy / FAQ** — shipping, returns, sizing, payment, general questions
 - **Order status** — for logged-in customers only, scoped to their own orders
 
-**Status:** implemented and manually verified (product search, policy Q&A, auth-scoped orders, prompt-injection resistance, retention cleanup). Not yet deployed to production — see [Rollout checklist](#rollout-checklist).
+**Status:** implemented, deployed, and verified live in production (product search, policy Q&A, auth-scoped orders, prompt-injection resistance, retention cleanup). Two rollout items remain — see [Rollout checklist](#rollout-checklist).
 
 ---
 
@@ -129,19 +129,22 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 
 ## Rollout Checklist
 
-Not yet done — needed before this goes live in production:
-
-- [ ] Set `VOYAGE_API_KEY` and `INTERNAL_TASK_TOKEN` in Railway's production env vars
-- [ ] Configure a daily Railway cron trigger for `POST /internal/chat/cleanup` (with the token header)
-- [ ] Run `pnpm ingest:knowledge` against production once, for the initial backfill — see the [Production ingestion runbook](#production-ingestion-runbook) above
-- [ ] Confirm Voyage AI's production rate limits/quota are sufficient for expected traffic
-- [x] ~~Migration `039` reaches production automatically on the next migration-touching merge to `main`~~ — was silently skipped twice by a CI bug (`dorny/paths-filter`'s default push-event diff fell back to comparing the live `dev`/`main` branch tips instead of the push event's fixed before/after SHAs, and lost a race against `merge-back.yml` fast-forwarding `dev` to `main` within seconds of the same push — see `.github/workflows/ci.yml`'s `Check for migration file changes` step). Fixed by pinning `base`/`ref` to `github.event.before`/`github.sha`. As of this fix, migration `039` still has **not** reached production — it needs one more migration-touching push to `main` to trigger the now-fixed `migrate` job (or a manual `supabase db push` against the linked production project).
+- [x] Set `VOYAGE_API_KEY` and `INTERNAL_TASK_TOKEN` in Railway's production env vars — confirmed present
+- [x] Migration `039` (RAG knowledge base: `kb_chunks`/`conversations`/`messages`) applied to production — was silently skipped twice by a CI bug (`dorny/paths-filter`'s default push-event diff fell back to comparing the live `dev`/`main` branch tips instead of the push event's fixed before/after SHAs, and lost a race against `merge-back.yml` fast-forwarding `dev` to `main` within seconds of the same push). Fixed by pinning `base`/`ref` to `github.event.before`/`github.sha` in `.github/workflows/ci.yml`, then landed via a follow-up migration-touching push.
+- [x] Migration `040` (`guest_sessions` RLS) applied to production
+- [x] Run `pnpm ingest:knowledge` against production, for the initial backfill — done for both policy/FAQ docs and the full product catalog; see the [Production ingestion runbook](#production-ingestion-runbook) above
+- [ ] Confirm Voyage AI's production rate limits/quota are sufficient for expected traffic — **not yet done**: the production key hit the same free-tier 3 RPM/10K TPM limit during the initial backfill (no payment method added yet), same as the local dev key
+- [ ] Configure a daily Railway cron trigger for `POST /internal/chat/cleanup` (with the token header) — **not yet done**
 
 ## Known Limitations / Backlog
 
 - No full CDC/delta indexing for the knowledge base — parked until catalog size or write volume demands it (see `01-requirements.md` Backlog)
 - No self-service "clear my chat history" action for logged-in users — only the automatic 90-day window applies today
 - Fixed the codebase's complete absence of `unhandledRejection`/`uncaughtException` handlers while working on this (`src/server.ts`) — unrelated to RAG specifically, but discovered while hardening the new async surfaces this feature introduces (Voyage/Anthropic calls)
+- **No re-ranking or hybrid search** — `retrieve()` does plain cosine-distance vector search only (`ORDER BY distance LIMIT topK`); no BM25/full-text fusion, no cross-encoder reranker pass. Would improve precision at the catalog's current small `kb_chunks` size only marginally; worth revisiting if retrieval quality complaints show up as the knowledge base grows.
+- **No evaluation harness** — no golden-answer test set, no precision/recall/hit-rate measurement anywhere. Retrieval quality is currently verified manually (ad hoc chat prompts), not tracked over time or regression-tested when ingestion content changes.
+- **No fine-tuning** — uses off-the-shelf Claude + Voyage-3 via API calls; not planned unless a specific quality gap shows up that prompt/retrieval tuning can't close.
+- **No RAG-specific monitoring dashboard** — only general-purpose observability exists (pino logs, optional Sentry, `/api/health`). Nothing tracks retrieval latency, hit-rate, or answer quality specifically for the chatbot.
 
 ---
 

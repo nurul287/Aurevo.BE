@@ -79,7 +79,9 @@ describe("POST /orders", () => {
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.orderNumber).toMatch(/^ORD-/);
+    // ORD- + 12-digit zero-padded sequential number (16 chars, fixed width —
+    // keeps the invoice PDF's layout predictable regardless of order volume).
+    expect(res.body.data.orderNumber).toMatch(/^ORD-\d{12}$/);
     expect(res.body.data.userId).toBe(MOCK_USER.id);
     expect(res.body.data.items).toHaveLength(1);
     expect(res.body.data.items[0].quantity).toBe(2);
@@ -93,6 +95,26 @@ describe("POST /orders", () => {
     // A sale is recorded solely as a quantity decrement — reserving on top of
     // it would double-count the sold units in availability calculations.
     expect(inv!.reservedQuantity).toBe(0);
+  });
+
+  it("assigns strictly increasing order numbers under sequential orders", async () => {
+    const product = await seedProduct();
+    const variant = await seedVariant(product.id, 10);
+    const body = {
+      email: "user@example.com",
+      paymentMethod: "cash",
+      shippingAddress: TEST_ADDRESS,
+      items: [{ variantId: variant.id, quantity: 1 }],
+    };
+
+    const first = await request(app).post("/").set("Authorization", userToken).send(body);
+    const second = await request(app).post("/").set("Authorization", userToken).send(body);
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const firstNum = BigInt(first.body.data.orderNumber.slice(4));
+    const secondNum = BigInt(second.body.data.orderNumber.slice(4));
+    expect(secondNum).toBeGreaterThan(firstNum);
   });
 
   it("creates a guest order (no auth)", async () => {
@@ -204,6 +226,60 @@ describe("GET /orders/by-number/:orderNumber", () => {
 
   it("returns 404 for unknown order number", async () => {
     const res = await request(app).get("/by-number/ORD-NOTEXIST");
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─── GET /by-number/:orderNumber/invoice ──────────────────────────────────────
+
+describe("GET /orders/by-number/:orderNumber/invoice", () => {
+  it("returns a PDF for a public order-number lookup (no auth, no token)", async () => {
+    await seedOrder({ orderNumber: "ORD-INV-PUB" });
+    const res = await request(app).get("/by-number/ORD-INV-PUB/invoice").buffer();
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("application/pdf");
+    expect(res.headers["content-disposition"]).toContain("attachment");
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body.subarray(0, 5).toString()).toBe("%PDF-");
+  });
+
+  it("returns a PDF when the correct guest token is supplied", async () => {
+    await seedOrder({
+      orderNumber: "ORD-INV-GUEST",
+      guestToken: "good-token",
+      guestTokenExpires: new Date(Date.now() + 60_000).toISOString(),
+    });
+    const res = await request(app)
+      .get("/by-number/ORD-INV-GUEST/invoice?guestToken=good-token")
+      .buffer();
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("application/pdf");
+  });
+
+  it("returns 403 when a wrong guest token is supplied for a token-protected order", async () => {
+    await seedOrder({
+      orderNumber: "ORD-INV-BADTOK",
+      guestToken: "good-token",
+      guestTokenExpires: new Date(Date.now() + 60_000).toISOString(),
+    });
+    const res = await request(app).get(
+      "/by-number/ORD-INV-BADTOK/invoice?guestToken=wrong-token",
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("lets an admin fetch any order's invoice", async () => {
+    await seedOrder({ orderNumber: "ORD-INV-ADMIN", userId: MOCK_USER.id });
+    const res = await request(app)
+      .get("/by-number/ORD-INV-ADMIN/invoice")
+      .set("Authorization", adminToken)
+      .buffer();
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("application/pdf");
+  });
+
+  it("returns 404 for an unknown order number", async () => {
+    const res = await request(app).get("/by-number/ORD-INV-NOPE/invoice");
     expect(res.status).toBe(404);
   });
 });

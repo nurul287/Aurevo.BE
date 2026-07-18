@@ -54,6 +54,7 @@ X-Guest-Session: <uuid>
 | `publicLimiter` | 100 req / 15 min | Public GET endpoints |
 | `authLimiter` | 20 req / 15 min | Login/register/password reset — brute-force protection |
 | `cartLimiter` | 60 req / min | Cart writes (add item) — routine shopper actions, not brute-force targets |
+| `trackingLimiter` | 30 req / min | Public parcel tracking lookup (`GET /courier/track/:trackingCode`) |
 | `strictLimiter` | 5 req / min | Sensitive write operations |
 | `uploadLimiter` | 20 req / min | File upload endpoints |
 | `chatLimiter` | 10 req / min | AI chat (expensive) |
@@ -178,6 +179,7 @@ X-Guest-Session: <uuid>
 | GET | `/` | Auth | List orders (users see own; admins see all) |
 | GET | `/stats` | Admin | Aggregate counts by status + total revenue |
 | GET | `/by-number/:orderNumber` | Optional | Lookup by order number (guest confirmation page) |
+| GET | `/by-number/:orderNumber/invoice` | Optional | Download invoice PDF (`application/pdf` attachment) |
 | POST | `/claim` | Auth | Claim guest orders on login (match by session/email/phone) |
 | GET | `/:id` | Optional | Get order detail (auth user/admin or guestToken param) |
 | PATCH | `/:id/cancel` | Auth | Cancel order |
@@ -186,17 +188,52 @@ X-Guest-Session: <uuid>
 | PATCH | `/:id/tracking` | Admin | Set tracking number |
 | PATCH | `/:id/fulfillment` | Admin | Update fulfillment status |
 
-**Order creation:** Validates all variants exist and have sufficient stock. Runs in a single transaction: inserts order + line items (with `productName`, `variantName`, `sku`, `unitPrice`, `totalPrice`) + decrements `stock` + increments `reserved_stock` on each variant. Price resolution: `variant.price ?? product.basePrice`. Accepts optional `shippingAmount`. `shippingAddress` is BD-shaped: `{ name, phone, address, district, upazila }`.
+**Order creation:** Validates all variants exist and have sufficient stock. Runs in a single transaction: inserts order + line items (with `productName`, `variantName`, `sku`, `unitPrice`, `totalPrice`) + atomically decrements inventory (`quantity - reserved_quantity >= N` guard so concurrent checkouts cannot oversell). Assigns a sequential order number via `order_number_seq` (`ORD-` + 12 zero-padded digits). Price resolution: `variant.price ?? product.basePrice`. Accepts optional `shippingAmount`. `shippingAddress` is BD-shaped: `{ name, phone, address, district, upazila }`. On success the controller fire-and-forgets `sendOrderConfirmationEmail` (Resend + PDF invoice attachment) — email failure never fails the order response.
+
+**Invoice PDF:** `GET /by-number/:orderNumber/invoice` uses the same guest-token / owner / admin access rules as order lookup. Generated fresh with `pdfkit` on every request (never stored). Response headers: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="invoice-{orderNumber}.pdf"`.
 
 **Stats endpoint:** `GET /stats` must be registered before `/:id` in the router to avoid the UUID validator matching the literal string "stats".
 
-**Guest access:** `GET /by-number/:orderNumber` and `GET /:id` accept `?guestToken=<token>` as an alternative to a Bearer JWT. Tokens expire after 30 days.
+**Guest access:** `GET /by-number/:orderNumber`, `GET /by-number/:orderNumber/invoice`, and `GET /:id` accept `?guestToken=<token>` as an alternative to a Bearer JWT. Tokens expire after 30 days.
 
 **Claim:** On login, `POST /claim` with `{ sessionId?, phone? }` assigns all matching guest orders (null `userId`) to the authenticated user via session ID, email, and phone matching.
 
-**Cancel:** User can cancel own pending order. Admin can cancel any non-delivered order. Cancellation restores stock in a transaction.
+**Cancel:** User can cancel own pending order. Admin can cancel any non-delivered order. Cancellation restores stock in a transaction (same helper as courier-driven cancel).
 
 **Search (GET /):** Supports `?search=` — matches order number, shipping name, phone, and email via `ilike`.
+
+---
+
+### Courier — `/api/courier`
+
+Steadfast Courier integration (Bangladesh). No-op / refuses booking when `COURIER_API_KEY` / `COURIER_SECRET_KEY` are unset. Thin client: `src/lib/steadfast.ts`.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/orders/:id/ship` | Admin | Book a Steadfast consignment (explicit — commits real money; refuses double-book / terminal orders) |
+| POST | `/orders/:id/refresh` | Admin | Re-fetch delivery status from Steadfast for one order |
+| GET | `/balance` | Admin | Current Steadfast account balance |
+| GET | `/track/:trackingCode` | Public | Parcel status + event timeline — **no recipient PII** (`trackingLimiter`) |
+| POST | `/webhook` | Bearer `COURIER_WEBHOOK_TOKEN` | Steadfast `delivery_status` / `tracking_update` webhook |
+
+**Ship:** Maps order shipping fields → Steadfast `create_order`. Sets `courier_provider`, `courier_consignment_id`, `tracking_number`, `courier_status`, advances order `status` to `shipped`, appends a timeline row. COD amount = full total when `payment_method === cash` and not yet paid; otherwise `0`.
+
+**Webhook:** Timing-safe Bearer compare; fail-closed if token unset. Resolves order by `invoice` (= `order_number`) + matching `consignment_id`. Maps courier status → order/fulfillment/payment effects (delivered → paid for COD; cancelled → stock restore via `restoreOrderStock`). Exact-replay dedupe on `(order_id, event_at, status, message)`. Unknown invoices ack `200` and are ignored (no mutation).
+
+**Public track response shape:** `{ trackingCode, provider, courierStatus, orderStatus, estimatedDeliveryDate, events: [{ status, message, eventAt }] }` (FE converts keys to snake_case).
+
+---
+
+### Internal — `/api/internal`
+
+Machine-to-machine only. Header: `x-internal-task-token: <INTERNAL_TASK_TOKEN>` (no JWT).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/chat/cleanup` | Delete expired chat conversations (90d users / 48h guests) |
+| POST | `/courier/poll` | Reconciliation poll for in-flight Steadfast shipments (missed webhooks) |
+
+Meant to be triggered by Railway crons.
 
 ---
 
@@ -269,12 +306,15 @@ data: {"text":"I found some great options for you!"}
 data: {"text":" Here are men's sneakers..."}
 data: [DONE]
 ```
+Real Anthropic token streaming (`stream: true`), not simulated — see `docs/09-ai-chatbot-rag.md`.
 
-**Tool use (agentic loop):**
+**Tool use (RAG, not the original tool-use-only bot):**
 The assistant has access to 3 tools called automatically when relevant:
-- `search_products` — searches by name, gender, price range
-- `get_product_details` — full product + variants by slug
-- `get_categories` — lists all active categories
+- `search_knowledge` — semantic retrieval over `kb_chunks` (pgvector), optional `sourceType` filter (`product`/`policy`/`faq`)
+- `get_product_details` — live stock/price + variants by slug
+- `get_my_orders` — **auth-gated only**, added to the tool list only on an authenticated request and hard-scoped server-side to `req.user.id`
+
+See `docs/09-ai-chatbot-rag.md` for the full architecture (ingestion pipeline, data model, retention, guardrails).
 
 Rate limited: 10 requests/minute per IP.
 

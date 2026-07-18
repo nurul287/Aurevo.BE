@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as OrderService from "./orders.service";
 import { sendOrderConfirmationEmail } from "../../../lib/email";
+import { buildInvoicePdfBuffer } from "../../../lib/invoice-pdf";
 import { logger } from "../../../lib/logger";
 import type {
   CreateOrderInput,
@@ -77,6 +78,33 @@ export const getOrderByNumber = async (
       guestToken,
     );
     res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getOrderInvoicePdf = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const guestToken = req.query.guestToken as string | undefined;
+    // Same auth semantics as getOrderByNumber: authenticated owner/admin, or a
+    // valid guest token, or the order number itself as the public access key.
+    const order = await OrderService.getOrderByNumber(
+      req.params.orderNumber!,
+      req.user,
+      guestToken,
+    );
+    const buffer = await buildInvoicePdfBuffer(order);
+    res.setHeader("Content-Type", "application/pdf");
+    // attachment so the FE's "Download invoice" link triggers a save dialog.
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="invoice-${order.orderNumber}.pdf"`,
+    );
+    res.send(buffer);
   } catch (err) {
     next(err);
   }

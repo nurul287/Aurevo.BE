@@ -63,11 +63,11 @@ Aurevo.BE/src/
 ## Local-Only Rule
 
 **NEVER touch production DB.** All changes go to local Supabase Docker only.
-- Local DB: `postgresql://postgres:postgres@127.0.0.1:55322/postgres`
-- Local API: `http://127.0.0.1:55321`
+- Local DB: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+- Local API: `http://127.0.0.1:54321`
 - Production URL (`SYNC_PROD_DATABASE_URL` in Aurevo.UI) is read-only reference, never written to.
 
-To re-introspect: `$env:DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:55322/postgres"; npx drizzle-kit introspect`
+To re-introspect: `$env:DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"; npx drizzle-kit introspect`
 
 ---
 
@@ -199,6 +199,8 @@ Role is read from `app_metadata.role` in the Supabase JWT. Admin role: `"admin"`
 |---------|--------|-----|-----|
 | `publicLimiter` | 15 min | 100 | Public GET endpoints |
 | `authLimiter` | 15 min | 20 | Auth endpoints |
+| `cartLimiter` | 1 min | 60 | Cart writes (add item) |
+| `trackingLimiter` | 1 min | 30 | Public parcel tracking lookup |
 | `chatLimiter` | 1 min | 10 | AI chat (expensive) |
 | `uploadLimiter` | 1 min | 20 | File upload endpoints |
 | `strictLimiter` | 1 min | 5 | Sensitive actions |
@@ -210,34 +212,54 @@ Role is read from `app_metadata.role` in the Supabase JWT. Admin role: `"admin"`
 - Plural nouns: `/api/products`, `/api/categories`
 - Lowercase hyphenated: `/api/product-images`
 - Nested: `/api/products/:id/variants`, `/api/products/:id/images`
-- Actions: `/api/orders/:id/cancel`, `/api/cart/migrate`
+- Actions: `/api/orders/:id/cancel`, `/api/cart/migrate`, `/api/courier/orders/:id/ship`
 
 Standard GET list query params: `page`, `limit`, `search`, `sortBy`, `sortOrder`, plus domain-specific filters.
 
 ---
 
-## Drizzle Schema (19 tables, 9 enums)
+## Drizzle Schema (23 tables, 11 enums)
 
-Key tables: `categories`, `brands`, `products`, `product_variants` (with `stock`/`reserved_stock`), `product_images`, `cart_items` (user_id or session_id), `orders`, `order_items`, `inventory`, `inventory_movements`, `profiles`, `users`, `user_addresses`, `guest_sessions`.
+Key tables: `categories`, `brands`, `products`, `product_variants` (with `stock`/`reserved_stock`), `product_images`, `cart_items` (user_id or session_id), `orders` (sequential `order_number`, courier fields), `order_items`, `courier_tracking_events`, `inventory`, `inventory_movements`, `profiles`, `users`, `user_addresses`, `guest_sessions`, `meta_capi_sent`, `kb_chunks`, `conversations`, `messages`.
 
-Enums: `product_gender`, `user_gender`, `order_status`, `payment_status`, `payment_method`, `fulfillment_status`, `movement_type`, `movement_reason`, `address_type`.
+Enums: `product_gender`, `user_gender`, `order_status`, `payment_status`, `payment_method`, `fulfillment_status`, `movement_type`, `movement_reason`, `address_type`, `kb_source_type`, `chat_role`.
 
 ---
 
 ## Module Build Order
 
-1. Categories → 2. Brands → 3. Products → 4. Variants → 5. Images → 6. Cart → 7. Orders → 8. Inventory → 9. Auth/Profile → 10. AI Chat
+1. Categories → 2. Brands → 3. Products → 4. Variants → 5. Images → 6. Cart → 7. Orders → 8. Inventory → 9. Auth/Profile → 10. AI Chat (RAG) → 11. Courier (Steadfast) → Admin, Internal, Knowledge
 
 ---
 
-## AI Chat Module (Phase 10)
+## Order Invoice PDF + Confirmation Email
 
-Claude Tool Use (not RAG). SSE streaming at `POST /api/chat`.
-Tools: `search_products`, `get_product_details`, `add_to_cart`, `view_cart`, `create_order`, `get_order_status`.
-Rate limit: `chatLimiter`. Auth: `optionalAuth`. Model: `claude-haiku-4-5-20251001`.
-
-SSE events: `{ type: "text" | "tool_result" | "done" | "error", data: ... }`
+- `src/lib/invoice-pdf.ts` — pdfkit buffer builder (mirrors `xlsx-export.ts` shape); Bengali font + SVG logo under `assets/`.
+- `src/lib/email.ts` — Resend, no-op without `RESEND_API_KEY`; attaches invoice; PDF failure does not block send.
+- Endpoint: `GET /api/orders/by-number/:orderNumber/invoice` (guest token / owner / admin).
+- Order numbers: `ORD-` + 12-digit `order_number_seq` (fixed width for PDF layout).
 
 ---
 
-*Last updated: Phase 0 — Foundation complete*
+## Courier (Steadfast)
+
+- Module: `src/app/modules/courier/` · client: `src/lib/steadfast.ts`.
+- Admin ship / refresh / balance; public track; Bearer webhook; internal poll cron.
+- Optional env: `COURIER_API_KEY`, `COURIER_SECRET_KEY`, `COURIER_WEBHOOK_TOKEN`.
+- Booking is never automatic — commits real money; no Steadfast cancel API.
+
+---
+
+## AI Chat Module (Phase 10, rebuilt as RAG)
+
+Full retrieval-augmented generation pipeline, not a plain tool-use bot — see `docs/09-ai-chatbot-rag.md` for the complete architecture. Real Anthropic token streaming (`stream: true`) at `POST /api/chat`.
+Tools: `search_knowledge` (semantic retrieval over `kb_chunks`/pgvector, optional `sourceType` filter), `get_product_details` (live stock/price by slug), `get_my_orders` (auth-gated only, hard-scoped server-side to `req.user.id`).
+Rate limit: `chatLimiter`. Auth: `optionalAuth` (order lookup requires a real session). Model: `claude-haiku-4-5-20251001`.
+
+Ingestion: `src/app/modules/knowledge/knowledge.service.ts` embeds products (auto, fire-and-forget on create/update) and `content/policies/*.md` (manual backfill via `pnpm ingest:knowledge`) into `kb_chunks` via Voyage AI.
+
+SSE events: `{"text": "..."}` chunks, then `[DONE]`.
+
+---
+
+*Last updated: Invoice PDF + Steadfast courier tracking (migrations 041–042); RAG chatbot (039)*

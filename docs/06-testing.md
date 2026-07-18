@@ -75,12 +75,15 @@ Creates a valid JWT signed with the local `SUPABASE_JWT_SECRET` — identical to
 | Variants | 23 | Nested routing, cross-product 404 protection, SKU conflict on create + update, stock adjust, 422 negative stock |
 | Images | 21 | Real Supabase Storage upload, auto-primary logic, set-primary (clears old), delete (removes from Storage), multer file type + size limits |
 | Cart | 22 | Auth + guest dual paths, upsert on re-add, 422 insufficient stock, 422 inactive variant, cart migration with quantity merge |
-| Orders | 27 | Stock decremented on create, guest order, 422 insufficient stock, user isolation (can't see others' orders), cancel + stock restore, 409 already-cancelled, admin cancel any, admin status/payment/tracking/fulfillment patches |
+| Orders | 42 | Sequential order numbers, stock decremented on create, guest order, invoice PDF download (guest token / owner / admin), 422 insufficient stock, user isolation, cancel + stock restore, 409 already-cancelled, admin cancel any, admin status/payment/tracking/fulfillment patches |
 | Inventory | 19 | Upsert, adjust (transaction integrity), low-stock filter, 422 negative adjustment, movement audit log entries |
 | Auth/Profile | 21 | Profile upsert (creates on first call), BD address create (district/upazila), default address clearing, cross-user address 404, gender enum validation |
 | AI Chat | 8 | SSE headers, stream contains [DONE], 400 empty message, 400 too long, invalid sessionId, optional sessionId — service mocked |
+| Courier | 29 | Admin ship (COD vs prepaid), refuse double-book / terminal, public track (no PII), webhook auth + status mapping + replay dedupe + stock restore on cancel |
+| Courier internal | 5 | Poll updates in-flight consignments; auth gate on `x-internal-task-token` |
+| Email / Invoice (unit) | 15 | Resend no-op when unset, PDF attachment path, Bengali font/invoice helpers |
 
-**Total: 216 tests**
+**Total: ~240+ tests** (module integration + lib unit tests; exact count drifts as suites grow — run `pnpm test` for the live number)
 
 ---
 
@@ -133,6 +136,7 @@ When cleaning the database between tests, deletion order must respect FK constra
 
 ```ts
 export async function cleanDb() {
+  await db.delete(courierTrackingEvents); // depends on orders
   await db.delete(orderItems);       // depends on orders + variants
   await db.delete(orders);           // depends on profiles
   await db.delete(cartItems);        // depends on profiles + variants

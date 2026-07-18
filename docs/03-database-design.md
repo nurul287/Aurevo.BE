@@ -3,8 +3,9 @@
 ## Overview
 
 - **Database:** PostgreSQL 15 (via Supabase)
-- **Tables:** 19
-- **Enums:** 9
+- **Tables:** 23 (adds `kb_chunks`, `conversations`, `messages` — migration 039 RAG; `courier_tracking_events` — migration 041 Steadfast)
+- **Enums:** 11 (adds `kb_source_type`, `chat_role` — migration 039)
+- **Sequences:** `order_number_seq` (migration 042 — sequential fixed-width order numbers)
 - **Schema managed by:** Supabase migrations (source of truth)
 - **ORM mapping:** Generated via `drizzle-kit introspect`
 
@@ -23,6 +24,8 @@
 | `payment_status` | `pending`, `paid`, `failed`, `refunded`, `partially_refunded` |
 | `product_gender` | `men`, `women`, `unisex` |
 | `user_gender` | `male`, `female`, `other` |
+| `kb_source_type` | `product`, `policy`, `faq` |
+| `chat_role` | `user`, `assistant` |
 
 ---
 
@@ -30,7 +33,7 @@
 
 ### Interactive Lucidchart Diagram
 
-Full ER diagram with all 17 active tables, FK cardinality notation (crow's foot), and color-coded domain groups:
+Full ER diagram with FK cardinality notation (crow's foot) and color-coded domain groups. Note: the diagram predates the RAG chatbot tables (`kb_chunks`/`conversations`/`messages`, migration 039) and courier tracking (`courier_tracking_events`, migration 041) and may be stale — the table count above (23) is the current source of truth, not this diagram:
 
 **View:** https://lucid.app/lucidchart/e366cdea-a4f9-42b1-aa79-36553c3eb081/view
 
@@ -237,7 +240,7 @@ Dual-owner design — items belong to either a logged-in user OR a guest session
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid PK | |
-| order_number | text | unique, format: `ORD-{timestamp}-{random}` |
+| order_number | text | unique, fixed-width `ORD-` + 12-digit zero-padded value from `order_number_seq` (migration 042; previously `ORD-{timestamp}-{random}`) |
 | user_id | uuid | FK → profiles.id (nullable — guests allowed) |
 | email, phone | text | contact on the order |
 | guest_token | text | for guest order lookup (with expiry) |
@@ -251,9 +254,31 @@ Dual-owner design — items belong to either a logged-in user OR a guest session
 | shipping_district, shipping_upazila | text | denormalized BD locality fields |
 | notes | text | customer notes |
 | internal_notes | text | admin notes (not shown to customer) |
-| tracking_number | text | |
+| tracking_number | text | Steadfast tracking code once booked (also settable manually via admin PATCH) |
 | estimated_delivery_date | date | |
+| courier_provider | text | e.g. `steadfast` once booked (migration 041) |
+| courier_consignment_id | bigint | Steadfast consignment id; unique when set |
+| courier_status | text | latest raw courier delivery status |
+| courier_status_updated_at | timestamptz | |
 | session_id | text | guest cart reference |
+
+---
+
+### `courier_tracking_events`
+Parcel tracking timeline — one row per status/tracking update from the Steadfast webhook or the reconciliation poll (migration 041).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| order_id | uuid | FK → orders (cascade) |
+| provider | text | default `steadfast` |
+| status | text | nullable (tracking-only updates may omit status) |
+| message | text | optional `tracking_message` from courier |
+| raw | jsonb | full webhook/poll payload for audit |
+| event_at | timestamptz | courier-reported timestamp (dedupe key with status/message) |
+| created_at | timestamptz | |
+
+**RLS:** enabled, no policies — backend service role only (same pattern as `kb_chunks` / `meta_capi_sent`).
 
 ---
 
@@ -327,6 +352,10 @@ Immutable audit log. Every stock change writes a row here.
 | `product_reviews` | Customer reviews with rating (1-5), verified purchase check, approval flow |
 | `wishlist_items` | User's saved products/variants |
 | `guest_sessions` | Tracks guest session UUIDs with expiry |
+| `meta_capi_sent` | Dedupes Meta Conversions API `Purchase` events sent per order (webhook retries) |
+| `kb_chunks` | RAG knowledge base — one row per embedded chunk (`product`/`policy`/`faq`), `embedding vector(1024)` (Voyage AI). See `docs/09-ai-chatbot-rag.md` |
+| `conversations` | Chat sessions — `user_id` nullable (guests), `intent_summary`, `last_activity_at` drives retention (90d users / 48h guests) |
+| `messages` | Individual chat turns, cascade-deletes with its `conversation` |
 | `users` | Legacy table (pre-Supabase Auth migration) — not used by the BE API |
 | `addresses` | Legacy address table (pre-`user_addresses`) — not used by the BE API |
 
@@ -352,11 +381,13 @@ Key indexes on high-traffic query paths:
 
 ## Row-Level Security
 
-Every table has RLS policies. Key patterns:
+Every table has RLS enabled. Two patterns:
 
-- **Public read** — active products, categories, brands visible to all
-- **Owner read/write** — users can only see/modify their own cart, orders, profile, addresses
-- **Admin all** — `is_admin()` function grants full access to admins
-- **Guest cart** — `session_id` based access without authentication
+- **Public/owner policies** — the original commerce tables:
+  - **Public read** — active products, categories, brands visible to all
+  - **Owner read/write** — users can only see/modify their own cart, orders, profile, addresses
+  - **Admin all** — `is_admin()` function grants full access to admins
+  - **Guest cart** — `session_id` based access without authentication
+- **RLS enabled, no policies** — `meta_capi_sent`, `kb_chunks`, `conversations`, `messages`, `courier_tracking_events`: backend-only access via the service role connection, no direct client access needed. `guest_sessions` was missing RLS entirely until migration 040 closed that gap (the only table in the project that had shipped without it — see the migration's own comment for the incident).
 
-The Express BE connects via the **service role key** (bypasses RLS) and enforces access control in the application layer. The UI's direct Supabase calls go through the **anon key** and are governed by RLS.
+The Express BE connects via the **service role key** (bypasses RLS) and enforces access control in the application layer. The frontend never talks to Postgres directly.

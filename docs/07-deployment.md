@@ -53,6 +53,7 @@ ANTHROPIC_API_KEY=<your key>
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 # SENTRY_DSN=   # leave unset locally — Sentry is a no-op without it
 # RESEND_API_KEY=   # leave unset locally — order confirmation email is a no-op without it
+# COURIER_API_KEY= / COURIER_SECRET_KEY= / COURIER_WEBHOOK_TOKEN=  # leave unset — courier booking refuses with a business error
 ```
 
 ### Step 4 — Configure frontend
@@ -138,11 +139,23 @@ ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 SENTRY_DSN=https://xxx@oXXXX.ingest.de.sentry.io/XXXX
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
 EMAIL_FROM=Aurevo Fashion <orders@aurevofashion.store>
+COURIER_API_KEY=<steadfast Api-Key>
+COURIER_SECRET_KEY=<steadfast Secret-Key>
+COURIER_WEBHOOK_TOKEN=<long random string — same value configured in Steadfast portal>
+# COURIER_BASE_URL=https://portal.packzy.com/api/v1   # default; override only if Steadfast changes host
+INTERNAL_TASK_TOKEN=<long random string — Railway cron header>
+VOYAGE_API_KEY=<voyage key>
 ```
 
 `SENTRY_DSN` is optional in config validation but required in production for error tracking. Leave it unset in local/CI so nothing is sent.
 
-`RESEND_API_KEY` is optional in config validation but required in production for order confirmation emails to actually send; `aurevofashion.store` must stay DNS-verified in Resend (SPF/DKIM records live on Vercel DNS) or sends will fail.
+`RESEND_API_KEY` is optional in config validation but required in production for order confirmation emails (with invoice PDF attachment) to actually send; `aurevofashion.store` must stay DNS-verified in Resend (SPF/DKIM records live on Vercel DNS) or sends will fail.
+
+`COURIER_*` keys are optional in config validation. When unset, admin "Ship with Steadfast" returns a business error and the public tracking endpoint still works against locally stored events. In production set all three (`API_KEY`, `SECRET_KEY`, `WEBHOOK_TOKEN`) and point Steadfast's webhook URL at `https://<backend>/api/courier/webhook` with Bearer auth.
+
+**Runtime assets:** the Docker/Railway image must include `assets/fonts/` (Noto Sans Bengali TTFs) and `assets/logo/aurevo-logo-black.svg` — invoice PDF generation resolves them from `process.cwd()`, and `tsc` does not copy them into `dist/`.
+
+**Crons (Railway):** daily `POST /api/internal/chat/cleanup` and periodic `POST /api/internal/courier/poll`, both with header `x-internal-task-token: $INTERNAL_TASK_TOKEN`.
 
 Build: `pnpm build` (`tsc`). A multi-stage `Dockerfile` (Node 22 Alpine) is also available if Railway is switched to Docker builds.
 
@@ -168,6 +181,9 @@ VITE_API_URL=https://<railway-app>.railway.app
 | `ANTHROPIC_API_KEY` | real key | real key | Rate limited at account level |
 | `SENTRY_DSN` | unset | set | No-op when unset; only unexpected 500s are captured |
 | `RESEND_API_KEY` | unset | set | No-op when unset; requires `aurevofashion.store` to stay DNS-verified in Resend |
+| `COURIER_API_KEY` / `COURIER_SECRET_KEY` | unset | set | Steadfast booking/status; booking refuses when unset |
+| `COURIER_WEBHOOK_TOKEN` | unset | set | Bearer for `POST /courier/webhook`; fail-closed when unset |
+| `INTERNAL_TASK_TOKEN` | set (local) | set | Required — gates `/api/internal/*` crons |
 | `VITE_*` | local | prod | Bundled into client JS — anon key only (public by design) |
 
 **Critical rule:** `SYNC_PROD_DATABASE_URL` (if it exists in `.env.local`) must **never** be used in migrations or seeding scripts. All local DB work goes to the Docker instance only.
@@ -201,6 +217,8 @@ Squash-merges leave commits only on `main`, so `dev` drifts. This workflow check
 | Unexpected API errors (500s) | Sentry (`@sentry/node`) | Implemented — see `src/lib/sentry.ts` |
 | Structured request/app logs | pino + pino-http (JSON in prod) | Implemented — Railway log drain |
 | Deep health / uptime | `GET /api/health` (DB ping) | Implemented — Railway healthcheck |
+| Order confirmation email | Resend | Implemented — no-op without `RESEND_API_KEY` |
+| Courier status | Steadfast webhook + poll | Implemented — see `src/app/modules/courier/` |
 | Database performance | Supabase Dashboard → Query Performance | Platform |
 | AI chat costs | Anthropic Console → Usage | Platform |
 | Frontend analytics | Vercel Analytics | UI repo |

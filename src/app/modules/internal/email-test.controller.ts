@@ -43,13 +43,19 @@ export const testSendEmail = async (
 
     const orderNumber = `TEST-${Date.now()}`;
     await sendOrderConfirmationEmail({
+      id: crypto.randomUUID(),
       email: parsed.data.body.email,
       orderNumber,
+      createdAt: new Date(),
+      paymentStatus: "pending",
+      shippingPhone: "01700000000",
+      notes: null,
       subtotal: "100.00",
       shippingAmount: "0.00",
       totalAmount: "100.00",
       shippingName: "Test Send",
       shippingAddress: { address: "Test address", district: "Dhaka", upazila: "Dhamrai" },
+      guestToken: null,
       items: [
         {
           productName: "Internal test product",
