@@ -21,6 +21,7 @@ import {
   getOrders,
   getOrderById,
   getOrderByNumber,
+  getOrderInvoicePdf,
   cancelOrder,
   deleteOrder,
   updateStatus,
@@ -113,6 +114,38 @@ router.get(
   optionalAuth,
   validate(orderNumberSchema),
   getOrderByNumber,
+);
+
+/**
+ * @swagger
+ * /api/orders/by-number/{orderNumber}/invoice:
+ *   get:
+ *     summary: Download the order invoice as a PDF (guest confirmation or owner/admin)
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: orderNumber
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: guestToken
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: PDF invoice (application/pdf, attachment)
+ *         content:
+ *           application/pdf:
+ *             schema: { type: string, format: binary }
+ *       403:
+ *         description: Invalid or expired guest token
+ *       404:
+ *         description: Order not found
+ */
+router.get(
+  "/by-number/:orderNumber/invoice",
+  optionalAuth,
+  validate(orderNumberSchema),
+  getOrderInvoicePdf,
 );
 
 /**

@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { config } from "../app/config";
 import { logger } from "./logger";
+import { buildInvoicePdfBuffer } from "./invoice-pdf";
 
 /**
  * Order confirmation email. No-op unless RESEND_API_KEY is set (Railway
@@ -27,15 +28,47 @@ export type OrderLineItem = {
 };
 
 export type OrderForEmail = {
+  id: string;
   email: string | null;
   orderNumber: string;
+  // Widened for the invoice PDF (src/lib/invoice-pdf.ts) — all already present
+  // on the orders row returned by createOrder / getOrderByNumber, so no extra
+  // DB fetch and the single email call site keeps compiling unchanged.
+  createdAt: string | Date | null;
+  paymentStatus: string | null;
+  shippingPhone: string | null;
+  notes: string | null;
   subtotal: string | null;
   shippingAmount: string | null;
   totalAmount: string | null;
   shippingName: string | null;
   shippingAddress: unknown;
+  // Guest orders carry a token so the confirmation link works without login;
+  // logged-in orders have none (owner access is via their session instead).
+  guestToken: string | null;
   items: OrderLineItem[];
 };
+
+/** Public confirmation-page URL for this order — works for guest and logged-in orders alike. */
+function buildConfirmationUrl(order: OrderForEmail): string {
+  const params = new URLSearchParams({
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+  });
+  if (order.guestToken) params.set("guestToken", order.guestToken);
+  return `${config.FRONTEND_URL}/order-confirmation?${params.toString()}`;
+}
+
+/** Shared by the email HTML and the invoice PDF so the two never drift. */
+export function formatShippingAddressLine(shippingAddress: unknown): string {
+  const shipTo = shippingAddress as
+    | { address?: string; district?: string; upazila?: string }
+    | null
+    | undefined;
+  return shipTo
+    ? [shipTo.address, shipTo.upazila, shipTo.district].filter(Boolean).join(", ")
+    : "";
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -45,30 +78,11 @@ function escapeHtml(value: string): string {
 }
 
 function renderOrderConfirmationHtml(order: OrderForEmail): string {
-  const shipTo = order.shippingAddress as
-    | { address?: string; district?: string; upazila?: string }
-    | null
-    | undefined;
-  const addressLine = shipTo
-    ? [shipTo.address, shipTo.upazila, shipTo.district].filter(Boolean).join(", ")
-    : "";
+  const addressLine = formatShippingAddressLine(order.shippingAddress);
   const firstName = (order.shippingName ?? "there").split(" ")[0];
-
-  const rows = order.items
-    .map((item, i) => {
-      const label = [item.productName, item.variantName].filter(Boolean).join(" — ");
-      const zebra = i % 2 === 1 ? "background:#fafafa;" : "";
-      return `
-      <tr>
-        <td style="padding:14px 12px;${zebra}border-bottom:1px solid #ececec;font-size:14px;color:#1a1a1a;">
-          ${escapeHtml(label)}
-          ${item.sku ? `<div style="font-size:12px;color:#8a8a8a;margin-top:2px;">SKU: ${escapeHtml(item.sku)}</div>` : ""}
-        </td>
-        <td style="padding:14px 12px;${zebra}border-bottom:1px solid #ececec;font-size:14px;color:#1a1a1a;text-align:center;">${item.quantity}</td>
-        <td style="padding:14px 12px;${zebra}border-bottom:1px solid #ececec;font-size:14px;color:#1a1a1a;text-align:right;white-space:nowrap;">৳${item.totalPrice}</td>
-      </tr>`;
-    })
-    .join("");
+  const confirmationUrl = buildConfirmationUrl(order);
+  const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemWord = itemCount === 1 ? "item" : "items";
 
   return `
   <div style="background:#f4f4f4;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
@@ -84,7 +98,6 @@ function renderOrderConfirmationHtml(order: OrderForEmail): string {
       </tr>
       <tr>
         <td style="padding:32px 32px 8px;">
-          <p style="margin:0 0 4px;font-size:13px;color:#8a8a8a;text-transform:uppercase;letter-spacing:1px;">Order Confirmed</p>
           <h1 style="margin:0 0 8px;font-size:22px;color:#111111;">Thanks for your order, ${escapeHtml(firstName)}!</h1>
           <p style="margin:0;font-size:14px;color:#5a5a5a;">
             Order <strong style="color:#111111;">${escapeHtml(order.orderNumber)}</strong> is confirmed and being prepared.
@@ -92,33 +105,17 @@ function renderOrderConfirmationHtml(order: OrderForEmail): string {
         </td>
       </tr>
       <tr>
-        <td style="padding:16px 32px 0;">
-          <table role="presentation" width="100%" style="border-collapse:collapse;">
-            <thead>
-              <tr>
-                <th style="padding:10px 12px;text-align:left;font-size:12px;color:#8a8a8a;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #111111;">Item</th>
-                <th style="padding:10px 12px;text-align:center;font-size:12px;color:#8a8a8a;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #111111;">Qty</th>
-                <th style="padding:10px 12px;text-align:right;font-size:12px;color:#8a8a8a;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #111111;">Total</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:20px 32px;">
-          <table role="presentation" width="100%" style="border-collapse:collapse;">
+        <td style="padding:20px 32px 0;">
+          <table role="presentation" width="100%" style="background:#f9f9f9;border-radius:6px;border-collapse:collapse;">
             <tr>
-              <td style="padding:4px 0;font-size:14px;color:#5a5a5a;">Subtotal</td>
-              <td style="padding:4px 0;font-size:14px;color:#5a5a5a;text-align:right;">৳${order.subtotal}</td>
-            </tr>
-            <tr>
-              <td style="padding:4px 0;font-size:14px;color:#5a5a5a;">Shipping</td>
-              <td style="padding:4px 0;font-size:14px;color:#5a5a5a;text-align:right;">৳${order.shippingAmount}</td>
-            </tr>
-            <tr>
-              <td style="padding:10px 0 0;font-size:16px;color:#111111;font-weight:600;border-top:1px solid #ececec;">Total</td>
-              <td style="padding:10px 0 0;font-size:16px;color:#111111;font-weight:600;text-align:right;border-top:1px solid #ececec;">৳${order.totalAmount}</td>
+              <td style="padding:16px 20px;">
+                <p style="margin:0;font-size:14px;color:#1a1a1a;line-height:1.6;">
+                  ${itemCount} ${itemWord} · <strong style="color:#111111;">৳${order.totalAmount}</strong> total
+                </p>
+                <p style="margin:6px 0 0;font-size:13px;color:#5a5a5a;line-height:1.6;">
+                  Your detailed invoice is attached as a PDF.
+                </p>
+              </td>
             </tr>
           </table>
         </td>
@@ -134,6 +131,11 @@ function renderOrderConfirmationHtml(order: OrderForEmail): string {
               </td>
             </tr>
           </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 32px 32px;text-align:center;">
+          <a href="${confirmationUrl}" style="display:inline-block;background:#111111;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 24px;border-radius:999px;">View your order</a>
         </td>
       </tr>
       <tr>
@@ -176,11 +178,26 @@ export async function sendOrderConfirmationEmail(
     "sending order confirmation email",
   );
 
+  // Attach the invoice PDF. Degrade gracefully: if PDF generation fails, still
+  // send the email (a customer getting the confirmation minus the attachment
+  // beats getting none — they can also fetch it from the confirmation page).
+  let attachments: { filename: string; content: Buffer }[] | undefined;
+  try {
+    const pdf = await buildInvoicePdfBuffer(order);
+    attachments = [{ filename: `invoice-${order.orderNumber}.pdf`, content: pdf }];
+  } catch (err) {
+    logger.error(
+      { err, orderNumber: order.orderNumber },
+      "invoice PDF generation failed — sending confirmation email without attachment",
+    );
+  }
+
   const { data, error } = await getResend().emails.send({
     from: config.EMAIL_FROM,
     to: order.email,
     subject: `Order confirmed — ${order.orderNumber}`,
     html: renderOrderConfirmationHtml(order),
+    ...(attachments ? { attachments } : {}),
   });
 
   if (error) {
