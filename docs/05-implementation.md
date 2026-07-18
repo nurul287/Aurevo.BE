@@ -15,7 +15,9 @@ Phase 6: Cart            ← depends on products + variants + profiles
 Phase 7: Orders          ← depends on cart + variants (stock transactions)
 Phase 8: Inventory       ← depends on variants (audit log + movements)
 Phase 9: Auth/Profile    ← depends on profiles + user_addresses
-Phase 10: AI Chat        ← depends on products + categories (tool use)
+Phase 10: AI Chat        ← RAG (knowledge + chat modules)
+Phase 11: Courier        ← Steadfast consignments + tracking (depends on orders)
+Phase 12: Invoice PDF    ← pdfkit invoice + Resend attachment (orders email path)
 ```
 
 ---
@@ -91,29 +93,46 @@ Every cart query takes a `CartOwner` and applies the right WHERE condition. One 
 
 ---
 
-### Transactional Stock Reservation (Orders)
+### Transactional Stock Decrement (Orders)
 
-Order creation runs entirely in one DB transaction. If any step fails, everything rolls back:
+Order creation runs entirely in one DB transaction. Stock is decremented with an availability guard so concurrent checkouts cannot oversell (`quantity - reserved_quantity >= N`). There is no separate "reserve then decrement" step — `reserved_quantity` stays at 0 for normal sales; cancel and courier-driven cancel both restore stock via the shared `restoreOrderStock` helper.
 
 ```ts
 await db.transaction(async (tx) => {
-  // 1. Insert order
-  const [order] = await tx.insert(orders).values(orderData).returning();
-
-  // 2. Insert line items
+  const orderNumber = await generateOrderNumber(tx); // ORD- + 12-digit sequence
+  const [order] = await tx.insert(orders).values({ ...orderData, orderNumber }).returning();
   await tx.insert(orderItems).values(lineItems);
 
-  // 3. Decrement stock on every variant
   for (const item of lineItems) {
-    await tx.update(productVariants).set({
-      stock: variant.stock - item.quantity,
-      reservedStock: variant.reservedStock + item.quantity,
-    }).where(eq(productVariants.id, item.variantId));
+    const updated = await tx.execute(sql`
+      UPDATE inventory
+      SET quantity = quantity - ${item.quantity}
+      WHERE variant_id = ${item.variantId}
+        AND quantity - reserved_quantity >= ${item.quantity}
+      RETURNING *
+    `);
+    if (!updated.length) throw new BusinessRuleError("Insufficient stock");
   }
 });
 ```
 
-Cancel reverses the same quantities in a transaction.
+Cancel (user/admin) and courier `cancelled` webhooks reverse the same quantities via `restoreOrderStock`.
+
+---
+
+### Order Confirmation Email + Invoice PDF
+
+`src/lib/email.ts` mirrors Sentry's no-op-if-unconfigured pattern: sends via Resend only when `RESEND_API_KEY` is set. Triggered fire-and-forget in `orders.controller.ts` after `createOrder` — the `.catch()` must never be removed.
+
+`src/lib/invoice-pdf.ts` builds an A4 PDF with `pdfkit` (no headless browser). Bundled assets under `assets/fonts/` (Noto Sans Bengali static Regular/Bold) and `assets/logo/aurevo-logo-black.svg`. Regenerated on every email attach and every `GET /orders/by-number/:orderNumber/invoice` — never persisted. PDF generation failure degrades gracefully: the confirmation email still sends without the attachment.
+
+---
+
+### Courier Tracking (Steadfast)
+
+`src/app/modules/courier/` + thin client `src/lib/steadfast.ts`. Booking is admin-only and never automatic. Status mapping (`mapCourierStatus`) is pure and unit-tested: delivered advances order + marks COD paid; cancelled restores stock once (replay-safe); approval-pending / unknown states record timeline only.
+
+Webhook + poll share `recordCourierEvent`. Internal poll: `POST /internal/courier/poll` with `x-internal-task-token`.
 
 ---
 
@@ -159,38 +178,11 @@ The service validates that the variant actually belongs to the given product —
 
 ---
 
-### AI Chat — Agentic Tool Use Loop
+### AI Chat — RAG Pipeline (rebuilt)
 
-The chat service runs an agentic loop: it keeps calling Claude until `stop_reason === "end_turn"`, handling tool calls in between:
+The chat service was rebuilt from a bare tool-use loop with simulated streaming (a non-streaming `anthropic.messages.create` call per turn, yielding whole text blocks after the fact) into a full retrieval-augmented generation pipeline: real Anthropic token streaming (`stream: true`), semantic retrieval over `kb_chunks` (pgvector, via Voyage AI embeddings), conversation persistence (`conversations`/`messages` tables) with a sliding-window + rolling-`intent_summary` history strategy, and retention cleanup.
 
-```ts
-export async function* streamChat(message: string): AsyncGenerator<string> {
-  const messages = [{ role: "user", content: message }];
-
-  while (true) {
-    const response = await anthropic.messages.create({ tools: TOOLS, messages });
-
-    for (const block of response.content) {
-      if (block.type === "text") yield block.text;  // stream to client
-    }
-
-    if (response.stop_reason === "end_turn") break;
-
-    if (response.stop_reason === "tool_use") {
-      // Execute DB queries for each tool call
-      const results = await Promise.all(toolUseBlocks.map(executeToolCall));
-      // Feed results back to Claude
-      messages.push({ role: "assistant", content: response.content });
-      messages.push({ role: "user", content: results });
-      continue;  // loop again
-    }
-
-    break;
-  }
-}
-```
-
-The generator yields text chunks as they come. The controller writes each chunk as an SSE `data:` event.
+Full architecture, tool definitions, ingestion pipeline, and data model: see `docs/09-ai-chatbot-rag.md`.
 
 ---
 
@@ -380,8 +372,9 @@ feat: products module — 10 endpoints + 32 integration tests
 feat: variants module — 7 endpoints + 23 integration tests (nested routing)
 feat: images module — 5 endpoints + 21 integration tests (Supabase Storage)
 feat: cart module — 6 endpoints + 22 integration tests (dual auth+guest)
-feat: orders module — 13 endpoints + 27 integration tests (transactional stock)
+feat: orders module — sequential numbers, invoice PDF endpoint, confirmation email
 feat: inventory module — 11 endpoints + 19 integration tests (audit log)
 feat: auth/profile module — 6 endpoints + 21 integration tests
-feat: AI chat module — SSE streaming + Claude tool use + 8 tests
+feat: AI chat module — RAG + SSE streaming + retention cleanup
+feat: courier module — Steadfast ship/webhook/poll/public track
 ```

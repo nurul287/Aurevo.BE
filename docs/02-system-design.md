@@ -9,7 +9,7 @@ The backend is a **modular monolith** — a single deployable Express applicatio
 - Easy to extract a module to a service later if scale demands it
 - Sufficient for an e-commerce store at realistic traffic
 
-The frontend has no Supabase SDK at all — every auth flow (including OAuth) and all business logic (cart, orders, products, AI chat) goes through the Express BE. `VITE_SUPABASE_URL` is only used to build storage image-transform URLs on the client.
+The frontend has **no Supabase SDK**. Auth (email/password + Google/Facebook OAuth), cart, orders, courier tracking, and AI chat all go through Aurevo.BE. `VITE_SUPABASE_URL` is only used to build storage image-transform URLs on the client.
 
 ---
 
@@ -18,10 +18,7 @@ The frontend has no Supabase SDK at all — every auth flow (including OAuth) an
 ```
 Browser (React SPA)
         │
-        ├──── Supabase Auth (sign in/up/out, JWT tokens)
-        ├──── Supabase Storage (avatar upload → avatars bucket)
-        │
-        └──── Aurevo.BE (Express REST API)  ← primary data layer
+        └──── Aurevo.BE (Express REST API)  ← sole data + auth layer
                      │
                      ├── /api/products      (read + admin write)
                      ├── /api/categories
@@ -29,16 +26,18 @@ Browser (React SPA)
                      ├── /api/products/:id/variants
                      ├── /api/products/:id/images  ← multer → Supabase Storage
                      ├── /api/cart          (auth + guest)
-                     ├── /api/orders        (transactional)
+                     ├── /api/orders        (transactional + invoice PDF)
+                     ├── /api/courier       (Steadfast consignments + tracking)
                      ├── /api/inventory     (admin only)
-                     ├── /api/auth          (profile + addresses)
-                     └── /api/chat          (SSE + Claude tool use)
+                     ├── /api/auth          (profile + addresses + OAuth)
+                     ├── /api/chat          (SSE + RAG)
+                     └── /api/internal      (cron: chat cleanup, courier poll)
                                 │
-                                └── PostgreSQL (Supabase)
-                                        ├── 19 tables
-                                        ├── 9 enums
-                                        ├── Row Level Security policies
-                                        └── DB-level constraints + indexes
+                     ┌──────────┼──────────────┐
+                     ▼          ▼              ▼
+              PostgreSQL   Resend email   Steadfast Courier
+              (Supabase)   (optional)     (optional)
+              23 tables · 11 enums · RLS + indexes
 ```
 
 ---
@@ -202,3 +201,15 @@ User signs in → Supabase Auth → JWT (sub = userId, app_metadata.role = "admi
 **Frontend has no Supabase SDK at all.** Every auth flow — email/password, Google/Facebook OAuth (server-side PKCE), logout — is initiated and completed through Aurevo.BE's `/api/auth/*` endpoints. The browser never holds a Supabase session; this is what makes logout reliable (`supabaseAdmin.auth.admin.signOut` runs server-side, where the token unambiguously exists).
 
 Guest users are identified by a UUID stored in localStorage, sent as `X-Guest-Session` header. The BE extracts this and uses it as a `sessionId` for cart lookups.
+
+---
+
+## External Integrations
+
+| Service | Role | Config |
+|---------|------|--------|
+| **Resend** | Order confirmation email + invoice PDF attachment | Optional `RESEND_API_KEY`; no-op when unset |
+| **Steadfast (Packzy)** | Courier consignments, webhooks, status poll | Optional `COURIER_API_KEY` / `COURIER_SECRET_KEY` / `COURIER_WEBHOOK_TOKEN` |
+| **Anthropic** | AI chat streaming | Required `ANTHROPIC_API_KEY` |
+| **Voyage AI** | RAG embeddings | Required `VOYAGE_API_KEY` |
+| **Sentry** | Unexpected 500s | Optional `SENTRY_DSN` |
