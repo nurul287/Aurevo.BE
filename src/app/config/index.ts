@@ -38,6 +38,14 @@ const envSchema = z.object({
   // Email (Resend) — optional; no-op when unset
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().default("Aurevo Fashion <orders@aurevofashion.store>"),
+
+  // Courier (Steadfast) — optional; consignment booking/tracking is a no-op
+  // when unset. COURIER_WEBHOOK_TOKEN is the Bearer token Steadfast sends
+  // back on every webhook call (set the same value in their portal).
+  COURIER_API_KEY: z.string().min(1).optional(),
+  COURIER_SECRET_KEY: z.string().min(1).optional(),
+  COURIER_WEBHOOK_TOKEN: z.string().min(1).optional(),
+  COURIER_BASE_URL: z.string().url().default("https://portal.packzy.com/api/v1"),
 });
 
 const parsed = envSchema.safeParse(process.env);
