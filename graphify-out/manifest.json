@@ -725,9 +725,9 @@
     "semantic_hash": "fcb3bcebf4e034a709c620745396904d"
   },
   "src/app/modules/knowledge/knowledge.service.ts": {
-    "mtime": 1784161438.2175467,
-    "ast_hash": "5befb974322bcba7157f00cadf022021",
-    "semantic_hash": "5befb974322bcba7157f00cadf022021"
+    "mtime": 1784492410.012479,
+    "ast_hash": "a3dd1490a3f0c8182b37ed67c2277470",
+    "semantic_hash": ""
   },
   "src/lib/email.ts": {
     "mtime": 1784367608.143812,
@@ -895,8 +895,8 @@
     "semantic_hash": ""
   },
   "docs/09-ai-chatbot-rag.md": {
-    "mtime": 1784491058.7955618,
-    "ast_hash": "0ab1f45fb2463f2351e5f338a0ef8685",
+    "mtime": 1784492450.4808557,
+    "ast_hash": "34f3ffd08db55f36d7b9f05d90797332",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
@@ -1065,13 +1065,18 @@
     "semantic_hash": ""
   },
   "src/app/modules/knowledge/knowledge.test.ts": {
-    "mtime": 1784490060.890565,
-    "ast_hash": "be43047c2470e1af21e312072e35cb49",
+    "mtime": 1784492423.8224535,
+    "ast_hash": "ced2903577ff215c2a4f560e0c5b3ecd",
     "semantic_hash": ""
   },
   "src/scripts/eval-retrieval.ts": {
-    "mtime": 1784489995.7776177,
-    "ast_hash": "e33f561b57c0b6f17c9461513524693b",
+    "mtime": 1784492429.402907,
+    "ast_hash": "b04e376aceda1da9c8da3b2dea1dfce2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/043_kb_chunks_fts.sql": {
+    "mtime": 1784491507.4067445,
+    "ast_hash": "83ac21b8fce6d628dafd627e7cb611df",
     "semantic_hash": ""
   }
 }

@@ -1,16 +1,16 @@
 # Graph Report - Aurevo.BE  (2026-07-20)
 
 ## Corpus Check
-- 197 files · ~261,139 words
+- 198 files · ~262,220 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1519 nodes · 2447 edges · 283 communities (75 shown, 208 thin omitted)
+- 1527 nodes · 2461 edges · 284 communities (75 shown, 209 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b3fcf2fe`
+- Built from commit: `9e22f77a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -90,6 +90,7 @@
 - Community 73
 - Community 74
 - Community 75
+- rateLimiter.ts
 - Community 77
 - Community 78
 - Community 79
@@ -332,23 +333,23 @@
 - **Offline ingestion pipeline (products + policy docs to kb_chunks)** — docs_images_rag_chatbot_architecture_products_db, docs_images_rag_chatbot_architecture_policy_faq_docs, docs_images_rag_chatbot_architecture_chunk_embed, docs_images_rag_chatbot_architecture_kb_chunks [INFERRED 0.85]
 - **Runtime chat tool-use loop (chat service + three tools)** — docs_images_rag_chatbot_architecture_chat_service, docs_images_rag_chatbot_architecture_search_knowledge, docs_images_rag_chatbot_architecture_get_product_details, docs_images_rag_chatbot_architecture_get_my_orders [INFERRED 0.85]
 
-## Communities (283 total, 208 thin omitted)
+## Communities (284 total, 209 thin omitted)
 
 ### Community 0 - "Error Type Hierarchy"
 Cohesion: 0.06
-Nodes (53): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, UpstreamServiceError, ValidationError (+45 more)
+Nodes (47): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, UpstreamServiceError, ValidationError (+39 more)
 
 ### Community 1 - "Auth & Address Controller"
-Cohesion: 0.06
-Nodes (54): createAddress(), deleteAddress(), deleteAvatar(), forgotPassword(), getAddresses(), getMe(), login(), logout() (+46 more)
+Cohesion: 0.07
+Nodes (47): createAddress(), deleteAddress(), deleteAvatar(), forgotPassword(), getAddresses(), getMe(), login(), logout() (+39 more)
 
 ### Community 2 - "Express App Bootstrap & Swagger"
-Cohesion: 0.13
-Nodes (26): getClient(), getOrCreateConversation(), loadRecentMessages(), maybeRefreshIntentSummary(), saveMessage(), touchConversation(), buildSystemPrompt(), buildToolList() (+18 more)
+Cohesion: 0.11
+Nodes (28): bulkDelete(), bulkUpdateStatus(), createProduct(), deleteProduct(), getFeaturedProducts(), getProductById(), getProductBySlug(), getProducts() (+20 more)
 
 ### Community 3 - "Chat Persistence Layer"
-Cohesion: 0.13
-Nodes (27): cancelOrder(), claimOrders(), deleteOrder(), getOrderById(), getOrderByNumber(), getOrderInvoicePdf(), getOrders(), getOrderStats() (+19 more)
+Cohesion: 0.14
+Nodes (24): cancelOrder(), claimOrders(), deleteOrder(), getOrderById(), getOrderByNumber(), getOrders(), getOrderStats(), updateFulfillment() (+16 more)
 
 ### Community 4 - "Orders Controller"
 Cohesion: 0.04
@@ -368,11 +369,11 @@ Nodes (39): drizzle-kit, devDependencies, drizzle-kit, pino-pretty, supertest, t
 
 ### Community 8 - "Dev Dependencies"
 Cohesion: 0.13
-Nodes (27): addItem(), clearCart(), createGuestSession(), getCart(), migrateCart(), removeItem(), resolveOwner(), updateItem() (+19 more)
+Nodes (28): addItem(), clearCart(), createGuestSession(), getCart(), migrateCart(), removeItem(), resolveOwner(), updateItem() (+20 more)
 
 ### Community 9 - "Cart Controller"
-Cohesion: 0.12
-Nodes (29): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getVariantById(), getVariants(), updateVariant(), AdjustStockInput (+21 more)
+Cohesion: 0.11
+Nodes (30): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getVariantById(), getVariants(), updateVariant(), router (+22 more)
 
 ### Community 10 - "Graphify Export & Traversal Features"
 Cohesion: 0.33
@@ -384,11 +385,11 @@ Nodes (24): For /graphify add and --watch, For /graphify query, For the commit h
 
 ### Community 12 - "Category/Product Routes & Tests"
 Cohesion: 0.16
-Nodes (14): app, app, app, cleanProducts(), DB, brands, categories, products (+6 more)
+Nodes (13): app, app, app, cleanProducts(), DB, brands, categories, cleanBrands() (+5 more)
 
 ### Community 13 - "Products Controller"
 Cohesion: 0.05
-Nodes (61): buildProductChunkText(), buildVariantSummary(), deleteProductChunk(), ingestPolicyDocs(), ingestProducts(), KnowledgeSourceType, loadProductForEmbedding(), POLICY_DOCS_DIR (+53 more)
+Nodes (67): getClient(), getOrCreateConversation(), loadRecentMessages(), maybeRefreshIntentSummary(), saveMessage(), touchConversation(), buildSystemPrompt(), buildToolList() (+59 more)
 
 ### Community 14 - "Meta CAPI Webhook Function"
 Cohesion: 0.08
@@ -403,24 +404,24 @@ Cohesion: 0.09
 Nodes (21): addressesRelations, brandsRelations, cartItemsRelations, categoriesRelations, inventoryMovementsRelations, inventoryRelations, metaCapiSentRelations, orderItemsRelations (+13 more)
 
 ### Community 17 - "Product Images Admin API"
-Cohesion: 0.11
-Nodes (23): authLimiter, baseOptions, cartLimiter, strictLimiter, trackingLimiter, uploadLimiter, createCategory(), deleteCategory() (+15 more)
+Cohesion: 0.18
+Nodes (16): createCategory(), deleteCategory(), deleteCategoryImage(), getCategories(), getCategoryById(), updateCategory(), uploadCategoryImage(), upload (+8 more)
 
 ### Community 18 - "Inventory Tests & Error Handler"
 Cohesion: 0.18
-Nodes (16): router, bulkUploadImages(), deleteImage(), getAllImagesAdmin(), getImageById(), getImages(), setPrimaryImage(), updateImage() (+8 more)
+Nodes (17): publicLimiter, router, bulkUploadImages(), deleteImage(), getAllImagesAdmin(), getImageById(), getImages(), setPrimaryImage() (+9 more)
 
 ### Community 19 - "Categories Controller"
-Cohesion: 0.21
-Nodes (18): getVariantAvailability(), cancelOrder(), claimGuestOrders(), createOrder(), DbTransaction, fetchOrderItemsWithImages(), generateOrderNumber(), getOrderById() (+10 more)
+Cohesion: 0.19
+Nodes (19): UpdateFulfillmentInput, UpdatePaymentStatusInput, cancelOrder(), claimGuestOrders(), createOrder(), DbTransaction, fetchOrderItemsWithImages(), generateOrderNumber() (+11 more)
 
 ### Community 20 - "Courier Webhook & Ship/Refresh Controller"
-Cohesion: 0.09
-Nodes (34): getCourierBalance(), isValidWebhookBearer(), receiveWebhook(), refreshOrderStatus(), shipOrder(), trackByCode(), router, CourierWebhookBody (+26 more)
+Cohesion: 0.05
+Nodes (52): allowedOrigins, app, envSchema, parsed, options, swaggerSpec, cleanupChatHistory(), router (+44 more)
 
 ### Community 21 - "Courier Service & Internal Poll Route"
-Cohesion: 0.18
-Nodes (11): express, router, router, router, app, pollCourierStatus(), router, router (+3 more)
+Cohesion: 0.22
+Nodes (8): router, router, router, router, router, router, router, router
 
 ### Community 22 - "Auth & Orders Route Tests"
 Cohesion: 0.12
@@ -439,20 +440,20 @@ Cohesion: 0.33
 Nodes (5): ApiResponse, Express, PaginatedResponse, PaginationParams, Request
 
 ### Community 27 - "Requirements Backlog & CI/CD Decisions"
-Cohesion: 0.27
-Nodes (8): authenticate(), optionalAuth(), requireAdmin(), verifyToken(), getDashboard(), router, getAdminDashboard(), supabaseAdmin
+Cohesion: 0.38
+Nodes (7): express, authenticate(), optionalAuth(), requireAdmin(), verifyToken(), getDashboard(), getAdminDashboard()
 
 ### Community 28 - "Non-Functional Requirements & Rate Limits"
-Cohesion: 0.13
-Nodes (11): app, TEST_ADDRESS, app, TEST_ADDRESS, app, createVariantsApp(), courierTrackingEvents, orderItems (+3 more)
+Cohesion: 0.17
+Nodes (10): app, TEST_ADDRESS, app, TEST_ADDRESS, courierTrackingEvents, inventory, orderItems, orders (+2 more)
 
 ### Community 29 - "RAG Chatbot Architecture Diagram"
 Cohesion: 0.50
 Nodes (5): CI Deploy Edge Functions Job (Stage 3), CI Migrate Job (Stage 2), Migration 039 silently skipped twice (dorny/paths-filter race with merge-back.yml), paths-filter base/ref pinning to event SHAs, CI Test Job (Stage 1)
 
 ### Community 30 - "Railway Deployment Config"
-Cohesion: 0.18
-Nodes (16): buildInvoicePdfBuffer(), deriveInvoicePayment(), Doc, drawItemsHeader(), extractEmailAddress(), FONT_BOLD, FONT_REGULAR, FONTS_DIR (+8 more)
+Cohesion: 0.17
+Nodes (17): getOrderInvoicePdf(), buildInvoicePdfBuffer(), deriveInvoicePayment(), Doc, drawItemsHeader(), extractEmailAddress(), FONT_BOLD, FONT_REGULAR (+9 more)
 
 ### Community 31 - "DB Sync Script"
 Cohesion: 0.25
@@ -483,8 +484,8 @@ Cohesion: 0.14
 Nodes (14): Architecture Pattern: Modular Monolith + BFF, Auth Design, Backend: Express + TypeScript, Database: Supabase (PostgreSQL 15), Error Hierarchy, External Integrations, Module Structure, ORM: Drizzle ORM (introspect-first) (+6 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.14
-Nodes (14): allowedOrigins, app, envSchema, parsed, options, swaggerSpec, cleanupChatHistory(), client (+6 more)
+Cohesion: 0.22
+Nodes (13): createBrand(), deleteBrand(), getBrandById(), getBrands(), updateBrand(), upload, brandIdSchema, CreateBrandInput (+5 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.14
@@ -492,15 +493,15 @@ Nodes (13): addresses, addressType, chatRole, fulfillmentStatus, kbSourceType, m
 
 ### Community 40 - "Community 40"
 Cohesion: 0.22
-Nodes (6): globalErrorHandler(), router, app, createImagesApp(), TINY_GIF, productImages
+Nodes (5): router, app, createImagesApp(), TINY_GIF, productImages
 
 ### Community 41 - "Community 41"
 Cohesion: 0.25
 Nodes (6): content, fs, outPath, path, srcPath, tables
 
 ### Community 42 - "Community 42"
-Cohesion: 0.31
-Nodes (6): publicLimiter, validate(), zodFieldErrors(), router, getAllVariants(), getAllVariantsSchema
+Cohesion: 0.36
+Nodes (5): validate(), zodFieldErrors(), router, getAllVariants(), getAllVariantsSchema
 
 ### Community 43 - "Community 43"
 Cohesion: 0.25
@@ -518,10 +519,6 @@ Nodes (12): 1. Rate-limiter bypass (small BE change, no-op by default), 2. Synth
 Cohesion: 0.14
 Nodes (9): app, TEST_ADDRESS, app, TEST_ADDRESS, productReviews, profiles, userAddresses, MOCK_ADMIN_USER (+1 more)
 
-### Community 47 - "Community 47"
-Cohesion: 0.25
-Nodes (3): app, inventory, inventoryMovements
-
 ### Community 49 - "Community 49"
 Cohesion: 0.67
 Nodes (3): Storefront Authentication Requirements, MFA Factor Enrolled Notice Template, MFA Factor Unenrolled Notice Template
@@ -536,7 +533,7 @@ Nodes (14): AI Chat — `/api/chat`, Auth & Profile — `/api/auth`, Brands — 
 
 ### Community 52 - "Courier Ship/Webhook Tests"
 Cohesion: 0.33
-Nodes (6): Local Development Setup, Prerequisites, Step 1 — Clone repos, Step 2 — Start local Supabase (owned by Aurevo.BE), Step 3 — Configure backend, Step 4 — Configure frontend
+Nodes (4): globalErrorHandler(), app, createVariantsApp(), createTestApp()
 
 ### Community 53 - "Community 53"
 Cohesion: 0.20
@@ -553,6 +550,10 @@ Nodes (5): Between sizes, Exchanging for a different size, Finding the right fit
 ### Community 59 - "Community 59"
 Cohesion: 0.25
 Nodes (7): Authentication, Base URL, Error Code Reference, HTTP Status Code Reference, Interactive Docs, Rate Limits, Response Shape
+
+### Community 76 - "rateLimiter.ts"
+Cohesion: 0.25
+Nodes (6): authLimiter, baseOptions, cartLimiter, strictLimiter, trackingLimiter, uploadLimiter
 
 ### Community 80 - "Community 80"
 Cohesion: 0.18
@@ -603,8 +604,8 @@ Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
 ### Community 125 - "Community 125"
-Cohesion: 0.17
-Nodes (11): Aurevo.BE — Railway, Aurevo.UI — Vercel, CI/CD, Environment Variable Security, Infrastructure Map, Merge-back (`merge-back.yml`) — on push to `main`, Monitoring, Pipeline (`ci.yml`) — on PR / push to `main` (+3 more)
+Cohesion: 0.11
+Nodes (17): Aurevo.BE — Railway, Aurevo.UI — Vercel, CI/CD, Environment Variable Security, Infrastructure Map, Local Development Setup, Merge-back (`merge-back.yml`) — on push to `main`, Monitoring (+9 more)
 
 ### Community 150 - "Auth Design (JWKS getClaims)"
 Cohesion: 0.67
@@ -621,9 +622,9 @@ Nodes (3): Auth Design (JWKS getClaims), Identity Linked Notice Template, Identi
   supabase/email-templates/phone-changed.html · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **657 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+652 more)
+- **660 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+655 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **208 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **209 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -636,9 +637,9 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Profile & Addresses Requirements (BD shape)` and `Phone Number Changed Notice Template`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `express` connect `Courier Service & Internal Poll Route` to `Error Type Hierarchy`, `Auth & Address Controller`, `Chat Persistence Layer`, `Package Metadata`, `Runtime Dependencies`, `Dev Dependencies`, `Cart Controller`, `Products Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Workspace Architecture Overview`, `Products Service`, `Requirements Backlog & CI/CD Decisions`, `Non-Functional Requirements & Rate Limits`, `Community 38`, `Community 40`, `Community 42`, `Community 93`?**
+- **Why does `express` connect `Requirements Backlog & CI/CD Decisions` to `Auth & Address Controller`, `Express App Bootstrap & Swagger`, `Chat Persistence Layer`, `Package Metadata`, `Community 38`, `Runtime Dependencies`, `Dev Dependencies`, `Community 40`, `Community 42`, `Cart Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Courier Ship/Webhook Tests`, `Courier Service & Internal Poll Route`, `Workspace Architecture Overview`, `Products Service`, `Community 93`?**
   _High betweenness centrality (0.109) - this node is a cross-community bridge._
-- **Why does `keywords` connect `Package Metadata` to `Courier Service & Internal Poll Route`?**
+- **Why does `keywords` connect `Package Metadata` to `Requirements Backlog & CI/CD Decisions`?**
   _High betweenness centrality (0.068) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `Orders Controller` to `Package Metadata`?**
   _High betweenness centrality (0.043) - this node is a cross-community bridge._
