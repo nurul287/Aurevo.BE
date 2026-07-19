@@ -29,6 +29,7 @@ import courierRoutes from "./courier.routes";
 import { mapCourierStatus } from "./courier.service";
 import { config } from "../../config";
 import { courierEnabled, createConsignment, getBalance } from "../../../lib/steadfast";
+import { UpstreamServiceError } from "../../errors";
 
 const app = createTestApp(courierRoutes);
 
@@ -235,6 +236,19 @@ describe("POST /courier/orders/:id/ship", () => {
     const res = await request(app).post(`/orders/${order.id}/ship`).set("Authorization", adminToken);
     expect(res.status).toBe(422);
     expect(createConsignment).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a Steadfast API failure as 502 with the real upstream message, not a generic 500", async () => {
+    const order = await seedOrder({});
+    (createConsignment as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new UpstreamServiceError("Steadfast: Account is not active!"),
+    );
+
+    const res = await request(app).post(`/orders/${order.id}/ship`).set("Authorization", adminToken);
+
+    expect(res.status).toBe(502);
+    expect(res.body.error.code).toBe("UPSTREAM_ERROR");
+    expect(res.body.error.message).toBe("Steadfast: Account is not active!");
   });
 
   it("refuses to ship a cancelled order", async () => {

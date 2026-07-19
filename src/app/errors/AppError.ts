@@ -46,5 +46,19 @@ export class BusinessRuleError extends AppError {
   }
 }
 
+/**
+ * A downstream third-party API (Steadfast, etc.) rejected or failed a
+ * request. 502, not 500 — our server is fine, the upstream isn't. Unlike a
+ * plain Error, AppError messages always reach the client (globalErrorHandler
+ * redacts only the generic-500 branch's message in production), so the real
+ * upstream reason (e.g. "Account is not active!") is visible instead of a
+ * bare "Internal server error".
+ */
+export class UpstreamServiceError extends AppError {
+  constructor(message: string) {
+    super(502, message, "UPSTREAM_ERROR");
+  }
+}
+
 
 

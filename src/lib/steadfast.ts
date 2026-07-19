@@ -1,4 +1,5 @@
 import { config } from "../app/config";
+import { UpstreamServiceError } from "../app/errors";
 
 /**
  * Thin wrapper around Steadfast Courier's REST API (Bangladesh courier).
@@ -71,7 +72,11 @@ async function request<T>(method: "GET" | "POST", path: string, body?: unknown):
 
   if (!res.ok) {
     const responseBody = await res.text().catch(() => "");
-    throw new Error(`Steadfast request failed (${res.status}): ${responseBody}`);
+    // UpstreamServiceError (not a plain Error) so the real reason reaches the
+    // client as a 502 — a plain Error falls into globalErrorHandler's generic
+    // 500 branch, which redacts the message in production ("Internal server
+    // error"), hiding actionable detail like "Account is not active!".
+    throw new UpstreamServiceError(`Steadfast: ${responseBody || `request failed (${res.status})`}`);
   }
 
   return (await res.json()) as T;
