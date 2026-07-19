@@ -211,27 +211,116 @@ export async function getAllProductTitles(): Promise<{ title: string | null; met
     .where(eq(kbChunks.sourceType, "product"));
 }
 
+export type RetrieveMode = "vector" | "hybrid";
+
+export type RetrieveOpts = { mode?: RetrieveMode };
+
+/**
+ * Candidates fetched per search leg before fusion cuts to topK. Wider than
+ * topK so a result ranked poorly by one leg can still win on the other.
+ */
+const CANDIDATE_POOL = 12;
+
+type Candidate = RetrievedChunk & { id: string };
+
+const candidateColumns = {
+  id: kbChunks.id,
+  title: kbChunks.title,
+  content: kbChunks.content,
+  sourceType: kbChunks.sourceType,
+  sourceId: kbChunks.sourceId,
+  metadata: kbChunks.metadata,
+};
+
+async function vectorSearch(
+  queryEmbedding: number[],
+  limit: number,
+  sourceType?: KnowledgeSourceType,
+): Promise<Candidate[]> {
+  const distance = cosineDistance(kbChunks.embedding, queryEmbedding);
+  return db
+    .select(candidateColumns)
+    .from(kbChunks)
+    .where(sourceType ? eq(kbChunks.sourceType, sourceType) : undefined)
+    .orderBy(distance)
+    .limit(limit);
+}
+
+/**
+ * Keyword leg — Postgres FTS over the generated `fts` column (migration 043;
+ * intentionally unmapped in schema.ts, hence raw SQL). websearch_to_tsquery
+ * never throws on arbitrary text, which matters since the chat model authors
+ * the query. Its terms are ANDed, so a query with any non-matching word
+ * returns nothing — fine: an empty keyword list just leaves fusion with the
+ * vector order.
+ */
+async function keywordSearch(
+  query: string,
+  limit: number,
+  sourceType?: KnowledgeSourceType,
+): Promise<Candidate[]> {
+  const tsquery = sql`websearch_to_tsquery('english', ${query})`;
+  return db
+    .select(candidateColumns)
+    .from(kbChunks)
+    .where(
+      and(
+        sql`${sql.raw('"kb_chunks"."fts"')} @@ ${tsquery}`,
+        sourceType ? eq(kbChunks.sourceType, sourceType) : undefined,
+      ),
+    )
+    .orderBy(sql`ts_rank(${sql.raw('"kb_chunks"."fts"')}, ${tsquery}) desc`)
+    .limit(limit);
+}
+
+/**
+ * Reciprocal Rank Fusion: score(id) = Σ over lists of 1/(k + rank). Ties
+ * break by earlier-list rank (vector leg first), keeping the result stable
+ * when the keyword leg is empty or fully agrees. Exported for unit tests.
+ */
+export function rrfFuse<T extends { id: string }>(lists: T[][], k = 60): T[] {
+  const scores = new Map<string, { item: T; score: number; firstSeen: number }>();
+  let seenCounter = 0;
+
+  for (const list of lists) {
+    for (let rank = 0; rank < list.length; rank++) {
+      const item = list[rank]!;
+      const existing = scores.get(item.id);
+      const increment = 1 / (k + rank + 1);
+      if (existing) {
+        existing.score += increment;
+      } else {
+        scores.set(item.id, { item, score: increment, firstSeen: seenCounter++ });
+      }
+    }
+  }
+
+  return [...scores.values()]
+    .sort((a, b) => b.score - a.score || a.firstSeen - b.firstSeen)
+    .map((entry) => entry.item);
+}
+
 export async function retrieve(
   query: string,
   topK = 3,
   sourceType?: KnowledgeSourceType,
+  opts: RetrieveOpts = {},
 ): Promise<RetrievedChunk[]> {
+  const mode = opts.mode ?? "hybrid";
   const queryEmbedding = await embedQuery(query);
-  const distance = cosineDistance(kbChunks.embedding, queryEmbedding);
 
-  const rows = await db
-    .select({
-      title: kbChunks.title,
-      content: kbChunks.content,
-      sourceType: kbChunks.sourceType,
-      sourceId: kbChunks.sourceId,
-      metadata: kbChunks.metadata,
-    })
-    .from(kbChunks)
-    .where(sourceType ? eq(kbChunks.sourceType, sourceType) : undefined)
-    .orderBy(distance)
-    .limit(topK);
+  let fused: Candidate[];
+  if (mode === "vector") {
+    fused = await vectorSearch(queryEmbedding, topK, sourceType);
+  } else {
+    const [vectorHits, keywordHits] = await Promise.all([
+      vectorSearch(queryEmbedding, CANDIDATE_POOL, sourceType),
+      keywordSearch(query, CANDIDATE_POOL, sourceType),
+    ]);
+    fused = rrfFuse([vectorHits, keywordHits]);
+  }
 
-  logger.debug({ query, sourceType, resultCount: rows.length }, "knowledge.retrieve");
+  const rows = fused.slice(0, topK).map(({ id: _id, ...chunk }) => chunk);
+  logger.debug({ query, sourceType, mode, resultCount: rows.length }, "knowledge.retrieve");
   return rows;
 }
