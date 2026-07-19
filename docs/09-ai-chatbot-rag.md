@@ -103,6 +103,27 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 
 ---
 
+## Retrieval Evaluation
+
+`pnpm eval:retrieval` measures `retrieve()` against a golden dataset (`content/eval/retrieval-golden.json`, 32 queries → their relevant chunks), reporting **precision@k, recall@k, hit-rate@k, and MRR** per query and macro-averaged. Products are keyed by slug (resolved to `kb_chunks.source_id` at eval time); policy/FAQ chunks by their `<file>-<section>` sourceId — re-check those IDs if a policy doc's section order changes.
+
+- Runs only against a **local** `DATABASE_URL` (refuses otherwise — it spends real Voyage quota and needs a seeded, `ingest:knowledge`-ed DB), and rides out free-tier 429s between queries. Deliberately a plain tsx script, never part of vitest/CI.
+- `--mode` selects the retrieval strategy so future modes can be compared on the same dataset (`vector` today; hybrid/rerank when they land). `--k` (default 3, matching the production `topK`) and `--json` for machine-readable output.
+- Deterministic unit coverage of `retrieve()` itself (ordering, topK, sourceType filter — mocked embeddings, no API calls) lives in `src/app/modules/knowledge/knowledge.test.ts`.
+
+**Baseline — mode=vector, k=3, 32 cases (2026-07-20, local seed catalog + policy docs):**
+
+| Metric | Value |
+|---|---|
+| precision@3 | 0.437 |
+| recall@3 | 0.990 |
+| hit-rate@3 | 1.000 |
+| MRR | 0.984 |
+
+Precision@3 is structurally bounded here — most queries have a single relevant chunk, capping their precision at 0.333 — so recall/hit-rate/MRR are the numbers to watch. At the current 31-chunk KB size, plain vector search nearly saturates them (only "what is your return policy" ranked a relevant chunk below rank 1); the harness's main job is to be the regression floor when hybrid search, re-ranking, or ingestion-content changes land.
+
+---
+
 ## Frontend Widget
 
 `src/components/ai-chat-widget.tsx` (Aurevo.UI)
@@ -142,7 +163,7 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 - No self-service "clear my chat history" action for logged-in users — only the automatic 90-day window applies today
 - Fixed the codebase's complete absence of `unhandledRejection`/`uncaughtException` handlers while working on this (`src/server.ts`) — unrelated to RAG specifically, but discovered while hardening the new async surfaces this feature introduces (Voyage/Anthropic calls)
 - **No re-ranking or hybrid search** — `retrieve()` does plain cosine-distance vector search only (`ORDER BY distance LIMIT topK`); no BM25/full-text fusion, no cross-encoder reranker pass. Would improve precision at the catalog's current small `kb_chunks` size only marginally; worth revisiting if retrieval quality complaints show up as the knowledge base grows.
-- **No evaluation harness** — no golden-answer test set, no precision/recall/hit-rate measurement anywhere. Retrieval quality is currently verified manually (ad hoc chat prompts), not tracked over time or regression-tested when ingestion content changes.
+- ~~No evaluation harness~~ — **done**: `pnpm eval:retrieval` + `content/eval/retrieval-golden.json` measure precision/recall/hit-rate/MRR against a 32-query golden set (see [Retrieval Evaluation](#retrieval-evaluation)), and `knowledge.test.ts` gives `retrieve()` deterministic unit coverage. Baseline recorded 2026-07-20.
 - **No fine-tuning** — uses off-the-shelf Claude + Voyage-3 via API calls; not planned unless a specific quality gap shows up that prompt/retrieval tuning can't close.
 - **No RAG-specific monitoring dashboard** — only general-purpose observability exists (pino logs, optional Sentry, `/api/health`). Nothing tracks retrieval latency, hit-rate, or answer quality specifically for the chatbot.
 
@@ -156,12 +177,14 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 - `src/app/modules/knowledge/knowledge.service.ts`
 - `content/policies/{shipping,returns,sizing,payment,faq}.md`
 - `src/scripts/ingest-knowledge.ts`
+- `src/scripts/eval-retrieval.ts`, `content/eval/retrieval-golden.json` (retrieval eval harness)
+- `src/app/modules/knowledge/knowledge.test.ts`
 - `src/app/modules/chat/{chat.service,chat.persistence,chat.controller,chat.schema,chat.routes}.ts`
 - `src/app/modules/chat/{chat.internal.controller,chat.internal.routes}.ts`
 - `src/app/modules/chat/{chat.test,chat.internal.test}.ts`
 - `src/app/modules/products/products.service.ts` (auto-embed hooks)
 - `src/server.ts` (crash-handler fix)
-- `package.json` (`ingest:knowledge` script), `.env.example`
+- `package.json` (`ingest:knowledge`, `eval:retrieval` scripts), `.env.example`
 
 **Aurevo.UI**
 - `src/components/ai-chat-widget.tsx`
