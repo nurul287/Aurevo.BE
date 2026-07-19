@@ -306,7 +306,16 @@ export async function retrieve(
   sourceType?: KnowledgeSourceType,
   opts: RetrieveOpts = {},
 ): Promise<RetrievedChunk[]> {
-  const mode = opts.mode ?? "hybrid";
+  // Default is still "vector": the eval gate showed hybrid marginally
+  // regressing at the current KB size (broad policy queries like "what is
+  // your return policy" AND-match common terms across many chunks, and
+  // ts_rank boosts lexically-dense-but-irrelevant ones into the fused
+  // top-3) while the messy-title lookups it targets are already rank-1 on
+  // vector alone at 31 chunks. Numbers in docs/09-ai-chatbot-rag.md
+  // ("Retrieval Evaluation"). Revisit the default when the reranker lands
+  // on top of the hybrid candidate pool, or when the KB outgrows vector
+  // search on exact lookups.
+  const mode = opts.mode ?? "vector";
   const queryEmbedding = await embedQuery(query);
 
   let fused: Candidate[];

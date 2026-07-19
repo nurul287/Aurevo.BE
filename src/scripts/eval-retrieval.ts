@@ -44,7 +44,8 @@ type CaseResult = {
 const MODES: RetrieveMode[] = ["vector", "hybrid"];
 
 function parseArgs(argv: string[]) {
-  const args = { mode: "hybrid" as RetrieveMode, k: 3, json: false };
+  // Default mirrors production's default retrieval mode.
+  const args = { mode: "vector" as RetrieveMode, k: 3, json: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--mode") args.mode = (argv[++i] ?? args.mode) as RetrieveMode;
     else if (argv[i] === "--k") args.k = Number(argv[++i] ?? args.k);

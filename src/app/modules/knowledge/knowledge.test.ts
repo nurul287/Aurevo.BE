@@ -138,11 +138,13 @@ describe("knowledge.retrieve", () => {
       embedding: basisVector(9),
     });
 
-    const results = await retrieve("Vomero Shoes1.1 special edition", 3);
+    const results = await retrieve("Vomero Shoes1.1 special edition", 3, undefined, { mode: "hybrid" });
     expect(results.map((r) => r.sourceId)).toContain("product-lexical");
   });
 
-  it("vector mode ignores lexical matches (pre-hybrid behavior preserved)", async () => {
+  it("defaults to vector mode — hybrid is opt-in until the eval gate clears it", async () => {
+    // Pins the eval-gated decision recorded in docs/09 ("Retrieval
+    // Evaluation"): a lexical-only match must NOT surface by default.
     await db.insert(kbChunks).values({
       sourceType: "product",
       sourceId: "product-lexical",
@@ -151,7 +153,7 @@ describe("knowledge.retrieve", () => {
       embedding: basisVector(9),
     });
 
-    const results = await retrieve("Vomero Shoes1.1 special edition", 3, undefined, { mode: "vector" });
+    const results = await retrieve("Vomero Shoes1.1 special edition", 3);
     expect(results.map((r) => r.sourceId)).not.toContain("product-lexical");
   });
 });
