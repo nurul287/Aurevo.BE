@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../../db";
 import { kbChunks } from "../../../db/schema";
-import { retrieve } from "./knowledge.service";
+import { retrieve, rrfFuse } from "./knowledge.service";
 import { embedQuery } from "../../../lib/voyage";
 
 // Deterministic embeddings — no real Voyage calls. Basis-style 1024-dim
@@ -124,5 +124,69 @@ describe("knowledge.retrieve", () => {
       content: "Closest to the query",
     });
     expect(top).toHaveProperty("metadata");
+  });
+
+  it("hybrid mode surfaces a lexical match whose embedding is far from the query", async () => {
+    // Embedding-wise this chunk is orthogonal to the query (distance 1, dead
+    // last in vector order) — only the FTS leg can rescue it. This is the
+    // messy-exact-title scenario hybrid search exists for.
+    await db.insert(kbChunks).values({
+      sourceType: "product",
+      sourceId: "product-lexical",
+      title: "Vomero Shoes1.1 special edition",
+      content: "Product: Vomero Shoes1.1 special edition",
+      embedding: basisVector(9),
+    });
+
+    const results = await retrieve("Vomero Shoes1.1 special edition", 3);
+    expect(results.map((r) => r.sourceId)).toContain("product-lexical");
+  });
+
+  it("vector mode ignores lexical matches (pre-hybrid behavior preserved)", async () => {
+    await db.insert(kbChunks).values({
+      sourceType: "product",
+      sourceId: "product-lexical",
+      title: "Vomero Shoes1.1 special edition",
+      content: "Product: Vomero Shoes1.1 special edition",
+      embedding: basisVector(9),
+    });
+
+    const results = await retrieve("Vomero Shoes1.1 special edition", 3, undefined, { mode: "vector" });
+    expect(results.map((r) => r.sourceId)).not.toContain("product-lexical");
+  });
+});
+
+describe("rrfFuse", () => {
+  const item = (id: string) => ({ id });
+
+  it("ranks an id appearing in both lists above single-list ids", () => {
+    const fused = rrfFuse([
+      [item("a"), item("b"), item("c")],
+      [item("c"), item("d")],
+    ]);
+    expect(fused[0]!.id).toBe("c"); // 1/63 + 1/61 beats a's 1/61
+  });
+
+  it("degenerates to first-list order when the second list is empty", () => {
+    const fused = rrfFuse([[item("a"), item("b"), item("c")], []]);
+    expect(fused.map((f) => f.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("breaks score ties by earlier-list rank", () => {
+    // a and b: identical scores by symmetry — a was seen first (vector leg).
+    const fused = rrfFuse([
+      [item("a"), item("b")],
+      [item("b"), item("a")],
+    ]);
+    expect(fused.map((f) => f.id)).toEqual(["a", "b"]);
+  });
+
+  it("merges disjoint lists in interleaved score order", () => {
+    const fused = rrfFuse([
+      [item("a"), item("b")],
+      [item("x"), item("y")],
+    ]);
+    // Same ranks in different lists score equally; first-seen breaks ties.
+    expect(fused.map((f) => f.id)).toEqual(["a", "x", "b", "y"]);
   });
 });
