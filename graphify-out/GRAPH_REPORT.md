@@ -1,13 +1,18 @@
-# Graph Report - .  (2026-07-18)
+# Graph Report - Aurevo.BE  (2026-07-19)
 
 ## Corpus Check
-- 31 files · ~252,174 words
+- 194 files · ~258,611 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1204 nodes · 2040 edges · 149 communities (66 shown, 83 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 44 edges (avg confidence: 0.85)
-- Token cost: 231,198 input · 0 output
+- 1502 nodes · 2409 edges · 284 communities (75 shown, 209 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.7)
+- Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `9ebe8666`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Error Type Hierarchy
@@ -153,30 +158,165 @@
 - Email Changed Notice Template
 - Magic Link Sign-In Template
 - Reauthentication Code Template
+- graphify reference: transcribe video and audio
+- Auth Design (JWKS getClaims)
+- graphify
+- extraction-spec.md
+- AI Shopping Assistant (RAG pipeline)
+- Aurevo.BE (Express + TypeScript + Drizzle backend)
+- Aurevo.UI (React storefront/admin)
+- JWKS-based auth via supabaseAdmin.auth.getClaims
+- CI/CD & two-environment model
+- Modular Monolith + BFF pattern (chosen over microservices)
+- 4-file domain module structure (schema/service/controller/routes/test)
+- No Supabase SDK on frontend (single most important architectural decision)
+- Backend-driven Google/Facebook OAuth (PKCE, state-in-redirect_to)
+- Observability stack (pino, Sentry, health check, graceful shutdown)
+- Request lifecycle (middleware chain)
+- Atomic guarded UPDATE stock accounting at checkout
+- Supabase (Postgres 15 + Auth + Storage)
+- Testing strategy (BE Vitest+Supertest, FE Vitest+MSW, E2E Playwright)
+- AI chat / RAG module (chat + knowledge)
+- cartLimiter split from authLimiter (routine adds vs brute-force)
+- Graphify Skill Pointer (/graphify)
+- Development workflow (build, test, micro-commit, no auto-deploy)
+- Zod-validated env vars in src/app/config/index.ts crash-on-boot
+- graphify usage rules (query/path/explain, mandatory update after code changes)
+- Migration 039 kept out of production for two merges — CI silent-skip incident
+- OAuth top-level state param collision with GoTrue gotcha
+- logger.ts/sentry.ts/health check/fail-fast boot
+- Resend email, migrated from earlier Gmail SMTP stopgap
+- Shared restoreOrderStock helper
+- getAddresses ORDER BY created_at ASC fix (card position swap bug)
+- FalkorDB Export / Push
+- MCP stdio Server (graphify.serve)
+- Neo4j Export / Push
+- Token Reduction Benchmark
+- Wiki Export (--wiki)
+- Hyperedge Extraction Rule
+- Node ID Format Rule ({stem}_{entity})
+- semantically_similar_to Edge Rule
+- Extraction Subagent Prompt Template
+- Cross-Repo Graph Merge (merge-graphs)
+- Monorepo / Multi-Subfolder Extraction
+- graphify hook install (post-commit auto-rebuild)
+- BFS / DFS Traversal Modes
+- Constrained Query Expansion (vocab matching)
+- /graphify explain implementation
+- /graphify path implementation (shortest_path)
+- save-result Feedback Loop
+- Work Memory / Self-Improving Loop (LESSONS.md)
+- Whisper Video/Audio Transcription
+- build_merge() replace-on-re-extract (#1344)
+- Graph Diff Reporting
+- --update Incremental Re-extraction
+- /graphify add
+- Structural (AST) Extraction - Part A
+- --cluster-only flag
+- Community Detection
+- Community Labeling (Step 5)
+- Cumulative Cost Tracker (cost.json)
+- --directed flag (directed graph)
+- /graphify explain
+- Fast Path - Existing Graph
+- God Nodes
+- Graph Health Check (Step 4.5)
+- graph.json output
+- GRAPH_REPORT.md audit output
+- Commit Hook / Native CLAUDE.md Integration
+- Interactive HTML Graph Export
+- No API Key Required Policy
+- Obsidian Vault Export
+- /graphify path
+- /graphify query
+- Semantic Extraction Cache (check_semantic_cache)
+- Semantic (LLM) Extraction - Part B
+- Shrink Guard on graph.json write (#479)
+- Parallel Subagent Dispatch (general-purpose)
+- --update flag
+- --watch flag
+- Historic double-counting bug: reserved_quantity incremented AND quantity decremented for same sale
+- FAQ: How to Track Order
+- FAQ: Out of Stock Items
+- Payment: Online Payment Option
+- Payment: Security (no card details stored)
+- Sizing: Finding the Right Fit
+- Sizing: How Sizes Are Shown (variants)
+- AI Shopping Assistant Requirement
+- No Dedicated Staging Supabase Project (Decision)
+- AI Chat Rebuilt as Full RAG Pipeline (Decision)
+- Testing: Vitest + Supertest Choice
+- cart_items table (dual-owner: user or guest session)
+- categories table (self-referencing tree)
+- conversations table (chat sessions, retention-driving)
+- guest_sessions missing RLS until migration 040 (incident)
+- inventory_movements table (immutable audit log)
+- inventory table (generated available_quantity column)
+- kb_chunks table (RAG vector knowledge base, migration 039)
+- messages table (chat turns, cascade delete)
+- order_items table (price/name snapshot)
+- orders table (full lifecycle)
+- payments table
+- product_variants table (stock, reserved_stock)
+- products table (core catalog)
+- profiles table (1:1 extension of auth.users)
+- Database Design overview (22 tables, 11 enums)
+- user_addresses table (BD checkout shape, migration 038)
+- AI Chat endpoint (/api/chat, SSE protocol)
+- Auth & Profile endpoint reference (/api/auth)
+- POST /cart/items moved off authLimiter to own cartLimiter
+- Health endpoint (/health, /api/health)
+- Inventory endpoint reference (/api/inventory)
+- Orders endpoint reference (/api/orders)
+- AI Chat RAG pipeline rebuild (from bare tool-use to full RAG)
+- JWT verification middleware (getClaims/JWKS)
+- Module Build Order & Rationale (Phase 0-10)
+- CORS exposedHeaders: [Content-Disposition] required for xlsx filename
+- Drizzle client singleton (src/db/index.ts)
+- Dual Owner Cart (CartOwner union type)
+- effectivePrice helper (variant.price ?? product.basePrice)
+- Inventory upsert syncs inventory + product_variants.stock
+- Lazy Anthropic client initialization (test-mockable)
+- Nested Router Pattern (mergeParams for variants/images)
+- Transactional Stock Reservation (Orders, stock/reservedStock update)
+- Variant–Inventory creation transaction
+- Testing Philosophy: Real DB, No Mocks
+- CI/CD Pipeline (ci.yml)
+- Running Tests (docs/07)
+- Execution Runbook
+- Files to Touch (Load Testing)
+- Rate-Limiter Bypass Design
+- Known limitations / Backlog (no CDC, no reranking, no eval harness)
+- Migration 039 silently skipped twice — RAG rollout incident
+- Policy-doc chunking dropped heading-only sections bug (fixed)
+- Aurevo Fashion project overview
+- Tech Decisions at a Glance table
+- Modular Monolith directory structure
+- Rate Limiters table
 
 ## God Nodes (most connected - your core abstractions)
-1. `express` - 39 edges
-2. `scripts` - 30 edges
-3. `products` - 23 edges
-4. `db` - 20 edges
-5. `productVariants` - 18 edges
-6. `compilerOptions` - 17 edges
-7. `streamChat()` - 16 edges
-8. `authenticate()` - 14 edges
-9. `graphify (knowledge graph tool)` - 14 edges
-10. `AppError` - 13 edges
+1. `express` - 43 edges
+2. `DB` - 31 edges
+3. `scripts` - 30 edges
+4. `products` - 23 edges
+5. `Key Implementation Patterns` - 20 edges
+6. `productVariants` - 18 edges
+7. `Aurevo.BE — Skills & Standards Reference` - 18 edges
+8. `compilerOptions` - 17 edges
+9. `streamChat()` - 16 edges
+10. `Table Reference` - 16 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Workspace-wide decisions (two-environment model, CI/CD, no-SDK, i18n, observability)` --semantically_similar_to--> `No Supabase SDK on frontend (single most important architectural decision)`  [INFERRED] [semantically similar]
-  CLAUDE.md → ARCHITECTURE.md
-- `Modular Monolith directory structure` --semantically_similar_to--> `4-file domain module structure (schema/service/controller/routes/test)`  [INFERRED] [semantically similar]
-  SKILLS.md → ARCHITECTURE.md
-- `JWT verification middleware (getClaims/JWKS)` --semantically_similar_to--> `JWKS-based auth via supabaseAdmin.auth.getClaims`  [INFERRED] [semantically similar]
-  docs/05-implementation.md → ARCHITECTURE.md
-- `Auth Middleware (authenticate/optionalAuth/requireAdmin)` --semantically_similar_to--> `JWKS-based auth via supabaseAdmin.auth.getClaims`  [INFERRED] [semantically similar]
-  SKILLS.md → ARCHITECTURE.md
-- `Auth & Profile endpoint reference (/api/auth)` --semantically_similar_to--> `Backend-driven Google/Facebook OAuth (PKCE, state-in-redirect_to)`  [INFERRED] [semantically similar]
-  docs/04-api-design.md → ARCHITECTURE.md
+- `Invite User Email Template` --conceptually_related_to--> `Admin User Role`  [AMBIGUOUS]
+  supabase/email-templates/invite-user.html → docs/01-requirements.md
+- `MFA Factor Enrolled Notice Template` --conceptually_related_to--> `Storefront Authentication Requirements`  [AMBIGUOUS]
+  supabase/email-templates/mfa-enrolled.html → docs/01-requirements.md
+- `MFA Factor Unenrolled Notice Template` --conceptually_related_to--> `Storefront Authentication Requirements`  [AMBIGUOUS]
+  supabase/email-templates/mfa-unenrolled.html → docs/01-requirements.md
+- `Phone Number Changed Notice Template` --conceptually_related_to--> `Profile & Addresses Requirements (BD shape)`  [AMBIGUOUS]
+  supabase/email-templates/phone-changed.html → docs/01-requirements.md
+- `buildXlsxBuffer()` --references--> `xlsx`  [EXTRACTED]
+  src/lib/xlsx-export.ts → package.json
 
 ## Import Cycles
 - None detected.
@@ -193,63 +333,63 @@
 - **Offline ingestion pipeline (products + policy docs to kb_chunks)** — docs_images_rag_chatbot_architecture_products_db, docs_images_rag_chatbot_architecture_policy_faq_docs, docs_images_rag_chatbot_architecture_chunk_embed, docs_images_rag_chatbot_architecture_kb_chunks [INFERRED 0.85]
 - **Runtime chat tool-use loop (chat service + three tools)** — docs_images_rag_chatbot_architecture_chat_service, docs_images_rag_chatbot_architecture_search_knowledge, docs_images_rag_chatbot_architecture_get_product_details, docs_images_rag_chatbot_architecture_get_my_orders [INFERRED 0.85]
 
-## Communities (149 total, 83 thin omitted)
+## Communities (284 total, 209 thin omitted)
 
 ### Community 0 - "Error Type Hierarchy"
-Cohesion: 0.06
-Nodes (52): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError, deleteAvatar() (+44 more)
+Cohesion: 0.07
+Nodes (42): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, UpstreamServiceError, ValidationError (+34 more)
 
 ### Community 1 - "Auth & Address Controller"
-Cohesion: 0.05
-Nodes (55): createAddress(), deleteAddress(), deleteAvatar(), forgotPassword(), getAddresses(), getMe(), login(), logout() (+47 more)
+Cohesion: 0.06
+Nodes (54): createAddress(), deleteAddress(), deleteAvatar(), forgotPassword(), getAddresses(), getMe(), login(), logout() (+46 more)
 
 ### Community 2 - "Express App Bootstrap & Swagger"
-Cohesion: 0.06
-Nodes (54): chat(), chatHealth(), getClient(), getOrCreateConversation(), loadRecentMessages(), maybeRefreshIntentSummary(), saveMessage(), touchConversation() (+46 more)
+Cohesion: 0.08
+Nodes (45): getClient(), getOrCreateConversation(), loadRecentMessages(), maybeRefreshIntentSummary(), saveMessage(), touchConversation(), buildSystemPrompt(), buildToolList() (+37 more)
 
 ### Community 3 - "Chat Persistence Layer"
-Cohesion: 0.08
-Nodes (38): testSendEmail(), testSendSchema, router, cancelOrder(), claimOrders(), createOrder(), deleteOrder(), getOrderById() (+30 more)
+Cohesion: 0.13
+Nodes (27): cancelOrder(), claimOrders(), deleteOrder(), getOrderById(), getOrderByNumber(), getOrderInvoicePdf(), getOrders(), getOrderStats() (+19 more)
 
 ### Community 4 - "Orders Controller"
-Cohesion: 0.05
-Nodes (42): @anthropic-ai/sdk, bcryptjs, compression, dotenv, drizzle-orm, express-rate-limit, helmet, jsonwebtoken (+34 more)
+Cohesion: 0.04
+Nodes (47): @anthropic-ai/sdk, bcryptjs, compression, dotenv, drizzle-orm, express, express-rate-limit, helmet (+39 more)
 
 ### Community 5 - "Package Metadata"
-Cohesion: 0.05
-Nodes (38): author, description, engines, node, license, main, name, scripts (+30 more)
+Cohesion: 0.04
+Nodes (44): author, description, engines, node, keywords, license, main, name (+36 more)
 
 ### Community 6 - "Runtime Dependencies"
 Cohesion: 0.10
-Nodes (26): adjustInventory(), exportInventory(), getInventory(), getInventoryById(), getLowStockAlerts(), getMovements(), getVariantAvailability(), upsertInventory() (+18 more)
+Nodes (25): adjustInventory(), exportInventory(), getInventory(), getInventoryById(), getLowStockAlerts(), getMovements(), getVariantAvailability(), upsertInventory() (+17 more)
 
 ### Community 7 - "Inventory Controller"
-Cohesion: 0.06
-Nodes (35): drizzle-kit, devDependencies, drizzle-kit, pino-pretty, supertest, tsx, @types/bcryptjs, @types/compression (+27 more)
+Cohesion: 0.05
+Nodes (39): drizzle-kit, devDependencies, drizzle-kit, pino-pretty, supertest, tsx, @types/bcryptjs, @types/compression (+31 more)
 
 ### Community 8 - "Dev Dependencies"
-Cohesion: 0.12
-Nodes (29): addItem(), clearCart(), createGuestSession(), getCart(), migrateCart(), removeItem(), resolveOwner(), updateItem() (+21 more)
+Cohesion: 0.13
+Nodes (27): addItem(), clearCart(), createGuestSession(), getCart(), migrateCart(), removeItem(), resolveOwner(), updateItem() (+19 more)
 
 ### Community 9 - "Cart Controller"
 Cohesion: 0.11
 Nodes (30): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getVariantById(), getVariants(), updateVariant(), router (+22 more)
 
 ### Community 10 - "Graphify Export & Traversal Features"
-Cohesion: 0.06
-Nodes (32): JWKS-based auth via supabaseAdmin.auth.getClaims, Backend-driven Google/Facebook OAuth (PKCE, state-in-redirect_to), Atomic guarded UPDATE stock accounting at checkout, OAuth top-level state param collision with GoTrue gotcha, Shared restoreOrderStock helper, getAddresses ORDER BY created_at ASC fix (card position swap bug), Historic double-counting bug: reserved_quantity incremented AND quantity decremented for same sale, FAQ: How to Track Order (+24 more)
+Cohesion: 0.33
+Nodes (5): Delivery areas, Delivery time, Order tracking, Shipping, Shipping cost
 
 ### Community 11 - "TypeScript Compiler Config"
-Cohesion: 0.07
-Nodes (29): Graphify Skill Pointer (/graphify), FalkorDB Export / Push, MCP stdio Server (graphify.serve), Neo4j Export / Push, Token Reduction Benchmark, Wiki Export (--wiki), Monorepo / Multi-Subfolder Extraction, BFS / DFS Traversal Modes (+21 more)
+Cohesion: 0.08
+Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
 ### Community 12 - "Category/Product Routes & Tests"
 Cohesion: 0.15
-Nodes (15): app, app, app, cleanProducts(), client, db, brands, categories (+7 more)
+Nodes (13): app, app, app, cleanProducts(), brands, categories, products, cleanBrands() (+5 more)
 
 ### Community 13 - "Products Controller"
-Cohesion: 0.14
-Nodes (23): bulkDelete(), bulkUpdateStatus(), createProduct(), deleteProduct(), getFeaturedProducts(), getProductById(), getProductBySlug(), getProducts() (+15 more)
+Cohesion: 0.10
+Nodes (30): deleteProductChunk(), bulkDelete(), bulkUpdateStatus(), createProduct(), deleteProduct(), getFeaturedProducts(), getProductById(), getProductBySlug() (+22 more)
 
 ### Community 14 - "Meta CAPI Webhook Function"
 Cohesion: 0.08
@@ -260,76 +400,72 @@ Cohesion: 0.17
 Nodes (22): AdminClient, corsHeaders, createAdminClient(), DbWebhookPayload, getEnv(), handlePurchase(), jsonResponse(), loadOrderContext() (+14 more)
 
 ### Community 16 - "Admin Dashboard & Enums"
-Cohesion: 0.09
-Nodes (21): addressesRelations, brandsRelations, cartItemsRelations, categoriesRelations, inventoryMovementsRelations, inventoryRelations, metaCapiSentRelations, orderItemsRelations (+13 more)
+Cohesion: 0.06
+Nodes (35): addressesRelations, brandsRelations, cartItemsRelations, categoriesRelations, inventoryMovementsRelations, inventoryRelations, metaCapiSentRelations, orderItemsRelations (+27 more)
 
 ### Community 17 - "Product Images Admin API"
-Cohesion: 0.17
-Nodes (17): createCategory(), deleteCategory(), deleteCategoryImage(), getCategories(), getCategoryById(), updateCategory(), uploadCategoryImage(), router (+9 more)
+Cohesion: 0.18
+Nodes (16): createCategory(), deleteCategory(), deleteCategoryImage(), getCategories(), getCategoryById(), updateCategory(), uploadCategoryImage(), upload (+8 more)
 
 ### Community 18 - "Inventory Tests & Error Handler"
 Cohesion: 0.18
 Nodes (16): router, bulkUploadImages(), deleteImage(), getAllImagesAdmin(), getImageById(), getImages(), setPrimaryImage(), updateImage() (+8 more)
 
 ### Community 19 - "Categories Controller"
-Cohesion: 0.22
-Nodes (17): cancelOrder(), claimGuestOrders(), createOrder(), DbTransaction, fetchOrderItemsWithImages(), generateOrderNumber(), getOrderById(), getOrderByNumber() (+9 more)
+Cohesion: 0.21
+Nodes (18): getVariantAvailability(), cancelOrder(), claimGuestOrders(), createOrder(), DbTransaction, fetchOrderItemsWithImages(), generateOrderNumber(), getOrderById() (+10 more)
 
 ### Community 20 - "Courier Webhook & Ship/Refresh Controller"
-Cohesion: 0.21
-Nodes (14): getCourierBalance(), isValidWebhookBearer(), receiveWebhook(), refreshOrderStatus(), shipOrder(), trackByCode(), CourierWebhookBody, courierWebhookSchema (+6 more)
+Cohesion: 0.06
+Nodes (46): allowedOrigins, app, envSchema, parsed, options, swaggerSpec, getCourierBalance(), isValidWebhookBearer() (+38 more)
 
 ### Community 21 - "Courier Service & Internal Poll Route"
-Cohesion: 0.23
-Nodes (12): pollCourierStatus(), CourierEffects, mapCourierStatus(), pollActiveShipments(), recordCourierEvent(), refreshOrderStatus(), shipOrder(), TERMINAL_COURIER_STATUSES (+4 more)
+Cohesion: 0.14
+Nodes (13): router, router, router, router, router, cleanupChatHistory(), router, router (+5 more)
 
 ### Community 22 - "Auth & Orders Route Tests"
 Cohesion: 0.13
-Nodes (15): AI Shopping Assistant (RAG pipeline), AI chat / RAG module (chat + knowledge), AI Shopping Assistant Requirement, AI Chat Rebuilt as Full RAG Pipeline (Decision), AI Chat endpoint (/api/chat, SSE protocol), AI Chat RAG pipeline rebuild (from bare tool-use to full RAG), Lazy Anthropic client initialization (test-mockable), Chat request lifecycle (streaming, tool calls, history window) (+7 more)
-
-### Community 23 - "App Bootstrap & Images Tests"
-Cohesion: 0.13
-Nodes (15): Confidence Score Rubric, Hyperedge Extraction Rule, Node ID Format Rule ({stem}_{entity}), semantically_similar_to Edge Rule, Extraction Subagent Prompt Template, build_merge() replace-on-re-extract (#1344), Graph Diff Reporting, --update Incremental Re-extraction (+7 more)
+Nodes (15): Architecture Diagram, Chat Request Lifecycle, Configuration, Data Model, File Reference, Frontend Widget, Guardrails, Ingestion Pipeline (+7 more)
 
 ### Community 24 - "Variants Service & Schema"
 Cohesion: 0.18
 Nodes (15): /api/chat (SSE stream), /api/orders (transactional), /api/products (read + admin write), Chat service (Claude tool-use loop, true token streaming), Chat widget (Storefront, SSE stream), Chunk + Embed (Voyage AI), conversations + messages (multi-turn history / conversations table), get_my_orders tool (auth-gated only, scoped to req.user.id) (+7 more)
 
 ### Community 25 - "Workspace Architecture Overview"
-Cohesion: 0.13
-Nodes (14): addressType, chatRole, fulfillmentStatus, kbSourceType, movementReason, movementType, orderStatus, paymentMethod (+6 more)
+Cohesion: 0.18
+Nodes (14): testSendEmail(), testSendSchema, router, createOrder(), buildConfirmationUrl(), emailEnabled(), escapeHtml(), formatShippingAddressLine() (+6 more)
 
 ### Community 26 - "Products Service"
-Cohesion: 0.19
-Nodes (9): express, ApiResponse, Express, PaginatedResponse, PaginationParams, Request, cleanupChatHistory(), router (+1 more)
+Cohesion: 0.33
+Nodes (5): ApiResponse, Express, PaginatedResponse, PaginationParams, Request
 
 ### Community 27 - "Requirements Backlog & CI/CD Decisions"
-Cohesion: 0.24
-Nodes (8): authenticate(), optionalAuth(), requireAdmin(), verifyToken(), getDashboard(), router, getAdminDashboard(), supabaseAdmin
+Cohesion: 0.39
+Nodes (6): authenticate(), optionalAuth(), requireAdmin(), verifyToken(), getDashboard(), getAdminDashboard()
 
 ### Community 28 - "Non-Functional Requirements & Rate Limits"
-Cohesion: 0.21
-Nodes (7): app, TEST_ADDRESS, inventory, orderItems, orders, productVariants, profiles
+Cohesion: 0.13
+Nodes (13): app, TEST_ADDRESS, app, TEST_ADDRESS, app, TEST_ADDRESS, DB, courierTrackingEvents (+5 more)
 
 ### Community 29 - "RAG Chatbot Architecture Diagram"
-Cohesion: 0.20
-Nodes (12): CI/CD & two-environment model, Development workflow (build, test, micro-commit, no auto-deploy), Zod-validated env vars in src/app/config/index.ts crash-on-boot, Migration 039 kept out of production for two merges — CI silent-skip incident, Migration 039 silently skipped twice — RAG rollout incident, Rollout checklist (env vars, migrations, backfill, cron), CI Deploy Edge Functions Job (Stage 3), CI Migrate Job (Stage 2) (+4 more)
+Cohesion: 0.50
+Nodes (5): CI Deploy Edge Functions Job (Stage 3), CI Migrate Job (Stage 2), Migration 039 silently skipped twice (dorny/paths-filter race with merge-back.yml), paths-filter base/ref pinning to event SHAs, CI Test Job (Stage 1)
 
 ### Community 30 - "Railway Deployment Config"
-Cohesion: 0.23
-Nodes (5): envSchema, parsed, logger, sentryEnabled(), PORT
+Cohesion: 0.18
+Nodes (16): buildInvoicePdfBuffer(), deriveInvoicePayment(), Doc, drawItemsHeader(), extractEmailAddress(), FONT_BOLD, FONT_REGULAR, FONTS_DIR (+8 more)
 
 ### Community 31 - "DB Sync Script"
-Cohesion: 0.18
-Nodes (11): Aurevo.BE (Express + TypeScript + Drizzle backend), Aurevo.UI (React storefront/admin), Modular Monolith + BFF pattern (chosen over microservices), 4-file domain module structure (schema/service/controller/routes/test), No Supabase SDK on frontend (single most important architectural decision), Supabase (Postgres 15 + Auth + Storage), Testing strategy (BE Vitest+Supertest, FE Vitest+MSW, E2E Playwright), Workspace-wide decisions (two-environment model, CI/CD, no-SDK, i18n, observability) (+3 more)
+Cohesion: 0.25
+Nodes (7): Architecture, Commands, Development workflow (always apply), Environment, graphify, Key gotchas, Workspace-wide decisions
 
 ### Community 32 - "Auth Middleware"
-Cohesion: 0.22
-Nodes (7): allowedOrigins, app, options, swaggerSpec, router, router, router
+Cohesion: 0.12
+Nodes (16): `brands`, `cart_items`, `categories`, `courier_tracking_events`, `inventory`, `inventory_movements`, `order_items`, `orders` (+8 more)
 
 ### Community 33 - "Graphify Extraction Spec"
-Cohesion: 0.24
-Nodes (10): Return window (7 days, defective/damaged/different), Delivery time (2-3 days Dhaka, 3-5 outside, up to 7 remote), conversations table (chat sessions, retention-driving), kb_chunks table (RAG vector knowledge base, migration 039), messages table (chat turns, cascade delete), RAG data model (kb_chunks/conversations/messages, migration 039), Ingestion pipeline (ingestProducts/ingestPolicyDocs/upsertProductChunk), Policy-doc chunking dropped heading-only sections bug (fixed) (+2 more)
+Cohesion: 0.29
+Nodes (6): Exchanges, How to start a return, Non-returnable items, Refunds, Return window, Returns & Exchanges
 
 ### Community 34 - "Cart Route Tests"
 Cohesion: 0.20
@@ -344,12 +480,12 @@ Cohesion: 0.22
 Nodes (6): DUMP_DEFAULT, ENV_LOCAL, restoreLocalData(), ROOT, run(), WIPE_SCRIPT
 
 ### Community 37 - "Community 37"
-Cohesion: 0.24
-Nodes (8): assertEnabled(), BalanceResponse, courierEnabled(), CreateOrderPayload, CreateOrderResponse, request(), StatusResponse, SteadfastConsignment
+Cohesion: 0.13
+Nodes (14): Architecture Pattern: Modular Monolith + BFF, Auth Design, Backend: Express + TypeScript, Database: Supabase (PostgreSQL 15), Error Hierarchy, External Integrations, Module Structure, ORM: Drizzle ORM (introspect-first) (+6 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.33
-Nodes (4): globalErrorHandler(), app, createVariantsApp(), createTestApp()
+Cohesion: 0.23
+Nodes (6): globalErrorHandler(), app, app, app, createVariantsApp(), createTestApp()
 
 ### Community 39 - "Community 39"
 Cohesion: 0.22
@@ -364,7 +500,7 @@ Cohesion: 0.25
 Nodes (6): content, fs, outPath, path, srcPath, tables
 
 ### Community 42 - "Community 42"
-Cohesion: 0.32
+Cohesion: 0.31
 Nodes (6): publicLimiter, validate(), zodFieldErrors(), router, getAllVariants(), getAllVariantsSchema
 
 ### Community 43 - "Community 43"
@@ -372,68 +508,108 @@ Cohesion: 0.25
 Nodes (3): app, cartItems, guestSessions
 
 ### Community 44 - "Community 44"
-Cohesion: 0.29
-Nodes (7): Observability stack (pino, Sentry, health check, graceful shutdown), logger.ts/sentry.ts/health check/fail-fast boot, Health endpoint (/health, /api/health), Deep Health Check (GET /health, /api/health), Fail-Fast Boot + Graceful Shutdown, Sentry error tracking (initSentry, unexpected-only capture), Structured Logging (pino, pino-http)
+Cohesion: 0.06
+Nodes (33): AI Chat — RAG Pipeline (rebuilt), BD-Shaped Saved Addresses, Build Order & Rationale, Cart `getCart` — Full JOIN, Composite Filter Pattern (Products, Orders, Inventory), CORS `exposedHeaders`, Courier Tracking (Steadfast), Deep Health Check (+25 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.29
-Nodes (7): Requirements Backlog, No Dedicated Staging Supabase Project (Decision), Testing: Vitest + Supertest Choice, Testing Philosophy: Real DB, No Mocks, CI/CD Pipeline (ci.yml), Load Testing Plan Context & Constraints, Files to Touch (Load Testing)
+Cohesion: 0.17
+Nodes (12): 1. Rate-limiter bypass (small BE change, no-op by default), 2. Synthetic-traffic tagging: `X-Load-Test-Run-Id` header → `loadTestRunId` column, 3. Seed a dedicated load-test product (manual, before each run), 4. k6 scripts (new `Aurevo.BE/loadtest/` directory), 5. Cleanup script (new `Aurevo.BE/loadtest/cleanup.ts`), 6. Execution runbook, Aurevo — Load Testing (k6, full user journey, against production), Context (+4 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.29
 Nodes (5): app, TEST_ADDRESS, userAddresses, MOCK_ADMIN_USER, MOCK_USER
 
 ### Community 49 - "Community 49"
-Cohesion: 0.33
-Nodes (6): Storefront Authentication Requirements, Auth Design (JWKS getClaims), Identity Linked Notice Template, Identity Unlinked Notice Template, MFA Factor Enrolled Notice Template, MFA Factor Unenrolled Notice Template
+Cohesion: 0.67
+Nodes (3): Storefront Authentication Requirements, MFA Factor Enrolled Notice Template, MFA Factor Unenrolled Notice Template
 
 ### Community 50 - "Community 50"
-Cohesion: 0.33
-Nodes (6): keywords, api, drizzle, ecommerce, node, supabase
+Cohesion: 0.13
+Nodes (14): Coverage by Module, `createTestApp(router)`, FK-Safe Cleanup Order, `generateToken(user)`, Key config (`vitest.config.ts`), Mock users, Phase 6 — Testing Strategy, Philosophy: Real DB, No Mocks on the Data Layer (+6 more)
 
 ### Community 51 - "Courier Internal Poll Tests"
-Cohesion: 0.33
-Nodes (3): app, TEST_ADDRESS, courierTrackingEvents
+Cohesion: 0.14
+Nodes (14): AI Chat — `/api/chat`, Auth & Profile — `/api/auth`, Brands — `/api/brands`, Cart — `/api/cart`, Categories — `/api/categories`, Courier — `/api/courier`, Endpoint Reference, Health — `/health` · `/api/health` (+6 more)
+
+### Community 52 - "Courier Ship/Webhook Tests"
+Cohesion: 0.26
+Nodes (11): createBrand(), deleteBrand(), getBrandById(), getBrands(), updateBrand(), upload, brandIdSchema, createBrandSchema (+3 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.47
-Nodes (5): embed(), embedDocuments(), embedQuery(), VoyageEmbeddingsResponse, VoyageInputType
-
-### Community 54 - "Community 54"
-Cohesion: 0.40
-Nodes (5): Data layer — 22 tables, 11 enums, RLS, service role key, Database Design overview (22 tables, 11 enums), Module Build Order & Rationale (Phase 0-10), Drizzle client singleton (src/db/index.ts), Module Build Order (Categories→...→AI Chat→Admin)
+Cohesion: 0.20
+Nodes (10): 1. What this is, 2. High-level architecture, 3. Backend (Aurevo.BE), 4. Frontend (Aurevo.UI), 5. Data layer, 6. CI/CD & environments, 7. Testing, 8. Codebase knowledge graph (+2 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.40
 Nodes (5): Backend: Modular Monolith (Express + TypeScript), RAG Chatbot Architecture Diagram (draft/duplicate of docs/images/rag-chatbot-architecture.svg, the canonical diagram referenced from docs/09-ai-chatbot-rag.md), Ingestion pipeline (offline, re-run after catalog changes), Runtime chat flow (every customer message), Supabase / PostgreSQL 15
 
 ### Community 56 - "Community 56"
-Cohesion: 0.50
-Nodes (4): FAQ: Out of Stock Items, Sizing: Between Sizes, Sizing: Finding the Right Fit, Sizing: How Sizes Are Shown (variants)
-
-### Community 58 - "Community 58"
-Cohesion: 0.67
-Nodes (3): Tiered rate limiters (public/auth/cart/strict/upload/chat), Request lifecycle (middleware chain), Rate Limiters table
+Cohesion: 0.33
+Nodes (5): Between sizes, Exchanging for a different size, Finding the right fit, How sizes are shown, Sizing Guide
 
 ### Community 59 - "Community 59"
-Cohesion: 0.67
-Nodes (3): cartLimiter split from authLimiter (routine adds vs brute-force), POST /cart/items moved off authLimiter to own cartLimiter, API Rate Limits table
+Cohesion: 0.25
+Nodes (7): Authentication, Base URL, Error Code Reference, HTTP Status Code Reference, Interactive Docs, Rate Limits, Response Shape
 
-### Community 60 - "Community 60"
-Cohesion: 0.67
-Nodes (3): graphify claude install (CLAUDE.md integration), graphify hook install (post-commit auto-rebuild), Commit Hook / Native CLAUDE.md Integration
+### Community 76 - "Community 76"
+Cohesion: 0.22
+Nodes (8): Entity Relationship Diagram, Enums, Indexes, Interactive Lucidchart Diagram, Overview, Phase 3 — Database Design, Row-Level Security, Text Summary (quick reference)
 
-### Community 61 - "Community 61"
-Cohesion: 0.67
-Nodes (3): Payment: Cash on Delivery, Payment: Online Payment Option, Payment: Security (no card details stored)
+### Community 80 - "Community 80"
+Cohesion: 0.22
+Nodes (7): Database Scripts, Deployment (Railway), Key Features, Live Architecture, Repositories, SDLC Documentation, Tech Decisions at a Glance
 
-### Community 62 - "Community 62"
-Cohesion: 0.67
-Nodes (3): Order Confirmation Email via Resend (Decision), Environment Variable Security, Rate-Limiter Bypass Design
+### Community 81 - "Community 81"
+Cohesion: 0.11
+Nodes (18): AI Chat Module (Phase 10, rebuilt as RAG), AppError Classes, Architecture, Aurevo.BE — Skills & Standards Reference, Auth Middleware, Composite Filter Pattern (list endpoints), Controller Pattern, Courier (Steadfast) (+10 more)
 
-### Community 63 - "Community 63"
+### Community 82 - "Community 82"
+Cohesion: 0.20
+Nodes (10): Admin Panel, Backlog, Decisions Log, Functional Requirements, Non-Functional Requirements, Out of Scope (for this portfolio build), Phase 1 — Requirements, Project Brief (+2 more)
+
+### Community 89 - "Community 89"
+Cohesion: 0.33
+Nodes (5): Cash on delivery, Online payment, Order confirmation, Payment Methods, Payment security
+
+### Community 90 - "Community 90"
+Cohesion: 0.22
+Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
+
+### Community 93 - "Community 93"
+Cohesion: 0.46
+Nodes (5): express, chat(), chatHealth(), ChatMessageInput, chatMessageSchema
+
+### Community 104 - "Community 104"
+Cohesion: 0.29
+Nodes (6): Can I change or cancel my order after placing it?, Do I need an account to order?, Do you have a physical store?, Frequently Asked Questions, How do I track my order?, What if an item I want is out of stock?
+
+### Community 108 - "Community 108"
+Cohesion: 0.33
+Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
+
+### Community 112 - "Community 112"
+Cohesion: 0.40
+Nodes (5): 1. Start local database, 2. Run the backend API, 3. Run the frontend, Prerequisites, Quick Start
+
+### Community 116 - "Community 116"
+Cohesion: 0.50
+Nodes (3): For /graphify add, For --watch, graphify reference: add a URL and watch a folder
+
+### Community 120 - "Community 120"
+Cohesion: 0.50
+Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify reference: commit hook and native CLAUDE.md integration
+
+### Community 123 - "Community 123"
+Cohesion: 0.50
+Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
+
+### Community 125 - "Community 125"
+Cohesion: 0.11
+Nodes (17): Aurevo.BE — Railway, Aurevo.UI — Vercel, CI/CD, Environment Variable Security, Infrastructure Map, Local Development Setup, Merge-back (`merge-back.yml`) — on push to `main`, Monitoring (+9 more)
+
+### Community 150 - "Auth Design (JWKS getClaims)"
 Cohesion: 0.67
-Nodes (3): fileParallelism: false in Vitest config (shared local Postgres), Tech Decisions at a Glance table, Tech Stack table (Drizzle, Zod, express-rate-limit, swagger)
+Nodes (3): Auth Design (JWKS getClaims), Identity Linked Notice Template, Identity Unlinked Notice Template
 
 ## Ambiguous Edges - Review These
 - `Admin User Role` → `Invite User Email Template`  [AMBIGUOUS]
@@ -444,13 +620,11 @@ Nodes (3): fileParallelism: false in Vitest config (shared local Postgres), Tech
   supabase/email-templates/mfa-unenrolled.html · relation: conceptually_related_to
 - `Profile & Addresses Requirements (BD shape)` → `Phone Number Changed Notice Template`  [AMBIGUOUS]
   supabase/email-templates/phone-changed.html · relation: conceptually_related_to
-- `Historic double-counting bug: reserved_quantity incremented AND quantity decremented for same sale` → `Transactional Stock Reservation (Orders, stock/reservedStock update)`  [AMBIGUOUS]
-  docs/05-implementation.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **408 isolated node(s):** `$schema`, `builder`, `startCommand`, `healthcheckPath`, `healthcheckTimeout` (+403 more)
+- **650 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+645 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **83 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **209 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -463,9 +637,9 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Profile & Addresses Requirements (BD shape)` and `Phone Number Changed Notice Template`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Historic double-counting bug: reserved_quantity incremented AND quantity decremented for same sale` and `Transactional Stock Reservation (Orders, stock/reservedStock update)`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `express` connect `Products Service` to `Auth Middleware`, `Auth & Address Controller`, `Error Type Hierarchy`, `Express App Bootstrap & Swagger`, `Orders Controller`, `Chat Persistence Layer`, `Runtime Dependencies`, `Community 38`, `Dev Dependencies`, `Community 40`, `Community 42`, `Cart Controller`, `Products Controller`, `Product Images Admin API`, `Community 50`, `Inventory Tests & Error Handler`, `Requirements Backlog & CI/CD Decisions`, `Railway Deployment Config`?**
-  _High betweenness centrality (0.184) - this node is a cross-community bridge._
-- **Why does `keywords` connect `Community 50` to `Products Service`, `Package Metadata`?**
-  _High betweenness centrality (0.078) - this node is a cross-community bridge._
+- **Why does `express` connect `Community 93` to `Auth & Address Controller`, `Chat Persistence Layer`, `Package Metadata`, `Runtime Dependencies`, `Community 38`, `Dev Dependencies`, `Community 40`, `Community 42`, `Cart Controller`, `Products Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Courier Ship/Webhook Tests`, `Courier Service & Internal Poll Route`, `Workspace Architecture Overview`, `Products Service`, `Requirements Backlog & CI/CD Decisions`?**
+  _High betweenness centrality (0.120) - this node is a cross-community bridge._
+- **Why does `keywords` connect `Package Metadata` to `Community 93`?**
+  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `Orders Controller` to `Package Metadata`?**
+  _High betweenness centrality (0.049) - this node is a cross-community bridge._

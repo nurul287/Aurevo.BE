@@ -123,17 +123,17 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - **Invoice PDFs are generated on demand with `pdfkit`**, never persisted to disk or object storage. Regenerated on every email send and every `GET /orders/by-number/:orderNumber/invoice` request so payment status and line items stay current. Uses a bundled Noto Sans Bengali static TTF (not the variable font — fontkit corrupts variable-font glyphs) because shipping names/addresses may be Bangla, and draws the Aurevo wordmark as vector SVG via `svg-to-pdfkit`. Order numbers are fixed-width (`ORD-` + 12 digits from `order_number_seq`) so the invoice layout stays stable under concurrency.
 - **Courier integration uses Steadfast** (Bangladesh). Consignment booking is an explicit admin action only (`POST /courier/orders/:id/ship`) — never automatic — because booking commits real COD/delivery-charge money and Steadfast has no cancel-consignment endpoint. Status updates arrive via a Bearer-token-guarded webhook (`POST /courier/webhook`) with a reconciliation poll (`POST /internal/courier/poll`) as a safety net for missed webhooks. Public tracking (`GET /courier/track/:trackingCode`) returns status + event timeline with no recipient PII.
 - **AI chat rebuilt as a full RAG pipeline** (previously a bare Anthropic tool-use bot with no retrieval, no persistence, and no real streaming). Voyage AI embeddings + pgvector (`kb_chunks`) power semantic search over products and a small set of policy/FAQ markdown docs (`content/policies/`); Anthropic's real `stream: true` API replaces the earlier simulated-streaming loop. Auto-embedding on product create/update/delete is a lightweight fire-and-forget hook, not full CDC — deliberately, given the catalog's current small scale (see Backlog for the CDC follow-up if that changes). Conversation history persists per `sessionId` with a 90-day retention window for logged-in users and 48 hours for guests, cleaned up by a secret-gated internal route (`POST /internal/chat/cleanup`) triggered by a daily Railway cron — no new job-runner infra. The order-lookup tool is only ever offered to the model on an authenticated request, enforced in code (not just prompted), so a guest session or a prompt-injection attempt has no path to another customer's order data.
+- **Full authentication + checkout E2E testing was implemented**, not deferred. Playwright specs in `Aurevo.UI/e2e/` cover login (valid/invalid credentials), logout (session revocation verified against a protected route), the full password-reset loop (request → real email via Inbucket → follow the link → set new password → log in with it, plus the expired/invalid-link state), guest checkout, and logged-in checkout with a saved address.
+- **The go-live checklist was executed.** The site is live in production — Aurevo.UI on Vercel at `aurevofashion.store`, Aurevo.BE on Railway at `api-aurevofashion.up.railway.app` — serving real customer orders, with Sentry error tracking, structured pino logs, and the deep `/api/health` check already covering the "monitor system health" half of this item.
 
 ---
 
 ## Backlog
 
 - Load testing — design doc parked at [`08-load-testing-plan.md`](08-load-testing-plan.md) (k6, full user journey, production safeguards); not started
-- Full authentication E2E testing — login, logout, reset password, full checkout flow
 - Role-based access control — additional roles beyond admin/user (order management role, product management role)
 - Security audit
 - Bulk data processing pipeline
-- Execute the go-live checklist, switch DNS records, and monitor system health
 - Payment gateway integration
 - CDC/delta indexing for the RAG knowledge base — current auto-embed hook re-embeds one product per mutation, which is fine at today's catalog size but doesn't scale to high write volume; revisit if that changes
 - Self-service "clear my chat history" action for logged-in users (currently only the 90-day automatic retention window applies)

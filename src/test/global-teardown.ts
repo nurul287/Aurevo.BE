@@ -27,6 +27,30 @@ export default async function () {
       console.log("[global-teardown] Reseeded local catalog from supabase/seed.sql");
     } catch (err) {
       console.error("[global-teardown] Failed to reseed catalog:", err);
+    }
+
+    // `profiles` is also truncated between test files, wiping the local
+    // dev-admin fixture used for manual browser testing. It can't live in
+    // seed.sql because it must reference a real auth.users row created via
+    // Supabase (see supabase/manual/grant-local-admin.sql). Re-grant it here
+    // by email so a `pnpm test` run right before manual browser testing
+    // doesn't leave the fixture 404ing on its next cart/order FK check. Safe
+    // no-op if the account doesn't exist (CI, other devs' machines).
+    try {
+      const testAdminEmail = process.env.TEST_ADMIN_EMAIL || "aurevo-test-admin@example.com";
+      const [user] = await sql`select id from auth.users where email = ${testAdminEmail} limit 1`;
+      if (user) {
+        await sql`
+          insert into public.profiles (id, preferences)
+          values (${user.id}, '{"role":"admin"}'::jsonb)
+          on conflict (id) do update set
+            preferences = coalesce(public.profiles.preferences, '{}'::jsonb) || '{"role":"admin"}'::jsonb,
+            updated_at = now()
+        `;
+        console.log(`[global-teardown] Re-granted admin profile for ${testAdminEmail}`);
+      }
+    } catch (err) {
+      console.error("[global-teardown] Failed to re-grant test-admin profile:", err);
     } finally {
       await sql.end();
     }
