@@ -234,4 +234,16 @@ INSERT INTO public.product_images (id, product_id, variant_id, url, alt_text, so
   ('84aeb844-ecd7-4a4a-8852-cb9c28bc1513', 'bdc8fa3a-127d-4604-b3cd-1f86041ed9cc', NULL, 'https://bwcbcmeftplyljgcacvr.supabase.co/storage/v1/object/public/product-images/products/bdc8fa3a-127d-4604-b3cd-1f86041ed9cc/1778873805069-1-p-side.jpg', '', '3', 'f', '2026-05-15 19:36:46.132714+00'),
   ('877e37a1-bdcc-4f1f-967f-0055dea763fc', 'bdc8fa3a-127d-4604-b3cd-1f86041ed9cc', NULL, 'https://bwcbcmeftplyljgcacvr.supabase.co/storage/v1/object/public/product-images/products/bdc8fa3a-127d-4604-b3cd-1f86041ed9cc/1778873805066-0-b-side.jpg', '', '4', 'f', '2026-05-15 19:36:46.177634+00');
 
+-- The product_variants INSERT above never sets stock/reserved_stock, so every
+-- row silently takes the column DEFAULT of 0 while inventory is seeded above
+-- with the real quantities. Sync them here so admin's Products list ("Out of
+-- Stock", derived from product_variants.stock) doesn't disagree with
+-- Inventory Levels (derived from the inventory table) on every fresh seed.
+UPDATE product_variants pv
+SET stock = GREATEST(i.quantity - i.reserved_quantity, 0),
+    updated_at = now()
+FROM inventory i
+WHERE i.variant_id = pv.id
+  AND pv.stock != GREATEST(i.quantity - i.reserved_quantity, 0);
+
 COMMIT;
