@@ -23,7 +23,7 @@ import { inArray } from "drizzle-orm";
 import { db } from "../db";
 import { products } from "../db/schema";
 import { retrieve } from "../app/modules/knowledge/knowledge.service";
-import type { KnowledgeSourceType } from "../app/modules/knowledge/knowledge.service";
+import type { KnowledgeSourceType, RetrieveMode } from "../app/modules/knowledge/knowledge.service";
 import { config } from "../app/config";
 
 const GOLDEN_PATH = path.resolve(process.cwd(), "content/eval/retrieval-golden.json");
@@ -41,16 +41,18 @@ type CaseResult = {
   expected: string[];
 };
 
+const MODES: RetrieveMode[] = ["vector", "hybrid"];
+
 function parseArgs(argv: string[]) {
-  const args = { mode: "vector", k: 3, json: false };
+  const args = { mode: "hybrid" as RetrieveMode, k: 3, json: false };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--mode") args.mode = argv[++i] ?? args.mode;
+    if (argv[i] === "--mode") args.mode = (argv[++i] ?? args.mode) as RetrieveMode;
     else if (argv[i] === "--k") args.k = Number(argv[++i] ?? args.k);
     else if (argv[i] === "--json") args.json = true;
   }
-  if (args.mode !== "vector") {
-    // "hybrid" / "hybrid+rerank" plumb in with their own retrieval sessions.
-    console.error(`Unknown --mode "${args.mode}" — only "vector" is implemented so far.`);
+  if (!MODES.includes(args.mode)) {
+    // "hybrid+rerank" plumbs in with the reranking session.
+    console.error(`Unknown --mode "${args.mode}" — expected one of: ${MODES.join(", ")}.`);
     process.exit(1);
   }
   if (!Number.isInteger(args.k) || args.k < 1) {
@@ -65,10 +67,10 @@ function parseArgs(argv: string[]) {
  * will 429 partway through a 30+ query eval run — wait out the window and
  * retry rather than aborting with half the metrics computed.
  */
-async function retrieveWithRetry(query: string, k: number, sourceType?: KnowledgeSourceType, attempts = 5) {
+async function retrieveWithRetry(query: string, k: number, mode: RetrieveMode, sourceType?: KnowledgeSourceType, attempts = 5) {
   for (;;) {
     try {
-      return await retrieve(query, k, sourceType);
+      return await retrieve(query, k, sourceType, { mode });
     } catch (err) {
       if (attempts-- <= 0 || !(err instanceof Error) || !err.message.includes("(429)")) throw err;
       await new Promise((resolve) => setTimeout(resolve, 21_000));
@@ -115,7 +117,7 @@ async function main() {
       c.relevant.map((r) => (r.kind === "product" ? `product:${slugToId.get(r.slug)!}` : `chunk:${r.sourceId}`)),
     );
 
-    const retrieved = await retrieveWithRetry(c.query, args.k, c.sourceType);
+    const retrieved = await retrieveWithRetry(c.query, args.k, args.mode, c.sourceType);
     const retrievedKeys = retrieved.map((r) => (r.sourceType === "product" ? `product:${r.sourceId}` : `chunk:${r.sourceId}`));
 
     const hits = retrievedKeys.filter((key) => expected.has(key));
