@@ -13,7 +13,13 @@ type VoyageEmbeddingsResponse = {
   data: { embedding: number[]; index: number }[];
 };
 
-async function embed(input: string[], inputType: VoyageInputType): Promise<number[][]> {
+// A free-tier Voyage key is limited to 3 requests/minute, so waiting out a
+// 429 needs a full 60s/3 window plus a little slack.
+const RATE_LIMIT_BACKOFF_MS = 21_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function embed(input: string[], inputType: VoyageInputType, retriesOn429 = 0): Promise<number[][]> {
   const res = await fetch(VOYAGE_EMBEDDINGS_URL, {
     method: "POST",
     headers: {
@@ -27,6 +33,11 @@ async function embed(input: string[], inputType: VoyageInputType): Promise<numbe
     }),
   });
 
+  if (res.status === 429 && retriesOn429 > 0) {
+    await sleep(RATE_LIMIT_BACKOFF_MS);
+    return embed(input, inputType, retriesOn429 - 1);
+  }
+
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Voyage embeddings request failed (${res.status}): ${body}`);
@@ -36,9 +47,15 @@ async function embed(input: string[], inputType: VoyageInputType): Promise<numbe
   return json.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
 }
 
-/** Embeds chunks going INTO the knowledge base (products, policy docs). */
+/**
+ * Embeds chunks going INTO the knowledge base (products, policy docs).
+ * Retries through 429s: every caller is offline (ingestion script) or
+ * fire-and-forget (auto-embed on product changes), so waiting out a
+ * free-tier rate-limit window beats failing the embed. embedQuery stays
+ * fail-fast — a chat search must not stall for 21s.
+ */
 export async function embedDocuments(texts: string[]): Promise<number[][]> {
-  return embed(texts, "document");
+  return embed(texts, "document", 5);
 }
 
 /** Embeds a user's search query. Voyage recommends a distinct input_type per side for best retrieval quality. */
