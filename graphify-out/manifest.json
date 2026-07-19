@@ -15,8 +15,8 @@
     "semantic_hash": "59e67f85075874941db7090c8f9ac2d3"
   },
   "package.json": {
-    "mtime": 1784367010.3554356,
-    "ast_hash": "81fd9ea14d7e10658155d9201a88f8d7",
+    "mtime": 1784489794.2289443,
+    "ast_hash": "8662e44e8f283b96337d3ea3ac3ff582",
     "semantic_hash": ""
   },
   "railway.json": {
@@ -735,9 +735,9 @@
     "semantic_hash": ""
   },
   "src/lib/voyage.ts": {
-    "mtime": 1784040935.699017,
-    "ast_hash": "b70e9d4505fcd4d0c416fef35dc77f67",
-    "semantic_hash": "b70e9d4505fcd4d0c416fef35dc77f67"
+    "mtime": 1784489983.3914297,
+    "ast_hash": "555cb05289e6d6be9667fb54c127b31d",
+    "semantic_hash": ""
   },
   "src/scripts/ingest-knowledge.ts": {
     "mtime": 1784041002.1247404,
@@ -895,9 +895,9 @@
     "semantic_hash": ""
   },
   "docs/09-ai-chatbot-rag.md": {
-    "mtime": 1784340721.9672544,
-    "ast_hash": "dc3048585b52a1a82006902d7a689e17",
-    "semantic_hash": "dc3048585b52a1a82006902d7a689e17"
+    "mtime": 1784491058.7955618,
+    "ast_hash": "0ab1f45fb2463f2351e5f338a0ef8685",
+    "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
     "mtime": 1783163117.4998267,
@@ -1057,6 +1057,21 @@
   "assets/logo/aurevo-logo-black.svg": {
     "mtime": 1784367016.3236992,
     "ast_hash": "4578dfba33b6c5c9cfd52f420d80f8eb",
+    "semantic_hash": ""
+  },
+  "content/eval/retrieval-golden.json": {
+    "mtime": 1784489749.5947962,
+    "ast_hash": "f78c84d3ea51d7711ff7deb3e172799d",
+    "semantic_hash": ""
+  },
+  "src/app/modules/knowledge/knowledge.test.ts": {
+    "mtime": 1784490060.890565,
+    "ast_hash": "be43047c2470e1af21e312072e35cb49",
+    "semantic_hash": ""
+  },
+  "src/scripts/eval-retrieval.ts": {
+    "mtime": 1784489995.7776177,
+    "ast_hash": "e33f561b57c0b6f17c9461513524693b",
     "semantic_hash": ""
   }
 }
