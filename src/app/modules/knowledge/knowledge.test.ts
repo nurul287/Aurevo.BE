@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { db } from "../../../db";
 import { kbChunks } from "../../../db/schema";
 import { retrieve, rrfFuse } from "./knowledge.service";
-import { embedQuery } from "../../../lib/voyage";
+import { embedQuery, rerank } from "../../../lib/voyage";
 
 // Deterministic embeddings — no real Voyage calls. Basis-style 1024-dim
 // vectors give exact, hand-computable cosine distances: identical vectors
@@ -10,6 +10,7 @@ import { embedQuery } from "../../../lib/voyage";
 vi.mock("../../../lib/voyage", () => ({
   embedQuery: vi.fn(),
   embedDocuments: vi.fn(),
+  rerank: vi.fn(),
 }));
 
 function basisVector(index: number, weight = 1): number[] {
@@ -80,7 +81,8 @@ describe("knowledge.retrieve", () => {
 
   beforeEach(async () => {
     await db.delete(kbChunks);
-    vi.mocked(embedQuery).mockResolvedValue(QUERY_EMBEDDING);
+    vi.mocked(embedQuery).mockReset().mockResolvedValue(QUERY_EMBEDDING);
+    vi.mocked(rerank).mockReset();
     await seedChunks();
   });
 
@@ -155,6 +157,34 @@ describe("knowledge.retrieve", () => {
 
     const results = await retrieve("Vomero Shoes1.1 special edition", 3);
     expect(results.map((r) => r.sourceId)).not.toContain("product-lexical");
+  });
+
+  it("hybrid+rerank applies the reranker's order and attaches its scores", async () => {
+    // Reranker inverts the fusion order: whatever it hands back index-by-score
+    // is the final order, regardless of how vector/keyword ranked it.
+    vi.mocked(rerank).mockImplementation(async (_q, docs, topK) => {
+      // Rank last candidate first — a total reversal to prove rerank wins.
+      const reversed = docs.map((_, i) => docs.length - 1 - i);
+      return reversed.slice(0, topK).map((index, r) => ({ index, relevanceScore: 1 - r * 0.1 }));
+    });
+
+    const results = await retrieve("anything", 3, undefined, { mode: "hybrid+rerank" });
+    // Fusion (vector-dominated here) would put product-exact first; the
+    // reversing reranker must push it down and surface the far chunks.
+    expect(results[0]!.sourceId).not.toBe("product-exact");
+    expect(results[0]).toHaveProperty("score", 1);
+    expect(results.every((r) => typeof r.score === "number")).toBe(true);
+  });
+
+  it("hybrid+rerank falls back to fusion order when the reranker throws", async () => {
+    vi.mocked(rerank).mockRejectedValue(new Error("Voyage rerank request failed (429): rate limited"));
+
+    const results = await retrieve("anything", 3, undefined, { mode: "hybrid+rerank" });
+    // Must still return results in the pre-rerank (fusion) order — a rerank
+    // outage degrades quality, never correctness.
+    expect(results[0]!.sourceId).toBe("product-exact");
+    expect(results).toHaveLength(3);
+    expect(results.every((r) => r.score === undefined)).toBe(true);
   });
 });
 

@@ -5,7 +5,7 @@ import path from "node:path";
 import { db } from "../../../db";
 import { brands, categories, kbChunks, productImages, productVariants, products } from "../../../db/schema";
 import { logger } from "../../../lib/logger";
-import { embedDocuments, embedQuery } from "../../../lib/voyage";
+import { embedDocuments, embedQuery, rerank } from "../../../lib/voyage";
 
 const POLICY_DOCS_DIR = path.resolve(process.cwd(), "content/policies");
 
@@ -195,6 +195,9 @@ export type RetrievedChunk = {
   sourceType: KnowledgeSourceType;
   sourceId: string | null;
   metadata: unknown;
+  // Reranker relevance score when mode includes reranking; absent otherwise.
+  // Non-breaking for existing consumers (chat.service reads title/content).
+  score?: number;
 };
 
 /**
@@ -211,7 +214,7 @@ export async function getAllProductTitles(): Promise<{ title: string | null; met
     .where(eq(kbChunks.sourceType, "product"));
 }
 
-export type RetrieveMode = "vector" | "hybrid";
+export type RetrieveMode = "vector" | "hybrid" | "hybrid+rerank";
 
 export type RetrieveOpts = { mode?: RetrieveMode };
 
@@ -300,6 +303,28 @@ export function rrfFuse<T extends { id: string }>(lists: T[][], k = 60): T[] {
     .map((entry) => entry.item);
 }
 
+/**
+ * Cross-encoder rerank of the fused candidate pool, cut to topK, attaching
+ * the reranker's relevance score. Reranking is best-effort: any failure
+ * (timeout, free-tier 429, network) falls back to the fusion order rather
+ * than failing the search — the reranker only reorders results vector +
+ * keyword already found, so its absence degrades quality, never correctness.
+ */
+async function rerankCandidates(query: string, candidates: Candidate[], topK: number): Promise<Candidate[]> {
+  if (candidates.length === 0) return [];
+  try {
+    const ranked = await rerank(
+      query,
+      candidates.map((c) => `${c.title ?? ""}\n${c.content}`),
+      topK,
+    );
+    return ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevanceScore }));
+  } catch (err) {
+    logger.warn({ err, query }, "knowledge.rerank failed — falling back to fusion order");
+    return candidates.slice(0, topK);
+  }
+}
+
 export async function retrieve(
   query: string,
   topK = 3,
@@ -327,6 +352,9 @@ export async function retrieve(
       keywordSearch(query, CANDIDATE_POOL, sourceType),
     ]);
     fused = rrfFuse([vectorHits, keywordHits]);
+    if (mode === "hybrid+rerank") {
+      fused = await rerankCandidates(query, fused, topK);
+    }
   }
 
   const rows = fused.slice(0, topK).map(({ id: _id, ...chunk }) => chunk);

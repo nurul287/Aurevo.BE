@@ -41,7 +41,7 @@ type CaseResult = {
   expected: string[];
 };
 
-const MODES: RetrieveMode[] = ["vector", "hybrid"];
+const MODES: RetrieveMode[] = ["vector", "hybrid", "hybrid+rerank"];
 
 function parseArgs(argv: string[]) {
   // Default mirrors production's default retrieval mode.
