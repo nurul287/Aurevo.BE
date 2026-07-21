@@ -15,8 +15,8 @@
     "semantic_hash": "59e67f85075874941db7090c8f9ac2d3"
   },
   "package.json": {
-    "mtime": 1784654280.4103723,
-    "ast_hash": "ba11b9f318221c50292ae37e927f2ef8",
+    "mtime": 1784661588.0988078,
+    "ast_hash": "d821486fa88fc9472d60fc3de71ae56d",
     "semantic_hash": ""
   },
   "railway.json": {
@@ -895,8 +895,8 @@
     "semantic_hash": ""
   },
   "docs/09-ai-chatbot-rag.md": {
-    "mtime": 1784660929.2957795,
-    "ast_hash": "ff00da77d77b2e7467eaf89bb9678f03",
+    "mtime": 1784662131.9280455,
+    "ast_hash": "4202d59fef8c6eb8888bb5d678cff110",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
@@ -1092,6 +1092,26 @@
   "supabase/migrations/044_chat_metrics.sql": {
     "mtime": 1784656865.6652162,
     "ast_hash": "724fbc6460b1c75718b75eb7de2371b8",
+    "semantic_hash": ""
+  },
+  "content/eval/answer-golden.json": {
+    "mtime": 1784661836.5748363,
+    "ast_hash": "d05c4ca0e7a100a7e496314c6d5c8768",
+    "semantic_hash": ""
+  },
+  "src/app/modules/chat/answer-eval.test.ts": {
+    "mtime": 1784661519.86395,
+    "ast_hash": "d25f3e6de82cd88b4f5d204b35f3f91f",
+    "semantic_hash": ""
+  },
+  "src/app/modules/chat/answer-eval.ts": {
+    "mtime": 1784661504.4162135,
+    "ast_hash": "3977a0833691e15970f8bdb6280ff700",
+    "semantic_hash": ""
+  },
+  "src/scripts/eval-answers.ts": {
+    "mtime": 1784661579.956023,
+    "ast_hash": "8bb1a09de2d5dd532c4ceb04a3d62439",
     "semantic_hash": ""
   }
 }
