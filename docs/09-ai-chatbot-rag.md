@@ -128,6 +128,28 @@ Note the earlier state: this decision was deferred through Sessions B and C beca
 
 ---
 
+## Answer-quality Evaluation
+
+The retrieval eval scores whether `retrieve()` returns the right *chunks*; `pnpm eval:answers` scores whether the chatbot's *answers* are actually good — the piece that makes prompt/answer tuning measurable now that retrieval is saturated at MRR 1.000. For each question in `content/eval/answer-golden.json` (15 cases, policy + product) it drives the **real** `streamChat` pipeline (retrieval + rerank + Claude + tool use), collects the full streamed answer and any product cards, then has an **LLM judge** score it against ground-truth reference facts.
+
+- **Metrics:** `correctness` (judge 1–5: agrees with the reference, no invented facts), `relevance` (judge 1–5: answers the question), `key-fact coverage` (deterministic 0–1: fraction of `mustMention` literal facts present), `card accuracy` (product cards surfaced when expected), and `pass rate` (correctness ≥ 4 **and** relevance ≥ 4).
+- `--judge-model` (default the chat model, `claude-haiku-4-5`; pass a stronger judge like `claude-sonnet-5` for more reliable, lower-variance grading), `--json`. Local-DB guard; makes real Anthropic + Voyage calls, so it's a manual script, never CI. The scoring core (`answer-eval.ts`) is pure and unit-tested; only the runner touches the API.
+- The two judge dimensions are LLM-scored, so they vary a little run to run — treat the baseline as a **band**, not a constant. A stronger judge narrows the variance.
+
+**Baseline — 15 cases, judge=`claude-haiku-4-5` (2026-07-22):**
+
+| Metric | Value |
+|---|---|
+| avg correctness | 3.80 / 5 |
+| avg relevance | 4.60 / 5 |
+| key-fact coverage | 1.00 |
+| card accuracy | 1.00 |
+| pass rate | 0.53 |
+
+Unlike the retrieval eval (saturated at hit-rate 1.000 / MRR 1.000), this one **discriminates** — pass rate 0.53 means roughly half the answers fall short of the "both ≥ 4" bar, so there's real headroom for prompt tuning. Product questions in particular score correctness 2–3 (the Haiku judge is strict on them even when the right card surfaces); confirming whether that's a genuine answer weakness or judge strictness is the natural next step (re-run with `--judge-model claude-sonnet-5`, then iterate on `buildSystemPrompt` and measure).
+
+---
+
 ## Frontend Widget
 
 `src/components/ai-chat-widget.tsx` (Aurevo.UI)
@@ -182,7 +204,8 @@ A 6-session roadmap to close the retrieval-quality and observability gaps above,
 | A | Retrieval evaluation harness (`pnpm eval:retrieval`, golden set, `knowledge.test.ts`) | ✅ Done |
 | B | Hybrid search — FTS keyword leg + RRF fusion (`opts.mode: "hybrid"`, migration 043) | ✅ Done (built, opt-in — eval-gated off as default) |
 | C | Re-ranking — Voyage `rerank-2.5-lite` over the fused pool (`opts.mode: "hybrid+rerank"`), graceful fallback on failure/429, optional env `VOYAGE_RERANK_MODEL` | ✅ Done — measured strictly ≥ vector (MRR 1.000) and **now the production default** |
-| D | **Eval-driven retrieval tuning** — clean messy titles in `buildProductChunkText` (extract `chat.service.ts`'s name-cleaning into a shared helper), few-shot prompt tuning from eval failures, embedding-model A/B (`voyage-3-large`) — all measured with the Session A harness. (Not weight-level fine-tuning: not offered for this stack.) | Backlog |
+| D | Eval-driven retrieval tuning — chunk-title cleanup / embedding-model A/B, measured with the Session A harness. **Superseded:** once reranking (C) took retrieval to MRR 1.000, the retrieval eval saturated and these have no measurable headroom. Revisit only if the KB grows enough to create it. | Moot at current KB size |
+| — | **Answer-quality eval** (`pnpm eval:answers`) — LLM-as-judge over the full `streamChat` answer (correctness/relevance/coverage/pass-rate), the measurable lever for *answer* tuning that the saturated retrieval eval can't provide. See [Answer-quality Evaluation](#answer-quality-evaluation). | ✅ Done |
 | E | Monitoring — backend — `chat_metrics` table (latency, tokens from the Anthropic stream `usage`, tool-call counts, retrieval stats), fire-and-forget capture in `chat.service.ts`, `GET /admin/ai-metrics?days=N` aggregation endpoint, metrics retention in the cleanup cron. | ✅ Done |
 | F | Monitoring — frontend — `/admin/ai` admin page (recharts) following the `admin-dashboard-page` pattern: stat cards, per-day volume chart, tool-usage breakdown, latency/token/cost. | ✅ Done (Aurevo.UI `admin-ai-metrics-page.tsx`) |
 
@@ -199,7 +222,8 @@ Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite`
 - `content/policies/{shipping,returns,sizing,payment,faq}.md`
 - `src/scripts/ingest-knowledge.ts`
 - `src/scripts/eval-retrieval.ts`, `content/eval/retrieval-golden.json` (retrieval eval harness)
-- `src/app/modules/knowledge/knowledge.test.ts`
+- `src/scripts/eval-answers.ts`, `src/app/modules/chat/answer-eval.ts`, `content/eval/answer-golden.json` (answer-quality eval harness)
+- `src/app/modules/knowledge/knowledge.test.ts`, `src/app/modules/chat/answer-eval.test.ts`
 - `src/app/modules/chat/{chat.service,chat.persistence,chat.controller,chat.schema,chat.routes}.ts`
 - `src/app/modules/chat/{chat.internal.controller,chat.internal.routes}.ts`
 - `src/app/modules/chat/chat.metrics.ts` (telemetry: record / retention / getAiMetrics), `supabase/migrations/044_chat_metrics.sql`
@@ -207,7 +231,7 @@ Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite`
 - `src/app/modules/chat/{chat.test,chat.internal.test,chat.metrics.test}.ts`
 - `src/app/modules/products/products.service.ts` (auto-embed hooks)
 - `src/server.ts` (crash-handler fix)
-- `package.json` (`ingest:knowledge`, `eval:retrieval` scripts), `.env.example`
+- `package.json` (`ingest:knowledge`, `eval:retrieval`, `eval:answers` scripts), `.env.example`
 
 **Aurevo.UI**
 - `src/components/ai-chat-widget.tsx`
