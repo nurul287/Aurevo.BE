@@ -171,6 +171,23 @@ Precision@3 is structurally bounded here — most queries have a single relevant
 
 ---
 
+## Planned Improvements
+
+A 6-session roadmap to close the retrieval-quality and observability gaps above, executed one session at a time (each independently shippable — build + test green, migrated, eval-verified, micro-committed).
+
+| Session | Scope | Status |
+|---|---|---|
+| A | Retrieval evaluation harness (`pnpm eval:retrieval`, golden set, `knowledge.test.ts`) | ✅ Done |
+| B | Hybrid search — FTS keyword leg + RRF fusion (`opts.mode: "hybrid"`, migration 043) | ✅ Done (built, opt-in — eval-gated off as default) |
+| C | **Re-ranking** — Voyage `rerank-2.5-lite` over the hybrid candidate pool → cut to topK; graceful fallback to fusion order on API failure/429. New optional env `VOYAGE_RERANK_MODEL`. Expected to make the hybrid pool finally beat vector, flipping the default. | Backlog |
+| D | **Eval-driven retrieval tuning** — clean messy titles in `buildProductChunkText` (extract `chat.service.ts`'s name-cleaning into a shared helper), few-shot prompt tuning from eval failures, embedding-model A/B (`voyage-3-large`) — all measured with the Session A harness. (Not weight-level fine-tuning: not offered for this stack.) | Backlog |
+| E | **Monitoring — backend** — `chat_metrics` table (latency, tokens from the Anthropic stream `usage`, tool-call counts, retrieval stats), fire-and-forget capture in `chat.service.ts`, `GET /admin/ai-metrics?days=N` aggregation endpoint, metrics retention in the cleanup cron. | Backlog |
+| F | **Monitoring — frontend** — `/admin/ai` admin page (recharts) following the `admin-dashboard-page` pattern: stat cards, per-day volume chart, tool-usage breakdown, latency/token/cost. | Backlog |
+
+Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite` (existing key, graceful 429 fallback); charting = recharts; "fine-tuning" reframed as eval-driven optimization (true fine-tuning isn't purchasable for this stack).
+
+---
+
 ## File Reference
 
 **Aurevo.BE**
