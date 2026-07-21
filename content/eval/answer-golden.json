@@ -1,0 +1,83 @@
+{
+  "description": "Golden dataset for pnpm eval:answers — measures the chatbot's full answers (the real streamChat pipeline: retrieval + rerank + Claude + tool use), not just retrieval ranking. `reference` is the ground-truth context the LLM judge scores correctness against (drawn from content/policies/*.md and the seed catalog); `mustMention` are robust key facts checked deterministically (case-insensitive substring) — keep them to near-verbatim tokens a correct answer will almost certainly contain. `expectsProductCard` asserts the pipeline surfaced at least one product card.",
+  "cases": [
+    {
+      "question": "What is your return policy?",
+      "reference": "Items can be returned within 7 days of delivery if defective, damaged, or different from what was ordered. Products must be unused, unwashed, and in original packaging with tags attached.",
+      "mustMention": ["7 days"]
+    },
+    {
+      "question": "Can I return socks or underwear?",
+      "reference": "For hygiene reasons, innerwear, socks, and pierced jewelry are not eligible for return or exchange.",
+      "mustMention": ["hygiene"]
+    },
+    {
+      "question": "How long do refunds take?",
+      "reference": "Approved refunds are processed to the original payment method (or store credit) within 7–10 business days of receiving the returned item.",
+      "mustMention": ["business days"]
+    },
+    {
+      "question": "Do you deliver outside Dhaka?",
+      "reference": "Aurevo ships nationwide within Bangladesh to all 64 districts. Inside Dhaka takes 2–3 working days, outside Dhaka 3–5, remote areas up to 7.",
+      "mustMention": ["Bangladesh"]
+    },
+    {
+      "question": "How much does shipping cost?",
+      "reference": "Shipping cost is calculated at checkout based on the delivery district and shown before payment. Browsing and adding to cart is free.",
+      "mustMention": ["checkout"]
+    },
+    {
+      "question": "How can I track my order?",
+      "reference": "Once an order ships, a tracking number is added and visible on the order details page. Logged-in users view it in their account; guests use the guest order lookup with order number and email.",
+      "mustMention": ["track"]
+    },
+    {
+      "question": "Do you accept cash on delivery?",
+      "reference": "Cash on delivery is available on all orders — pay in cash when the order arrives. An online payment option is also available at checkout.",
+      "mustMention": ["cash on delivery"]
+    },
+    {
+      "question": "Is my card information stored on your servers?",
+      "reference": "No payment card details are stored on Aurevo Fashion's own servers.",
+      "mustMention": []
+    },
+    {
+      "question": "Do you have a physical store I can visit?",
+      "reference": "Aurevo Fashion currently operates as an online-only store.",
+      "mustMention": ["online"]
+    },
+    {
+      "question": "Do I need an account to order?",
+      "reference": "No — guest checkout is available. Creating an account lets you save addresses and view order history.",
+      "mustMention": ["guest"]
+    },
+    {
+      "question": "Can I cancel my order after placing it?",
+      "reference": "Contact us as soon as possible with your order number. Once an order has shipped it can no longer be changed or cancelled — a return can be requested instead once it arrives.",
+      "mustMention": []
+    },
+    {
+      "question": "I'm between two sizes, which should I pick?",
+      "reference": "If you're between two sizes, sizing generally runs true to standard measurements unless the product description says otherwise (e.g. 'runs small' or 'oversized fit').",
+      "mustMention": []
+    },
+    {
+      "question": "Do you have any Nike Vomero running shoes?",
+      "reference": "The catalog includes the Nike Vomero 18 running shoe, priced around BDT 2,550.",
+      "mustMention": ["Vomero"],
+      "expectsProductCard": true
+    },
+    {
+      "question": "Show me a Louis Vuitton Air Force 1.",
+      "reference": "The catalog includes Louis Vuitton x Nike Air Force 1 Low collaborations (e.g. the Monogram Brown Damier Azur, and a White/Blue version).",
+      "mustMention": ["Air Force 1"],
+      "expectsProductCard": true
+    },
+    {
+      "question": "What's the price of the Air Jordan 1 Black Toe?",
+      "reference": "The Nike Air Jordan 1 Retro Low OG 'Black Toe' is priced around BDT 2,450.",
+      "mustMention": ["2,450"],
+      "expectsProductCard": true
+    }
+  ]
+}
