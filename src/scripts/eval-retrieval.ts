@@ -48,7 +48,7 @@ function parseArgs(argv: string[]) {
   // between queries to stay under a rate-limited key's budget (a free-tier
   // Voyage key is 3 RPM; hybrid+rerank spends 2 calls/query, so ~45000 keeps
   // it sustainable). 0 = no pacing, fine on a paid key.
-  const args = { mode: "vector" as RetrieveMode, k: 3, json: false, paceMs: 0 };
+  const args = { mode: "hybrid+rerank" as RetrieveMode, k: 3, json: false, paceMs: 0 };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--mode") args.mode = (argv[++i] ?? args.mode) as RetrieveMode;
     else if (argv[i] === "--k") args.k = Number(argv[++i] ?? args.k);

@@ -86,8 +86,8 @@ describe("knowledge.retrieve", () => {
     await seedChunks();
   });
 
-  it("returns chunks ordered by cosine distance, closest first", async () => {
-    const results = await retrieve("anything", 4);
+  it("vector mode returns chunks ordered by cosine distance, closest first", async () => {
+    const results = await retrieve("anything", 4, undefined, { mode: "vector" });
     expect(results.map((r) => r.sourceId)).toEqual([
       "product-exact",
       "policy-near",
@@ -97,28 +97,28 @@ describe("knowledge.retrieve", () => {
   });
 
   it("cuts the result list at topK", async () => {
-    const results = await retrieve("anything", 2);
+    const results = await retrieve("anything", 2, undefined, { mode: "vector" });
     expect(results.map((r) => r.sourceId)).toEqual(["product-exact", "policy-near"]);
   });
 
   it("defaults topK to 3", async () => {
-    const results = await retrieve("anything");
+    const results = await retrieve("anything", undefined, undefined, { mode: "vector" });
     expect(results).toHaveLength(3);
   });
 
   it("filters by sourceType without disturbing ranking", async () => {
-    const results = await retrieve("anything", 4, "policy");
+    const results = await retrieve("anything", 4, "policy", { mode: "vector" });
     expect(results.map((r) => r.sourceId)).toEqual(["policy-near", "policy-orthogonal"]);
     expect(results.every((r) => r.sourceType === "policy")).toBe(true);
   });
 
   it("passes the raw query text to the embedding call", async () => {
-    await retrieve("do you deliver outside Dhaka?", 1);
+    await retrieve("do you deliver outside Dhaka?", 1, undefined, { mode: "vector" });
     expect(embedQuery).toHaveBeenCalledWith("do you deliver outside Dhaka?");
   });
 
   it("returns the fields the chat tool consumes", async () => {
-    const [top] = await retrieve("anything", 1);
+    const [top] = await retrieve("anything", 1, undefined, { mode: "vector" });
     expect(top).toMatchObject({
       sourceId: "product-exact",
       sourceType: "product",
@@ -144,9 +144,12 @@ describe("knowledge.retrieve", () => {
     expect(results.map((r) => r.sourceId)).toContain("product-lexical");
   });
 
-  it("defaults to vector mode — hybrid is opt-in until the eval gate clears it", async () => {
+  it("defaults to hybrid+rerank mode — the reranker is invoked", async () => {
     // Pins the eval-gated decision recorded in docs/09 ("Retrieval
-    // Evaluation"): a lexical-only match must NOT surface by default.
+    // Evaluation"): hybrid+rerank beat vector, so it's the production
+    // default. The reranker only runs in that mode, so its invocation
+    // proves the default. A lexical-only match also surfaces (via the
+    // hybrid candidate pool the reranker orders).
     await db.insert(kbChunks).values({
       sourceType: "product",
       sourceId: "product-lexical",
@@ -154,9 +157,13 @@ describe("knowledge.retrieve", () => {
       content: "Product: Vomero Shoes1.1 special edition",
       embedding: basisVector(9),
     });
+    vi.mocked(rerank).mockImplementation(async (_q, docs, topK) =>
+      docs.map((_, i) => ({ index: i, relevanceScore: 1 - i * 0.01 })).slice(0, topK),
+    );
 
     const results = await retrieve("Vomero Shoes1.1 special edition", 3);
-    expect(results.map((r) => r.sourceId)).not.toContain("product-lexical");
+    expect(rerank).toHaveBeenCalled();
+    expect(results.map((r) => r.sourceId)).toContain("product-lexical");
   });
 
   it("hybrid+rerank applies the reranker's order and attaches its scores", async () => {
