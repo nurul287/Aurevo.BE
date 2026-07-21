@@ -63,18 +63,34 @@ function parseArgs(argv: string[]) {
   return args;
 }
 
+const RATE_LIMIT_WAIT_MS = 21_000;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * retrieve() uses fail-fast embedQuery, but a free-tier Voyage key (3 RPM)
  * will 429 partway through a 30+ query eval run — wait out the window and
  * retry rather than aborting with half the metrics computed.
+ *
+ * For hybrid+rerank there's a second, sneakier failure: retrieve() swallows
+ * a rerank 429 and silently falls back to fusion order, which would pollute
+ * the eval with un-reranked rows measured as if they were reranked. Detect
+ * that (a reranked row always carries a `score`; its absence means fallback)
+ * and retry so the measurement is honestly all-reranked.
  */
 async function retrieveWithRetry(query: string, k: number, mode: RetrieveMode, sourceType?: KnowledgeSourceType, attempts = 5) {
   for (;;) {
     try {
-      return await retrieve(query, k, sourceType, { mode });
+      const results = await retrieve(query, k, sourceType, { mode });
+      const rerankSilentlyFellBack =
+        mode === "hybrid+rerank" && results.length > 0 && results.every((r) => r.score === undefined);
+      if (rerankSilentlyFellBack && attempts-- > 0) {
+        await sleep(RATE_LIMIT_WAIT_MS);
+        continue;
+      }
+      return results;
     } catch (err) {
       if (attempts-- <= 0 || !(err instanceof Error) || !err.message.includes("(429)")) throw err;
-      await new Promise((resolve) => setTimeout(resolve, 21_000));
+      await sleep(RATE_LIMIT_WAIT_MS);
     }
   }
 }
