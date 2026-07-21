@@ -6,6 +6,7 @@ import { config } from "../app/config";
  * external calls in this codebase.
  */
 const VOYAGE_EMBEDDINGS_URL = "https://api.voyageai.com/v1/embeddings";
+const VOYAGE_RERANK_URL = "https://api.voyageai.com/v1/rerank";
 
 type VoyageInputType = "query" | "document";
 
@@ -62,4 +63,49 @@ export async function embedDocuments(texts: string[]): Promise<number[][]> {
 export async function embedQuery(text: string): Promise<number[]> {
   const [embedding] = await embed([text], "query");
   return embedding!;
+}
+
+// ─── Reranking ───────────────────────────────────────────────────────────
+
+type VoyageRerankResponse = {
+  data: { index: number; relevance_score: number }[];
+};
+
+export type RerankResult = { index: number; relevanceScore: number };
+
+/**
+ * Cross-encoder rerank of `documents` against `query`, returning the top
+ * `topK` as { original index, relevance score } sorted best-first. Bounded by
+ * a hard timeout: this sits inline in a live chat search, so a slow rerank
+ * must fail fast and let the caller fall back to the pre-rerank order rather
+ * than stall the response. No 429 retry for the same reason — a free-tier
+ * rate-limit is a fast fallback, not something to wait out mid-request.
+ */
+export async function rerank(query: string, documents: string[], topK: number): Promise<RerankResult[]> {
+  if (documents.length === 0) return [];
+
+  const res = await fetch(VOYAGE_RERANK_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.VOYAGE_API_KEY}`,
+    },
+    body: JSON.stringify({
+      query,
+      documents,
+      model: config.VOYAGE_RERANK_MODEL,
+      top_k: Math.min(topK, documents.length),
+    }),
+    signal: AbortSignal.timeout(2500),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Voyage rerank request failed (${res.status}): ${body}`);
+  }
+
+  const json = (await res.json()) as VoyageRerankResponse;
+  return json.data
+    .sort((a, b) => b.relevance_score - a.relevance_score)
+    .map((d) => ({ index: d.index, relevanceScore: d.relevance_score }));
 }
