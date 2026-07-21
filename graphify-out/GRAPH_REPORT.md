@@ -1,7 +1,7 @@
 # Graph Report - Aurevo.BE  (2026-07-22)
 
 ## Corpus Check
-- 201 files · ~265,320 words
+- 201 files · ~265,281 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5fc2979c`
+- Built from commit: `bda4f6ad`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -394,7 +394,7 @@ Nodes (24): For /graphify add and --watch, For /graphify query, For the commit h
 
 ### Community 12 - "Category/Product Routes & Tests"
 Cohesion: 0.16
-Nodes (13): app, app, app, cleanProducts(), DB, brands, categories, cleanBrands() (+5 more)
+Nodes (14): app, app, app, cleanProducts(), DB, brands, categories, products (+6 more)
 
 ### Community 13 - "Products Controller"
 Cohesion: 0.19
@@ -453,8 +453,8 @@ Cohesion: 0.33
 Nodes (7): authenticate(), optionalAuth(), verifyToken(), getAiMetricsController(), getDashboard(), router, getAdminDashboard()
 
 ### Community 28 - "Non-Functional Requirements & Rate Limits"
-Cohesion: 0.17
-Nodes (10): app, TEST_ADDRESS, app, TEST_ADDRESS, courierTrackingEvents, inventory, orderItems, orders (+2 more)
+Cohesion: 0.13
+Nodes (11): app, TEST_ADDRESS, app, TEST_ADDRESS, app, createVariantsApp(), courierTrackingEvents, orderItems (+3 more)
 
 ### Community 29 - "RAG Chatbot Architecture Diagram"
 Cohesion: 0.50
@@ -502,7 +502,7 @@ Nodes (8): Entity Relationship Diagram, Enums, Indexes, Interactive Lucidchart D
 
 ### Community 40 - "Community 40"
 Cohesion: 0.22
-Nodes (5): router, app, createImagesApp(), TINY_GIF, productImages
+Nodes (6): globalErrorHandler(), router, app, createImagesApp(), TINY_GIF, productImages
 
 ### Community 41 - "Community 41"
 Cohesion: 0.25
@@ -525,8 +525,8 @@ Cohesion: 0.14
 Nodes (9): app, TEST_ADDRESS, app, TEST_ADDRESS, productReviews, profiles, userAddresses, MOCK_ADMIN_USER (+1 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.18
-Nodes (15): deleteAvatar(), assertProductExists(), bulkUploadImages(), createImageRecord(), deleteImage(), getImageById(), getImageOrThrow(), getImages() (+7 more)
+Cohesion: 0.29
+Nodes (11): assertProductExists(), bulkUploadImages(), createImageRecord(), deleteImage(), getImageById(), getImageOrThrow(), getImages(), setPrimaryImage() (+3 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.67
@@ -541,8 +541,8 @@ Cohesion: 0.14
 Nodes (14): AI Chat — `/api/chat`, Auth & Profile — `/api/auth`, Brands — `/api/brands`, Cart — `/api/cart`, Categories — `/api/categories`, Courier — `/api/courier`, Endpoint Reference, Health — `/health` · `/api/health` (+6 more)
 
 ### Community 52 - "categories.service.ts"
-Cohesion: 0.25
-Nodes (15): uploadAvatar(), createBrand(), updateBrand(), createCategory(), deleteCategory(), getCategoryById(), removeCategoryImage(), setCategoryImage() (+7 more)
+Cohesion: 0.23
+Nodes (17): deleteAvatar(), uploadAvatar(), createBrand(), updateBrand(), createCategory(), deleteCategory(), getCategoryById(), removeCategoryImage() (+9 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.20
@@ -640,13 +640,13 @@ Nodes (11): keywordSearch(), rerankCandidates(), retrieve(), rrfFuse(), vectorSe
 Cohesion: 0.26
 Nodes (11): KnowledgeSourceType, CaseResult, GOLDEN_PATH, GoldenCase, GoldenRelevant, main(), MODES, parseArgs() (+3 more)
 
-### Community 289 - "variants.test.ts"
-Cohesion: 0.33
-Nodes (4): globalErrorHandler(), app, createVariantsApp(), createTestApp()
-
 ### Community 290 - "voyage.ts"
 Cohesion: 0.31
 Nodes (8): embed(), embedDocuments(), embedQuery(), RerankResult, sleep(), VoyageEmbeddingsResponse, VoyageInputType, VoyageRerankResponse
+
+### Community 291 - "inventory.test.ts"
+Cohesion: 0.25
+Nodes (3): app, inventory, inventoryMovements
 
 ### Community 292 - "Quick Start"
 Cohesion: 0.40
@@ -678,7 +678,7 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Profile & Addresses Requirements (BD shape)` and `Phone Number Changed Notice Template`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `express` connect `rateLimiter.ts` to `Error Type Hierarchy`, `Auth & Address Controller`, `Express App Bootstrap & Swagger`, `Chat Persistence Layer`, `Package Metadata`, `Runtime Dependencies`, `Dev Dependencies`, `Cart Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Courier Service & Internal Poll Route`, `Workspace Architecture Overview`, `Products Service`, `Requirements Backlog & CI/CD Decisions`, `variants.test.ts`, `Community 40`, `Community 42`, `Community 93`?**
+- **Why does `express` connect `rateLimiter.ts` to `Error Type Hierarchy`, `Auth & Address Controller`, `Express App Bootstrap & Swagger`, `Chat Persistence Layer`, `Package Metadata`, `Runtime Dependencies`, `Dev Dependencies`, `Cart Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Courier Service & Internal Poll Route`, `Workspace Architecture Overview`, `Products Service`, `Requirements Backlog & CI/CD Decisions`, `Non-Functional Requirements & Rate Limits`, `Community 40`, `Community 42`, `Community 93`?**
   _High betweenness centrality (0.115) - this node is a cross-community bridge._
 - **Why does `keywords` connect `Package Metadata` to `rateLimiter.ts`?**
   _High betweenness centrality (0.071) - this node is a cross-community bridge._

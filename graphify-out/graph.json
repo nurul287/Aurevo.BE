@@ -2105,7 +2105,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_errors_index",
-      "community": 47,
+      "community": 289,
       "norm_label": "index.ts"
     },
     {
@@ -2235,7 +2235,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_app_middlewares_globalerrorhandler_globalerrorhandler",
-      "community": 289,
+      "community": 40,
       "norm_label": "globalerrorhandler()"
     },
     {
@@ -2435,7 +2435,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_modules_admin_admin_service",
-      "community": 28,
+      "community": 12,
       "norm_label": "admin.service.ts"
     },
     {
@@ -2945,7 +2945,7 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "src_app_modules_auth_auth_service_deleteavatar",
-      "community": 47,
+      "community": 52,
       "norm_label": "deleteavatar()"
     },
     {
@@ -7715,7 +7715,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_test",
-      "community": 289,
+      "community": 28,
       "norm_label": "variants.test.ts"
     },
     {
@@ -7725,7 +7725,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_test_createvariantsapp",
-      "community": 289,
+      "community": 28,
       "norm_label": "createvariantsapp()"
     },
     {
@@ -7735,7 +7735,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_test_app",
-      "community": 289,
+      "community": 28,
       "norm_label": "app"
     },
     {
@@ -7745,7 +7745,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_test_cleanall",
-      "community": 289,
+      "community": 28,
       "norm_label": "cleanall()"
     },
     {
@@ -7755,7 +7755,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_test_seedproduct",
-      "community": 289,
+      "community": 28,
       "norm_label": "seedproduct()"
     },
     {
@@ -7765,7 +7765,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_test_seedvariant",
-      "community": 289,
+      "community": 28,
       "norm_label": "seedvariant()"
     },
     {
@@ -8225,7 +8225,7 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "src_db_schema_products",
-      "community": 28,
+      "community": 12,
       "norm_label": "products"
     },
     {
@@ -8375,7 +8375,7 @@
       "source_location": "L562",
       "_origin": "ast",
       "id": "src_db_schema_inventory",
-      "community": 28,
+      "community": 291,
       "norm_label": "inventory"
     },
     {
@@ -9005,7 +9005,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_storage",
-      "community": 47,
+      "community": 289,
       "norm_label": "storage.ts"
     },
     {
@@ -9025,7 +9025,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_lib_storage_deletefile",
-      "community": 47,
+      "community": 52,
       "norm_label": "deletefile()"
     },
     {
@@ -9035,7 +9035,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_lib_storage_getpublicurl",
-      "community": 47,
+      "community": 289,
       "norm_label": "getpublicurl()"
     },
     {
@@ -9045,7 +9045,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_supabase",
-      "community": 47,
+      "community": 289,
       "norm_label": "supabase.ts"
     },
     {
@@ -9055,7 +9055,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_lib_supabase_supabaseadmin",
-      "community": 47,
+      "community": 289,
       "norm_label": "supabaseadmin"
     },
     {
@@ -9375,7 +9375,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_test_app",
-      "community": 289,
+      "community": 28,
       "norm_label": "app.ts"
     },
     {
@@ -9385,7 +9385,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_test_app_createtestapp",
-      "community": 289,
+      "community": 28,
       "norm_label": "createtestapp()"
     },
     {
@@ -13229,7 +13229,7 @@
       "contributor": null,
       "community": 169,
       "norm_label": "graphify skill pointer (/graphify)",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_graphify_pointer"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_graphify_pointer"
     },
     {
       "label": "Community Detection",
@@ -31886,7 +31886,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/app/modules/knowledge/knowledge.service.ts",
-      "source_location": "L348",
+      "source_location": "L347",
       "weight": 1.0,
       "source": "src_app_modules_knowledge_knowledge_service_retrieve",
       "target": "src_app_modules_knowledge_knowledge_service_vectorsearch",
@@ -31897,7 +31897,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/app/modules/knowledge/knowledge.service.ts",
-      "source_location": "L352",
+      "source_location": "L351",
       "weight": 1.0,
       "source": "src_app_modules_knowledge_knowledge_service_retrieve",
       "target": "src_app_modules_knowledge_knowledge_service_keywordsearch",
@@ -31908,7 +31908,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/app/modules/knowledge/knowledge.service.ts",
-      "source_location": "L354",
+      "source_location": "L353",
       "weight": 1.0,
       "source": "src_app_modules_knowledge_knowledge_service_retrieve",
       "target": "src_app_modules_knowledge_knowledge_service_rrffuse",
@@ -31941,7 +31941,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/app/modules/knowledge/knowledge.service.ts",
-      "source_location": "L356",
+      "source_location": "L355",
       "weight": 1.0,
       "source": "src_app_modules_knowledge_knowledge_service_retrieve",
       "target": "src_app_modules_knowledge_knowledge_service_rerankcandidates",
@@ -31953,7 +31953,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/app/modules/knowledge/knowledge.service.ts",
-      "source_location": "L344",
+      "source_location": "L343",
       "weight": 1.0,
       "source": "src_app_modules_knowledge_knowledge_service_retrieve",
       "target": "src_lib_voyage_embedquery"
@@ -43066,5 +43066,5 @@
       "source_file": "docs/images/rag-chatbot-architecture.svg"
     }
   ],
-  "built_at_commit": "5fc2979cd6efeca9c72d9c39d5f77b7e9c30a3d7"
+  "built_at_commit": "bda4f6addd7bddb0eb5365bbd9ea8a4278fd0658"
 }
