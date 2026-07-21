@@ -52,7 +52,7 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 - **Inventory System** — per-variant stock tracking, audit log of every movement (`inventoryMovements`), low-stock alerts
 - **Auth & Profiles** — backend-driven auth (email/password + Google/Facebook OAuth, all via Aurevo.BE — no Supabase SDK on the client), user profiles, saved address book with checkout autofill
 - **Internationalization** — English/বাংলা (Bangla) via i18next; English by default, user-selected and persisted via a header toggle
-- **AI Shopping Assistant** — full RAG pipeline: Claude + Voyage AI embeddings + pgvector (`kb_chunks`) for product/policy/FAQ retrieval, real token streaming, auth-gated order lookup, conversation persistence with retention cleanup — see [docs/09-ai-chatbot-rag.md](docs/09-ai-chatbot-rag.md)
+- **AI Shopping Assistant** — full RAG pipeline: Claude + Voyage AI embeddings; **hybrid retrieval (pgvector + FTS via RRF) with Voyage cross-encoder reranking** over `kb_chunks`, real token streaming, auth-gated order lookup, conversation persistence with retention cleanup, retrieval + answer-quality eval harnesses, and a `chat_metrics` admin monitoring dashboard — see [docs/09-ai-chatbot-rag.md](docs/09-ai-chatbot-rag.md)
 - **Admin Dashboard** — product/order/inventory management, bulk operations, analytics
 - **Observability** — structured pino logs, Sentry error tracking (FE + BE, optional/no-op unless configured), deep health check, graceful shutdown
 
@@ -86,6 +86,9 @@ cd Aurevo.BE
 pnpm db:start          # starts Supabase Docker stack (Docker required)
 pnpm db:reset          # applies all migrations + seed data
 pnpm ingest:knowledge   # backfills the AI chat's knowledge base (products + content/policies/*.md) — required for the chatbot to answer anything; needs VOYAGE_API_KEY set first
+# Optional, manual (real API calls, local DB only — never CI):
+pnpm eval:retrieval     # precision/recall/hit-rate/MRR for retrieve() vs a golden set
+pnpm eval:answers       # LLM-as-judge quality of the chatbot's full answers
 ```
 
 ### 2. Run the backend API
