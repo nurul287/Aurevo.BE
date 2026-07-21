@@ -253,8 +253,14 @@ Enums: `product_gender`, `user_gender`, `order_status`, `payment_status`, `payme
 ## AI Chat Module (Phase 10, rebuilt as RAG)
 
 Full retrieval-augmented generation pipeline, not a plain tool-use bot — see `docs/09-ai-chatbot-rag.md` for the complete architecture. Real Anthropic token streaming (`stream: true`) at `POST /api/chat`.
-Tools: `search_knowledge` (semantic retrieval over `kb_chunks`/pgvector, optional `sourceType` filter), `get_product_details` (live stock/price by slug), `get_my_orders` (auth-gated only, hard-scoped server-side to `req.user.id`).
+Tools: `search_knowledge` (retrieval over `kb_chunks`, optional `sourceType` filter), `get_product_details` (live stock/price by slug), `get_my_orders` (auth-gated only, hard-scoped server-side to `req.user.id`).
 Rate limit: `chatLimiter`. Auth: `optionalAuth` (order lookup requires a real session). Model: `claude-haiku-4-5-20251001`.
+
+Retrieval: `retrieve()` in `knowledge.service.ts` defaults to **`hybrid+rerank`** — pgvector cosine + FTS keyword (generated `fts` tsvector, migration 043) fused via Reciprocal Rank Fusion, then reranked by Voyage `rerank-2.5-lite` (best-effort, falls back to fusion order on failure). `opts.mode` also allows `vector`/`hybrid`. The default was eval-gated: it measured strictly ≥ vector (MRR 1.000). Optional env `VOYAGE_RERANK_MODEL`.
+
+Eval harnesses (manual scripts, never CI — real API calls, local DB): `pnpm eval:retrieval` (precision/recall/hit-rate/MRR vs `content/eval/retrieval-golden.json`) and `pnpm eval:answers` (LLM-as-judge over the full answer vs `content/eval/answer-golden.json`). Deterministic scoring cores are unit-tested (`knowledge.test.ts`, `answer-eval.test.ts`).
+
+Monitoring: `chat_metrics` (migration 044) captures per-request latency/tokens/tool-calls/retrieval-stats fire-and-forget from `chat.service.ts`; `GET /admin/ai-metrics?days=N` (admin-gated) aggregates them for the Aurevo.UI `/admin/ai` dashboard; 90-day retention in the cleanup cron.
 
 Ingestion: `src/app/modules/knowledge/knowledge.service.ts` embeds products (auto, fire-and-forget on create/update) and `content/policies/*.md` (manual backfill via `pnpm ingest:knowledge`) into `kb_chunks` via Voyage AI.
 
@@ -262,4 +268,4 @@ SSE events: `{"text": "..."}` chunks, then `[DONE]`.
 
 ---
 
-*Last updated: Invoice PDF + Steadfast courier tracking (migrations 041–042); RAG chatbot (039)*
+*Last updated: RAG retrieval quality + monitoring — hybrid+rerank default, eval harnesses, `chat_metrics` (migrations 043–044). Earlier: Invoice PDF + Steadfast courier tracking (041–042); RAG chatbot (039).*

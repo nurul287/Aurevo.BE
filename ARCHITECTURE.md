@@ -89,7 +89,7 @@ cors + helmet + pino-http → compression + express.json(1mb) → /health
 
 **Observability** — pino (structured JSON logs), optional Sentry (`@sentry/node`, no-op unless `SENTRY_DSN` set, only unexpected 500s reported), deep `/api/health` (DB ping, 503 on failure), graceful shutdown (drains in-flight requests on SIGTERM/SIGINT, exits non-zero if DB unreachable at boot).
 
-**AI Shopping Assistant** — full RAG pipeline: real Claude token streaming (`stream: true`), tool use over `search_knowledge` (semantic retrieval, pgvector `kb_chunks`, Voyage AI embeddings), `get_product_details` (live stock/price), and `get_my_orders` (auth-gated, hard-scoped server-side). Full detail: [`docs/09-ai-chatbot-rag.md`](docs/09-ai-chatbot-rag.md).
+**AI Shopping Assistant** — full RAG pipeline: real Claude token streaming (`stream: true`), tool use over `search_knowledge` (hybrid retrieval by default — pgvector + FTS fused via RRF, then Voyage `rerank-2.5-lite`; eval-gated), `get_product_details` (live stock/price), and `get_my_orders` (auth-gated, hard-scoped server-side). Retrieval and answer quality are tracked by two eval harnesses (`pnpm eval:retrieval` / `eval:answers`) and a `chat_metrics`-backed admin dashboard (`/admin/ai`). Full detail: [`docs/09-ai-chatbot-rag.md`](docs/09-ai-chatbot-rag.md).
 
 **Order confirmation email** — sent via Resend (`src/lib/email.ts`) from `orders@aurevofashion.store`, fire-and-forget right after order creation so a slow/failed send never blocks the order response. No-op unless `RESEND_API_KEY` is set, same convention as Sentry. Includes a link back to the live order-confirmation page and the invoice PDF as an attachment (degrades gracefully — a PDF-generation failure still sends the email, just without the attachment).
 
@@ -134,7 +134,7 @@ Core entity shape:
 auth.users (Supabase) ── profiles (1:1) ── user_addresses, cart_items, orders, reviews, wishlist
 categories (self-ref tree) ── products ── product_variants ── cart_items, order_items, inventory
 orders ── order_items, payments, courier_tracking_events
-kb_chunks (RAG knowledge base) ── conversations ── messages
+kb_chunks (RAG knowledge base) ── conversations ── messages ── chat_metrics
 ```
 
 Notable design points:
