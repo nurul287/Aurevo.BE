@@ -21,5 +21,6 @@ describe("POST /internal/chat/cleanup", () => {
     const res = await request(app).post("/cleanup").set("x-internal-task-token", config.INTERNAL_TASK_TOKEN);
     expect(res.status).toBe(200);
     expect(res.body.data.deletedCount).toBeDefined();
+    expect(res.body.data.deletedMetrics).toBeDefined();
   });
 });
