@@ -44,15 +44,18 @@ type CaseResult = {
 const MODES: RetrieveMode[] = ["vector", "hybrid", "hybrid+rerank"];
 
 function parseArgs(argv: string[]) {
-  // Default mirrors production's default retrieval mode.
-  const args = { mode: "vector" as RetrieveMode, k: 3, json: false };
+  // Default mirrors production's default retrieval mode. --pace-ms sleeps
+  // between queries to stay under a rate-limited key's budget (a free-tier
+  // Voyage key is 3 RPM; hybrid+rerank spends 2 calls/query, so ~45000 keeps
+  // it sustainable). 0 = no pacing, fine on a paid key.
+  const args = { mode: "vector" as RetrieveMode, k: 3, json: false, paceMs: 0 };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--mode") args.mode = (argv[++i] ?? args.mode) as RetrieveMode;
     else if (argv[i] === "--k") args.k = Number(argv[++i] ?? args.k);
+    else if (argv[i] === "--pace-ms") args.paceMs = Number(argv[++i] ?? args.paceMs);
     else if (argv[i] === "--json") args.json = true;
   }
   if (!MODES.includes(args.mode)) {
-    // "hybrid+rerank" plumbs in with the reranking session.
     console.error(`Unknown --mode "${args.mode}" — expected one of: ${MODES.join(", ")}.`);
     process.exit(1);
   }
@@ -77,7 +80,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * that (a reranked row always carries a `score`; its absence means fallback)
  * and retry so the measurement is honestly all-reranked.
  */
-async function retrieveWithRetry(query: string, k: number, mode: RetrieveMode, sourceType?: KnowledgeSourceType, attempts = 5) {
+async function retrieveWithRetry(query: string, k: number, mode: RetrieveMode, sourceType?: KnowledgeSourceType, attempts = 12) {
   for (;;) {
     try {
       const results = await retrieve(query, k, sourceType, { mode });
@@ -129,7 +132,10 @@ async function main() {
   const slugToId = await resolveSlugMap(golden.cases);
 
   const results: CaseResult[] = [];
-  for (const c of golden.cases) {
+  for (let i = 0; i < golden.cases.length; i++) {
+    const c = golden.cases[i]!;
+    if (i > 0 && args.paceMs > 0) await sleep(args.paceMs);
+
     const expected = new Set(
       c.relevant.map((r) => (r.kind === "product" ? `product:${slugToId.get(r.slug)!}` : `chunk:${r.sourceId}`)),
     );
