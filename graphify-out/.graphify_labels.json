@@ -51,6 +51,7 @@
   "49": "Community 49",
   "50": "Community 50",
   "51": "Courier Internal Poll Tests",
+  "52": "categories.service.ts",
   "53": "Community 53",
   "54": "Community 54",
   "55": "Community 55",
@@ -110,6 +111,7 @@
   "109": "Community 109",
   "110": "Community 110",
   "111": "Community 111",
+  "112": "AppError.ts",
   "113": "Community 113",
   "114": "Community 114",
   "115": "Community 115",
@@ -280,5 +282,14 @@
   "280": "Aurevo Fashion project overview",
   "281": "Tech Decisions at a Glance table",
   "282": "Modular Monolith directory structure",
-  "283": "Rate Limiters table"
+  "283": "Rate Limiters table",
+  "284": "Phase 5 — Implementation",
+  "285": "chat.metrics.ts",
+  "286": "schema.ts",
+  "287": "knowledge.test.ts",
+  "288": "eval-retrieval.ts",
+  "289": "variants.test.ts",
+  "290": "voyage.ts",
+  "291": "inventory.test.ts",
+  "292": "Quick Start"
 }
