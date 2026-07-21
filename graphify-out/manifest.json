@@ -15,8 +15,8 @@
     "semantic_hash": "59e67f85075874941db7090c8f9ac2d3"
   },
   "package.json": {
-    "mtime": 1784489794.2289443,
-    "ast_hash": "8662e44e8f283b96337d3ea3ac3ff582",
+    "mtime": 1784654280.4103723,
+    "ast_hash": "ba11b9f318221c50292ae37e927f2ef8",
     "semantic_hash": ""
   },
   "railway.json": {
@@ -45,8 +45,8 @@
     "semantic_hash": "98c0f894b2ea7bf5c9ea2597e2e0c6bb"
   },
   "src/app/config/index.ts": {
-    "mtime": 1784340717.3823504,
-    "ast_hash": "261e9bb6acc1bdffbb564fca903fcbe2",
+    "mtime": 1784654393.0643551,
+    "ast_hash": "a3cc60c5680b9112b1520561357d1ab9",
     "semantic_hash": ""
   },
   "src/app/config/swagger.ts": {
@@ -725,8 +725,8 @@
     "semantic_hash": "fcb3bcebf4e034a709c620745396904d"
   },
   "src/app/modules/knowledge/knowledge.service.ts": {
-    "mtime": 1784492410.012479,
-    "ast_hash": "a3dd1490a3f0c8182b37ed67c2277470",
+    "mtime": 1784654530.1165426,
+    "ast_hash": "9619ef139f39a0c24f78b872e4b0ed50",
     "semantic_hash": ""
   },
   "src/lib/email.ts": {
@@ -735,8 +735,8 @@
     "semantic_hash": ""
   },
   "src/lib/voyage.ts": {
-    "mtime": 1784489983.3914297,
-    "ast_hash": "555cb05289e6d6be9667fb54c127b31d",
+    "mtime": 1784654410.8979554,
+    "ast_hash": "62a5228c2408ed0de677445ad6db7b6a",
     "semantic_hash": ""
   },
   "src/scripts/ingest-knowledge.ts": {
@@ -855,8 +855,8 @@
     "semantic_hash": "447ce7d67a37589156d38058b2a78570"
   },
   "docs/01-requirements.md": {
-    "mtime": 1784453412.5906732,
-    "ast_hash": "76d9110ac93f980ac95af425110c891f",
+    "mtime": 1784654322.806252,
+    "ast_hash": "a43de2c113bb827e398515be40311650",
     "semantic_hash": ""
   },
   "docs/02-system-design.md": {
@@ -895,8 +895,8 @@
     "semantic_hash": ""
   },
   "docs/09-ai-chatbot-rag.md": {
-    "mtime": 1784492450.4808557,
-    "ast_hash": "34f3ffd08db55f36d7b9f05d90797332",
+    "mtime": 1784655459.5716326,
+    "ast_hash": "2d47293704b49ea1911011049942975b",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
@@ -1060,23 +1060,23 @@
     "semantic_hash": ""
   },
   "content/eval/retrieval-golden.json": {
-    "mtime": 1784489749.5947962,
-    "ast_hash": "f78c84d3ea51d7711ff7deb3e172799d",
+    "mtime": 1784654280.3662245,
+    "ast_hash": "113f78c42fb0c507dd024bfd5edcc6ae",
     "semantic_hash": ""
   },
   "src/app/modules/knowledge/knowledge.test.ts": {
-    "mtime": 1784492423.8224535,
-    "ast_hash": "ced2903577ff215c2a4f560e0c5b3ecd",
+    "mtime": 1784654595.8051002,
+    "ast_hash": "db5428219c8fc27357fd5bfd5eb3948c",
     "semantic_hash": ""
   },
   "src/scripts/eval-retrieval.ts": {
-    "mtime": 1784492429.402907,
-    "ast_hash": "b04e376aceda1da9c8da3b2dea1dfce2",
+    "mtime": 1784655029.0002532,
+    "ast_hash": "8fe70c226dbd01b6d93af5ff339cc03d",
     "semantic_hash": ""
   },
   "supabase/migrations/043_kb_chunks_fts.sql": {
-    "mtime": 1784491507.4067445,
-    "ast_hash": "83ac21b8fce6d628dafd627e7cb611df",
+    "mtime": 1784654280.6476314,
+    "ast_hash": "98b9007fe629bc479056c91a06185293",
     "semantic_hash": ""
   }
 }
