@@ -1,0 +1,38 @@
+{
+  "description": "Golden retrieval dataset for pnpm eval:retrieval. Queries mimic what the chat model passes to search_knowledge. Products are keyed by slug (stable across environments; resolved to kb_chunks.source_id = product id at eval time). Policy/FAQ chunks are keyed by sourceId, which is `<filename>-<section index>` from ingestPolicyDocs()'s heading split — re-check these if content/policies/*.md section order changes.",
+  "cases": [
+    { "query": "what is your return policy", "relevant": [{ "kind": "chunk", "sourceId": "returns-0" }, { "kind": "chunk", "sourceId": "returns-1" }, { "kind": "chunk", "sourceId": "returns-2" }] },
+    { "query": "how long do I have to return an item after delivery", "relevant": [{ "kind": "chunk", "sourceId": "returns-0" }] },
+    { "query": "how do I start a return", "sourceType": "policy", "relevant": [{ "kind": "chunk", "sourceId": "returns-1" }] },
+    { "query": "when will I get my refund back", "relevant": [{ "kind": "chunk", "sourceId": "returns-2" }] },
+    { "query": "can I return socks or underwear", "relevant": [{ "kind": "chunk", "sourceId": "returns-3" }] },
+    { "query": "can I exchange my shoes for a different size", "relevant": [{ "kind": "chunk", "sourceId": "returns-4" }, { "kind": "chunk", "sourceId": "sizing-3" }] },
+    { "query": "do you deliver outside Dhaka", "relevant": [{ "kind": "chunk", "sourceId": "shipping-0" }, { "kind": "chunk", "sourceId": "shipping-1" }] },
+    { "query": "how many days does delivery take", "relevant": [{ "kind": "chunk", "sourceId": "shipping-1" }] },
+    { "query": "how much does shipping cost", "sourceType": "policy", "relevant": [{ "kind": "chunk", "sourceId": "shipping-2" }] },
+    { "query": "how can I track my order", "relevant": [{ "kind": "chunk", "sourceId": "shipping-3" }, { "kind": "chunk", "sourceId": "faq-3" }] },
+    { "query": "do you accept cash on delivery", "relevant": [{ "kind": "chunk", "sourceId": "payment-0" }] },
+    { "query": "can I pay online with a card", "relevant": [{ "kind": "chunk", "sourceId": "payment-1" }] },
+    { "query": "is my card information safe with you", "relevant": [{ "kind": "chunk", "sourceId": "payment-2" }] },
+    { "query": "will I get a confirmation email after ordering", "relevant": [{ "kind": "chunk", "sourceId": "payment-3" }] },
+    { "query": "do you have a physical shop I can visit", "relevant": [{ "kind": "chunk", "sourceId": "faq-0" }] },
+    { "query": "can I cancel my order after placing it", "relevant": [{ "kind": "chunk", "sourceId": "faq-1" }] },
+    { "query": "do I need to create an account to buy something", "relevant": [{ "kind": "chunk", "sourceId": "faq-2" }] },
+    { "query": "what happens if the size I want is out of stock", "relevant": [{ "kind": "chunk", "sourceId": "faq-4" }] },
+    { "query": "I'm between two sizes which one should I pick", "relevant": [{ "kind": "chunk", "sourceId": "sizing-2" }] },
+    { "query": "how do I find the right fit", "relevant": [{ "kind": "chunk", "sourceId": "sizing-1" }, { "kind": "chunk", "sourceId": "sizing-0" }] },
+
+    { "query": "Nike Vomero 18 Running Shoes1.1", "relevant": [{ "kind": "product", "slug": "nike-vomero-18-running-shoes1-1" }, { "kind": "product", "slug": "nike-vomero-18" }] },
+    { "query": "Vomero running shoes", "sourceType": "product", "relevant": [{ "kind": "product", "slug": "nike-vomero-18" }, { "kind": "product", "slug": "nike-vomero-18-running-shoes1-1" }] },
+    { "query": "Louis Vuitton Air Force 1 collab", "relevant": [{ "kind": "product", "slug": "louis-vuitton-x-nike-air-force-1-low-monogram-brown-damier-azur" }, { "kind": "product", "slug": "nike-x-louis-vuitton-air-force-1-low-white-blue" }] },
+    { "query": "Monogram Brown Damier Azur", "relevant": [{ "kind": "product", "slug": "louis-vuitton-x-nike-air-force-1-low-monogram-brown-damier-azur" }] },
+    { "query": "Air Jordan 1 Black Toe", "relevant": [{ "kind": "product", "slug": "air-jordan-1-retro-low-og-black-toe" }] },
+    { "query": "black toe jordan low", "sourceType": "product", "relevant": [{ "kind": "product", "slug": "air-jordan-1-retro-low-og-black-toe" }] },
+    { "query": "triple white sneakers", "relevant": [{ "kind": "product", "slug": "aurevo-air force1-triple white-sneakers" }] },
+    { "query": "white sneakers for women", "relevant": [{ "kind": "product", "slug": "nike-air-force-1-low-white-light-armory-blue-mini-swoosh" }, { "kind": "product", "slug": "aurevo-air force1-triple white-sneakers" }] },
+    { "query": "snakeskin air force 1", "relevant": [{ "kind": "product", "slug": "nike-air-force-1-07-lv8-in-the-off-noir-snakeskin-shoe1-1" }] },
+    { "query": "Off Noir Snakeskin {Shoe1:1}", "relevant": [{ "kind": "product", "slug": "nike-air-force-1-07-lv8-in-the-off-noir-snakeskin-shoe1-1" }] },
+    { "query": "navy blue air force 1", "relevant": [{ "kind": "product", "slug": "nike-air-force-1-a-white-and-navy-blue-{shoe1:1}" }] },
+    { "query": "running shoes under 3000 taka", "relevant": [{ "kind": "product", "slug": "nike-vomero-18" }, { "kind": "product", "slug": "nike-vomero-18-running-shoes1-1" }] }
+  ]
+}

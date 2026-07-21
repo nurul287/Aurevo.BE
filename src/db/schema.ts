@@ -632,3 +632,24 @@ export const messages = pgTable("messages", {
 			name: "messages_conversation_id_fkey"
 		}).onDelete("cascade"),
 ]);
+
+export const chatMetrics = pgTable("chat_metrics", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	conversationId: uuid("conversation_id"),
+	model: text().notNull(),
+	latencyMs: integer("latency_ms").notNull(),
+	retrievalLatencyMs: integer("retrieval_latency_ms"),
+	inputTokens: integer("input_tokens").default(0).notNull(),
+	outputTokens: integer("output_tokens").default(0).notNull(),
+	toolCalls: jsonb("tool_calls").default({}).notNull(),
+	retrievalResultCount: integer("retrieval_result_count"),
+	retrievalTopScore: numeric("retrieval_top_score"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_chat_metrics_created").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	foreignKey({
+			columns: [table.conversationId],
+			foreignColumns: [conversations.id],
+			name: "chat_metrics_conversation_id_fkey"
+		}).onDelete("set null"),
+]);

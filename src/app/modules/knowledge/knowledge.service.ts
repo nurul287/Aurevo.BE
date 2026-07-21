@@ -5,7 +5,7 @@ import path from "node:path";
 import { db } from "../../../db";
 import { brands, categories, kbChunks, productImages, productVariants, products } from "../../../db/schema";
 import { logger } from "../../../lib/logger";
-import { embedDocuments, embedQuery } from "../../../lib/voyage";
+import { embedDocuments, embedQuery, rerank } from "../../../lib/voyage";
 
 const POLICY_DOCS_DIR = path.resolve(process.cwd(), "content/policies");
 
@@ -195,6 +195,9 @@ export type RetrievedChunk = {
   sourceType: KnowledgeSourceType;
   sourceId: string | null;
   metadata: unknown;
+  // Reranker relevance score when mode includes reranking; absent otherwise.
+  // Non-breaking for existing consumers (chat.service reads title/content).
+  score?: number;
 };
 
 /**
@@ -211,27 +214,149 @@ export async function getAllProductTitles(): Promise<{ title: string | null; met
     .where(eq(kbChunks.sourceType, "product"));
 }
 
+export type RetrieveMode = "vector" | "hybrid" | "hybrid+rerank";
+
+export type RetrieveOpts = { mode?: RetrieveMode };
+
+/**
+ * Candidates fetched per search leg before fusion cuts to topK. Wider than
+ * topK so a result ranked poorly by one leg can still win on the other.
+ */
+const CANDIDATE_POOL = 12;
+
+type Candidate = RetrievedChunk & { id: string };
+
+const candidateColumns = {
+  id: kbChunks.id,
+  title: kbChunks.title,
+  content: kbChunks.content,
+  sourceType: kbChunks.sourceType,
+  sourceId: kbChunks.sourceId,
+  metadata: kbChunks.metadata,
+};
+
+async function vectorSearch(
+  queryEmbedding: number[],
+  limit: number,
+  sourceType?: KnowledgeSourceType,
+): Promise<Candidate[]> {
+  const distance = cosineDistance(kbChunks.embedding, queryEmbedding);
+  return db
+    .select(candidateColumns)
+    .from(kbChunks)
+    .where(sourceType ? eq(kbChunks.sourceType, sourceType) : undefined)
+    .orderBy(distance)
+    .limit(limit);
+}
+
+/**
+ * Keyword leg — Postgres FTS over the generated `fts` column (migration 043;
+ * intentionally unmapped in schema.ts, hence raw SQL). websearch_to_tsquery
+ * never throws on arbitrary text, which matters since the chat model authors
+ * the query. Its terms are ANDed, so a query with any non-matching word
+ * returns nothing — fine: an empty keyword list just leaves fusion with the
+ * vector order.
+ */
+async function keywordSearch(
+  query: string,
+  limit: number,
+  sourceType?: KnowledgeSourceType,
+): Promise<Candidate[]> {
+  const tsquery = sql`websearch_to_tsquery('english', ${query})`;
+  return db
+    .select(candidateColumns)
+    .from(kbChunks)
+    .where(
+      and(
+        sql`${sql.raw('"kb_chunks"."fts"')} @@ ${tsquery}`,
+        sourceType ? eq(kbChunks.sourceType, sourceType) : undefined,
+      ),
+    )
+    .orderBy(sql`ts_rank(${sql.raw('"kb_chunks"."fts"')}, ${tsquery}) desc`)
+    .limit(limit);
+}
+
+/**
+ * Reciprocal Rank Fusion: score(id) = Σ over lists of 1/(k + rank). Ties
+ * break by earlier-list rank (vector leg first), keeping the result stable
+ * when the keyword leg is empty or fully agrees. Exported for unit tests.
+ */
+export function rrfFuse<T extends { id: string }>(lists: T[][], k = 60): T[] {
+  const scores = new Map<string, { item: T; score: number; firstSeen: number }>();
+  let seenCounter = 0;
+
+  for (const list of lists) {
+    for (let rank = 0; rank < list.length; rank++) {
+      const item = list[rank]!;
+      const existing = scores.get(item.id);
+      const increment = 1 / (k + rank + 1);
+      if (existing) {
+        existing.score += increment;
+      } else {
+        scores.set(item.id, { item, score: increment, firstSeen: seenCounter++ });
+      }
+    }
+  }
+
+  return [...scores.values()]
+    .sort((a, b) => b.score - a.score || a.firstSeen - b.firstSeen)
+    .map((entry) => entry.item);
+}
+
+/**
+ * Cross-encoder rerank of the fused candidate pool, cut to topK, attaching
+ * the reranker's relevance score. Reranking is best-effort: any failure
+ * (timeout, free-tier 429, network) falls back to the fusion order rather
+ * than failing the search — the reranker only reorders results vector +
+ * keyword already found, so its absence degrades quality, never correctness.
+ */
+async function rerankCandidates(query: string, candidates: Candidate[], topK: number): Promise<Candidate[]> {
+  if (candidates.length === 0) return [];
+  try {
+    const ranked = await rerank(
+      query,
+      candidates.map((c) => `${c.title ?? ""}\n${c.content}`),
+      topK,
+    );
+    return ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevanceScore }));
+  } catch (err) {
+    logger.warn({ err, query }, "knowledge.rerank failed — falling back to fusion order");
+    return candidates.slice(0, topK);
+  }
+}
+
 export async function retrieve(
   query: string,
   topK = 3,
   sourceType?: KnowledgeSourceType,
+  opts: RetrieveOpts = {},
 ): Promise<RetrievedChunk[]> {
+  // Default is "hybrid+rerank": the eval gate (docs/09-ai-chatbot-rag.md
+  // "Retrieval Evaluation") showed it strictly beats vector — same
+  // precision/recall/hit-rate, MRR 0.984 -> 1.000 (every query now returns
+  // a relevant chunk at rank 1). The reranker both fixes the one ranking
+  // vector got wrong ("what is your return policy") and demotes the fusion
+  // pollution that made plain hybrid regress, so it dominates both. Rerank
+  // is best-effort: any failure falls back to fusion order (see
+  // rerankCandidates), so the worst case is hybrid, never a hard failure.
+  const mode = opts.mode ?? "hybrid+rerank";
   const queryEmbedding = await embedQuery(query);
-  const distance = cosineDistance(kbChunks.embedding, queryEmbedding);
 
-  const rows = await db
-    .select({
-      title: kbChunks.title,
-      content: kbChunks.content,
-      sourceType: kbChunks.sourceType,
-      sourceId: kbChunks.sourceId,
-      metadata: kbChunks.metadata,
-    })
-    .from(kbChunks)
-    .where(sourceType ? eq(kbChunks.sourceType, sourceType) : undefined)
-    .orderBy(distance)
-    .limit(topK);
+  let fused: Candidate[];
+  if (mode === "vector") {
+    fused = await vectorSearch(queryEmbedding, topK, sourceType);
+  } else {
+    const [vectorHits, keywordHits] = await Promise.all([
+      vectorSearch(queryEmbedding, CANDIDATE_POOL, sourceType),
+      keywordSearch(query, CANDIDATE_POOL, sourceType),
+    ]);
+    fused = rrfFuse([vectorHits, keywordHits]);
+    if (mode === "hybrid+rerank") {
+      fused = await rerankCandidates(query, fused, topK);
+    }
+  }
 
-  logger.debug({ query, sourceType, resultCount: rows.length }, "knowledge.retrieve");
+  const rows = fused.slice(0, topK).map(({ id: _id, ...chunk }) => chunk);
+  logger.debug({ query, sourceType, mode, resultCount: rows.length }, "knowledge.retrieve");
   return rows;
 }

@@ -5,6 +5,7 @@ import { productImages, productVariants, products } from "../../../db/schema";
 import { config } from "../../config";
 import { getAllProductTitles, retrieve, type KnowledgeSourceType, type ProductCardMetadata } from "../knowledge/knowledge.service";
 import { getOrders } from "../orders/orders.service";
+import { recordChatMetricSafe } from "./chat.metrics";
 import {
   getOrCreateConversation,
   loadRecentMessages,
@@ -118,13 +119,23 @@ export type ProductCard = {
   basePrice: string;
 };
 
-type ToolResult = { content: string; products: ProductCard[] };
+/** Retrieval telemetry from a search_knowledge call, surfaced for metrics. */
+type RetrievalStats = { latencyMs: number; resultCount: number; topScore: number | null };
+
+type ToolResult = { content: string; products: ProductCard[]; retrieval?: RetrievalStats };
 
 async function handleSearchKnowledge(input: Record<string, unknown>): Promise<ToolResult> {
   const query = String(input.query ?? "");
   const sourceType = input.sourceType as KnowledgeSourceType | undefined;
+  const startedAt = Date.now();
   const results = await retrieve(query, 3, sourceType);
-  if (results.length === 0) return { content: "No relevant results found.", products: [] };
+  const retrieval: RetrievalStats = {
+    latencyMs: Date.now() - startedAt,
+    resultCount: results.length,
+    // score is only populated by reranking modes; null under the vector default.
+    topScore: results.reduce<number | null>((max, r) => (r.score === undefined ? max : Math.max(max ?? r.score, r.score)), null),
+  };
+  if (results.length === 0) return { content: "No relevant results found.", products: [], retrieval };
 
   const products: ProductCard[] = results
     .filter((r) => r.sourceType === "product" && r.metadata)
@@ -138,7 +149,7 @@ async function handleSearchKnowledge(input: Record<string, unknown>): Promise<To
     null,
     2,
   );
-  return { content, products };
+  return { content, products, retrieval };
 }
 
 async function handleGetProductDetails(input: Record<string, unknown>): Promise<ToolResult> {
@@ -264,59 +275,104 @@ export async function* streamChat(
   let assistantText = "";
   const candidateProducts: ProductCard[] = [];
 
-  while (true) {
-    const stream = getClient().messages.stream({
+  // Per-request telemetry, recorded fire-and-forget in the finally below.
+  const startedAt = Date.now();
+  const metrics = {
+    inputTokens: 0,
+    outputTokens: 0,
+    toolCalls: {} as Record<string, number>,
+    retrievalLatencyMs: 0,
+    retrievalResultCount: null as number | null,
+    retrievalTopScore: null as number | null,
+    hadRetrieval: false,
+  };
+
+  try {
+    while (true) {
+      const stream = getClient().messages.stream({
+        model: config.ANTHROPIC_MODEL,
+        max_tokens: 1024,
+        system,
+        tools,
+        messages: anthropicMessages,
+      });
+
+      for await (const event of stream) {
+        if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+          yield { type: "thinking" };
+        }
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          assistantText += event.delta.text;
+          yield { type: "text", text: event.delta.text };
+        }
+      }
+
+      const finalMessage = await stream.finalMessage();
+      // usage.input_tokens grows each iteration as tool results are appended —
+      // summing gives the true billed input across the whole tool-use loop.
+      metrics.inputTokens += finalMessage.usage.input_tokens;
+      metrics.outputTokens += finalMessage.usage.output_tokens;
+
+      if (finalMessage.stop_reason === "tool_use") {
+        const toolUseBlocks = finalMessage.content.filter(
+          (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+        );
+
+        anthropicMessages.push({ role: "assistant", content: finalMessage.content });
+
+        // Multiple tool calls in the same turn resolve concurrently.
+        const resolved = await Promise.all(
+          toolUseBlocks.map(async (toolUse) => ({
+            toolUse,
+            result: await handleToolCall(toolUse.name, toolUse.input as Record<string, unknown>, userId),
+          })),
+        );
+
+        for (const { toolUse, result } of resolved) {
+          metrics.toolCalls[toolUse.name] = (metrics.toolCalls[toolUse.name] ?? 0) + 1;
+          if (result.retrieval) {
+            metrics.hadRetrieval = true;
+            metrics.retrievalLatencyMs += result.retrieval.latencyMs;
+            metrics.retrievalResultCount = (metrics.retrievalResultCount ?? 0) + result.retrieval.resultCount;
+            if (result.retrieval.topScore !== null) {
+              metrics.retrievalTopScore = Math.max(metrics.retrievalTopScore ?? result.retrieval.topScore, result.retrieval.topScore);
+            }
+          }
+        }
+
+        const toolResults: Anthropic.ToolResultBlockParam[] = resolved.map(({ toolUse, result }) => ({
+          type: "tool_result" as const,
+          tool_use_id: toolUse.id,
+          content: result.content,
+        }));
+
+        // Collected, not shown yet — a single search_knowledge/get_product_details
+        // call often returns more candidates than the assistant ends up actually
+        // recommending in its final text. Cards must match what's said, not the
+        // raw retrieval set.
+        candidateProducts.push(...resolved.flatMap(({ result }) => result.products));
+
+        anthropicMessages.push({ role: "user", content: toolResults });
+        continue;
+      }
+
+      break;
+    }
+  } finally {
+    // Fire-and-forget — metrics must never fail or delay the chat, and must
+    // still record what happened even if the stream threw mid-turn. Same
+    // pattern as the order-confirmation email.
+    recordChatMetricSafe({
+      conversationId: conversation.id,
       model: config.ANTHROPIC_MODEL,
-      max_tokens: 1024,
-      system,
-      tools,
-      messages: anthropicMessages,
+      latencyMs: Date.now() - startedAt,
+      retrievalLatencyMs: metrics.hadRetrieval ? metrics.retrievalLatencyMs : null,
+      inputTokens: metrics.inputTokens,
+      outputTokens: metrics.outputTokens,
+      toolCalls: metrics.toolCalls,
+      retrievalResultCount: metrics.retrievalResultCount,
+      retrievalTopScore: metrics.retrievalTopScore,
     });
-
-    for await (const event of stream) {
-      if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
-        yield { type: "thinking" };
-      }
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        assistantText += event.delta.text;
-        yield { type: "text", text: event.delta.text };
-      }
-    }
-
-    const finalMessage = await stream.finalMessage();
-
-    if (finalMessage.stop_reason === "tool_use") {
-      const toolUseBlocks = finalMessage.content.filter(
-        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
-      );
-
-      anthropicMessages.push({ role: "assistant", content: finalMessage.content });
-
-      // Multiple tool calls in the same turn resolve concurrently.
-      const resolved = await Promise.all(
-        toolUseBlocks.map(async (toolUse) => ({
-          toolUse,
-          result: await handleToolCall(toolUse.name, toolUse.input as Record<string, unknown>, userId),
-        })),
-      );
-
-      const toolResults: Anthropic.ToolResultBlockParam[] = resolved.map(({ toolUse, result }) => ({
-        type: "tool_result" as const,
-        tool_use_id: toolUse.id,
-        content: result.content,
-      }));
-
-      // Collected, not shown yet — a single search_knowledge/get_product_details
-      // call often returns more candidates than the assistant ends up actually
-      // recommending in its final text. Cards must match what's said, not the
-      // raw retrieval set.
-      candidateProducts.push(...resolved.flatMap(({ result }) => result.products));
-
-      anthropicMessages.push({ role: "user", content: toolResults });
-      continue;
-    }
-
-    break;
   }
 
   const uniqueCandidates = [...new Map(candidateProducts.map((p) => [p.id, p])).values()];

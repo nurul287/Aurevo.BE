@@ -5,9 +5,11 @@ import { conversations } from "../../../db/schema";
 import { config } from "../../config";
 import { UnauthorizedError } from "../../errors";
 import { logger } from "../../../lib/logger";
+import { deleteOldChatMetrics } from "./chat.metrics";
 
 const GUEST_RETENTION_MS = 48 * 60 * 60 * 1000; // 48 hours
 const USER_RETENTION_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const METRICS_RETENTION_DAYS = 90;
 
 /**
  * Machine-to-machine only — no JWT/session auth. Called daily by a Railway
@@ -38,8 +40,15 @@ export const cleanupChatHistory = async (
       )
       .returning({ id: conversations.id });
 
-    logger.info({ deletedCount: deleted.length }, "chat history cleanup completed");
-    res.status(200).json({ success: true, data: { deletedCount: deleted.length } });
+    // Metrics have their own retention (conversation_id is ON DELETE SET NULL,
+    // so the delete above orphans but never removes them).
+    const deletedMetrics = await deleteOldChatMetrics(METRICS_RETENTION_DAYS);
+
+    logger.info(
+      { deletedCount: deleted.length, deletedMetrics },
+      "chat history cleanup completed",
+    );
+    res.status(200).json({ success: true, data: { deletedCount: deleted.length, deletedMetrics } });
   } catch (err) {
     next(err);
   }

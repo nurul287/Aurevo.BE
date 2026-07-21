@@ -103,6 +103,53 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 
 ---
 
+## Retrieval Evaluation
+
+`pnpm eval:retrieval` measures `retrieve()` against a golden dataset (`content/eval/retrieval-golden.json`, 32 queries → their relevant chunks), reporting **precision@k, recall@k, hit-rate@k, and MRR** per query and macro-averaged. Products are keyed by slug (resolved to `kb_chunks.source_id` at eval time); policy/FAQ chunks by their `<file>-<section>` sourceId — re-check those IDs if a policy doc's section order changes.
+
+- Runs only against a **local** `DATABASE_URL` (refuses otherwise — it spends real Voyage quota and needs a seeded, `ingest:knowledge`-ed DB). Deliberately a plain tsx script, never part of vitest/CI.
+- `--mode` selects the retrieval strategy so modes are compared on the same dataset (`vector`, `hybrid`, `hybrid+rerank`; default matches the production default). `--k` (default 3, matching the production `topK`), `--pace-ms` (sleep between queries — only needed on a rate-limited key; a paid Voyage key doesn't need it), and `--json` for machine-readable output.
+- Deterministic unit coverage of `retrieve()` itself (ordering, topK, sourceType filter, rerank reorder + fallback — mocked embeddings/rerank, no API calls) lives in `src/app/modules/knowledge/knowledge.test.ts`.
+
+**Results — k=3, 32 cases (2026-07-22, local seed catalog + policy docs, same KB for all three):**
+
+| Metric | vector | hybrid | **hybrid+rerank (production default)** |
+|---|---|---|---|
+| precision@3 | 0.437 | 0.427 | **0.437** |
+| recall@3 | 0.990 | 0.979 | **0.990** |
+| hit-rate@3 | 1.000 | 1.000 | **1.000** |
+| MRR | 0.984 | 0.979 | **1.000** |
+
+Precision@3 is structurally bounded here — most queries have a single relevant chunk, capping their precision at 0.333 — so recall/hit-rate/MRR are the numbers to watch.
+
+**Why `hybrid+rerank` is the default:** it strictly dominates the other two — identical precision/recall/hit-rate to vector, and the only mode to reach **MRR 1.000** (every query returns a relevant chunk at rank 1). Two things happen at once. Plain hybrid *regressed* (recall 0.990 → 0.979) because on a broad query like "what is your return policy", `ts_rank` boosts lexically-dense-but-irrelevant chunks (exchange/sizing cross-references) into the fused top-3; the Voyage `rerank-2.5-lite` cross-encoder demotes exactly those, restoring recall. And it fixed the one ranking *vector itself* got wrong — "what is your return policy" moved from rank 2 (RR 0.500) to rank 1 — lifting MRR past the vector baseline. So reranking the hybrid candidate pool recovers hybrid's loss and beats vector, which is the outcome the reranker was added to produce. Rerank is best-effort (2500ms timeout, `rerankCandidates` falls back to fusion order on any failure), so the worst case degrades to hybrid, never a hard failure.
+
+Note the earlier state: this decision was deferred through Sessions B and C because the free-tier Voyage key (3 RPM) couldn't complete a `hybrid+rerank` eval (2 API calls/query). It was measured and the default flipped once the key was upgraded to a paid plan.
+
+---
+
+## Answer-quality Evaluation
+
+The retrieval eval scores whether `retrieve()` returns the right *chunks*; `pnpm eval:answers` scores whether the chatbot's *answers* are actually good — the piece that makes prompt/answer tuning measurable now that retrieval is saturated at MRR 1.000. For each question in `content/eval/answer-golden.json` (15 cases, policy + product) it drives the **real** `streamChat` pipeline (retrieval + rerank + Claude + tool use), collects the full streamed answer and any product cards, then has an **LLM judge** score it against ground-truth reference facts.
+
+- **Metrics:** `correctness` (judge 1–5: agrees with the reference, no invented facts), `relevance` (judge 1–5: answers the question), `key-fact coverage` (deterministic 0–1: fraction of `mustMention` literal facts present), `card accuracy` (product cards surfaced when expected), and `pass rate` (correctness ≥ 4 **and** relevance ≥ 4).
+- `--judge-model` (default the chat model, `claude-haiku-4-5`; pass a stronger judge like `claude-sonnet-5` for more reliable, lower-variance grading), `--json`. Local-DB guard; makes real Anthropic + Voyage calls, so it's a manual script, never CI. The scoring core (`answer-eval.ts`) is pure and unit-tested; only the runner touches the API.
+- The two judge dimensions are LLM-scored, so they vary a little run to run — treat the baseline as a **band**, not a constant. A stronger judge narrows the variance.
+
+**Baseline — 15 cases, judge=`claude-haiku-4-5` (2026-07-22):**
+
+| Metric | Value |
+|---|---|
+| avg correctness | 3.80 / 5 |
+| avg relevance | 4.60 / 5 |
+| key-fact coverage | 1.00 |
+| card accuracy | 1.00 |
+| pass rate | 0.53 |
+
+Unlike the retrieval eval (saturated at hit-rate 1.000 / MRR 1.000), this one **discriminates** — pass rate 0.53 means roughly half the answers fall short of the "both ≥ 4" bar, so there's real headroom for prompt tuning. Product questions in particular score correctness 2–3 (the Haiku judge is strict on them even when the right card surfaces); confirming whether that's a genuine answer weakness or judge strictness is the natural next step (re-run with `--judge-model claude-sonnet-5`, then iterate on `buildSystemPrompt` and measure).
+
+---
+
 ## Frontend Widget
 
 `src/components/ai-chat-widget.tsx` (Aurevo.UI)
@@ -133,7 +180,7 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 - [x] Migration `039` (RAG knowledge base: `kb_chunks`/`conversations`/`messages`) applied to production — was silently skipped twice by a CI bug (`dorny/paths-filter`'s default push-event diff fell back to comparing the live `dev`/`main` branch tips instead of the push event's fixed before/after SHAs, and lost a race against `merge-back.yml` fast-forwarding `dev` to `main` within seconds of the same push). Fixed by pinning `base`/`ref` to `github.event.before`/`github.sha` in `.github/workflows/ci.yml`, then landed via a follow-up migration-touching push.
 - [x] Migration `040` (`guest_sessions` RLS) applied to production
 - [x] Run `pnpm ingest:knowledge` against production, for the initial backfill — done for both policy/FAQ docs and the full product catalog; see the [Production ingestion runbook](#production-ingestion-runbook) above
-- [ ] Confirm Voyage AI's production rate limits/quota are sufficient for expected traffic — **not yet done**: the production key hit the same free-tier 3 RPM/10K TPM limit during the initial backfill (no payment method added yet), same as the local dev key
+- [x] Confirm Voyage AI's production rate limits/quota are sufficient for expected traffic — **done (2026-07-22)**: a payment method was added to the Voyage org, lifting the free-tier 3 RPM/10K TPM throttle to standard limits (the 200M free-token allowance for the voyage-3 series still applies, so at this catalog's scale the actual spend stays negligible). Confirmed by the `hybrid+rerank` eval completing fast without pacing. **Verify the production `VOYAGE_API_KEY` belongs to the same billed Voyage org** — if prod uses a key from a different org, add a payment method there too.
 - [ ] Configure a daily Railway cron trigger for `POST /internal/chat/cleanup` (with the token header) — **not yet done**
 
 ## Known Limitations / Backlog
@@ -141,10 +188,28 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 - No full CDC/delta indexing for the knowledge base — parked until catalog size or write volume demands it (see `01-requirements.md` Backlog)
 - No self-service "clear my chat history" action for logged-in users — only the automatic 90-day window applies today
 - Fixed the codebase's complete absence of `unhandledRejection`/`uncaughtException` handlers while working on this (`src/server.ts`) — unrelated to RAG specifically, but discovered while hardening the new async surfaces this feature introduces (Voyage/Anthropic calls)
-- **No re-ranking or hybrid search** — `retrieve()` does plain cosine-distance vector search only (`ORDER BY distance LIMIT topK`); no BM25/full-text fusion, no cross-encoder reranker pass. Would improve precision at the catalog's current small `kb_chunks` size only marginally; worth revisiting if retrieval quality complaints show up as the knowledge base grows.
-- **No evaluation harness** — no golden-answer test set, no precision/recall/hit-rate measurement anywhere. Retrieval quality is currently verified manually (ad hoc chat prompts), not tracked over time or regression-tested when ingestion content changes.
+- ~~No re-ranking or hybrid search~~ — **done**: hybrid retrieval (FTS + RRF fusion, migration 043) plus a Voyage `rerank-2.5-lite` pass over the fused pool. `hybrid+rerank` measured strictly ≥ vector (MRR 0.984 → 1.000) and is now the production default (`retrieve()`'s `opts.mode`); `vector` and `hybrid` remain selectable. See [Retrieval Evaluation](#retrieval-evaluation).
+- ~~No evaluation harness~~ — **done**: `pnpm eval:retrieval` + `content/eval/retrieval-golden.json` measure precision/recall/hit-rate/MRR against a 32-query golden set (see [Retrieval Evaluation](#retrieval-evaluation)), and `knowledge.test.ts` gives `retrieve()` deterministic unit coverage. Baseline recorded 2026-07-20.
 - **No fine-tuning** — uses off-the-shelf Claude + Voyage-3 via API calls; not planned unless a specific quality gap shows up that prompt/retrieval tuning can't close.
-- **No RAG-specific monitoring dashboard** — only general-purpose observability exists (pino logs, optional Sentry, `/api/health`). Nothing tracks retrieval latency, hit-rate, or answer quality specifically for the chatbot.
+- ~~No RAG-specific monitoring dashboard~~ — **done**: `chat_metrics` (migration 044) captures per-request latency, token usage, tool-call counts, and retrieval stats fire-and-forget from `chat.service.ts`; `GET /admin/ai-metrics?days=N` (admin-gated) aggregates per-day + total counts, avg/p95 latency, token totals + a labelled USD cost estimate, tool-usage breakdown, and retrieval stats; the cleanup cron purges metrics past 90 days; and the `/admin/ai` admin page (Aurevo.UI, recharts) renders it all with a 7/30-day toggle.
+
+---
+
+## Planned Improvements
+
+A 6-session roadmap to close the retrieval-quality and observability gaps above, executed one session at a time (each independently shippable — build + test green, migrated, eval-verified, micro-committed).
+
+| Session | Scope | Status |
+|---|---|---|
+| A | Retrieval evaluation harness (`pnpm eval:retrieval`, golden set, `knowledge.test.ts`) | ✅ Done |
+| B | Hybrid search — FTS keyword leg + RRF fusion (`opts.mode: "hybrid"`, migration 043) | ✅ Done (built, opt-in — eval-gated off as default) |
+| C | Re-ranking — Voyage `rerank-2.5-lite` over the fused pool (`opts.mode: "hybrid+rerank"`), graceful fallback on failure/429, optional env `VOYAGE_RERANK_MODEL` | ✅ Done — measured strictly ≥ vector (MRR 1.000) and **now the production default** |
+| D | Eval-driven retrieval tuning — chunk-title cleanup / embedding-model A/B, measured with the Session A harness. **Superseded:** once reranking (C) took retrieval to MRR 1.000, the retrieval eval saturated and these have no measurable headroom. Revisit only if the KB grows enough to create it. | Moot at current KB size |
+| — | **Answer-quality eval** (`pnpm eval:answers`) — LLM-as-judge over the full `streamChat` answer (correctness/relevance/coverage/pass-rate), the measurable lever for *answer* tuning that the saturated retrieval eval can't provide. See [Answer-quality Evaluation](#answer-quality-evaluation). | ✅ Done |
+| E | Monitoring — backend — `chat_metrics` table (latency, tokens from the Anthropic stream `usage`, tool-call counts, retrieval stats), fire-and-forget capture in `chat.service.ts`, `GET /admin/ai-metrics?days=N` aggregation endpoint, metrics retention in the cleanup cron. | ✅ Done |
+| F | Monitoring — frontend — `/admin/ai` admin page (recharts) following the `admin-dashboard-page` pattern: stat cards, per-day volume chart, tool-usage breakdown, latency/token/cost. | ✅ Done (Aurevo.UI `admin-ai-metrics-page.tsx`) |
+
+Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite` (existing key, graceful 429 fallback); charting = recharts; "fine-tuning" reframed as eval-driven optimization (true fine-tuning isn't purchasable for this stack).
 
 ---
 
@@ -156,12 +221,17 @@ Naively showing every product `search_knowledge`/`get_product_details` returns p
 - `src/app/modules/knowledge/knowledge.service.ts`
 - `content/policies/{shipping,returns,sizing,payment,faq}.md`
 - `src/scripts/ingest-knowledge.ts`
+- `src/scripts/eval-retrieval.ts`, `content/eval/retrieval-golden.json` (retrieval eval harness)
+- `src/scripts/eval-answers.ts`, `src/app/modules/chat/answer-eval.ts`, `content/eval/answer-golden.json` (answer-quality eval harness)
+- `src/app/modules/knowledge/knowledge.test.ts`, `src/app/modules/chat/answer-eval.test.ts`
 - `src/app/modules/chat/{chat.service,chat.persistence,chat.controller,chat.schema,chat.routes}.ts`
 - `src/app/modules/chat/{chat.internal.controller,chat.internal.routes}.ts`
-- `src/app/modules/chat/{chat.test,chat.internal.test}.ts`
+- `src/app/modules/chat/chat.metrics.ts` (telemetry: record / retention / getAiMetrics), `supabase/migrations/044_chat_metrics.sql`
+- `src/app/modules/admin/{admin.controller,admin.routes}.ts` (`GET /admin/ai-metrics`)
+- `src/app/modules/chat/{chat.test,chat.internal.test,chat.metrics.test}.ts`
 - `src/app/modules/products/products.service.ts` (auto-embed hooks)
 - `src/server.ts` (crash-handler fix)
-- `package.json` (`ingest:knowledge` script), `.env.example`
+- `package.json` (`ingest:knowledge`, `eval:retrieval`, `eval:answers` scripts), `.env.example`
 
 **Aurevo.UI**
 - `src/components/ai-chat-widget.tsx`

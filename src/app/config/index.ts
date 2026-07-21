@@ -27,6 +27,9 @@ const envSchema = z.object({
   // Voyage AI embeddings — powers the RAG chatbot's knowledge base
   VOYAGE_API_KEY: z.string().min(1),
   VOYAGE_EMBEDDING_MODEL: z.string().default("voyage-3"),
+  // Cross-encoder reranker over the hybrid candidate pool. Optional (has a
+  // default) so it never becomes a required env — no CI workflow change.
+  VOYAGE_RERANK_MODEL: z.string().default("rerank-2.5-lite"),
 
   // Shared secret for internal, non-user machine-to-machine routes
   // (e.g. the chat-history cleanup cron) — no JWT/session auth applies to these.
