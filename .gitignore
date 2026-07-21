@@ -35,3 +35,5 @@ graphify-out/cache/
 # graphify intermediate/machine-local files - deleted by Step 9 cleanup or per-machine, not build output
 graphify-out/.graphify_python
 graphify-out/.graphify_analysis.json
+graphify-out/[0-9][0-9][0-9][0-9]-*/
+graphify-out/.graphify_root
