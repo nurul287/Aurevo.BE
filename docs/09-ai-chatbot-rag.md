@@ -169,7 +169,7 @@ Precision@3 is structurally bounded here — most queries have a single relevant
 - **Hybrid search + re-ranking built; both opt-in, vector still default** — hybrid retrieval (FTS + RRF fusion, migration 043) and a Voyage `rerank-2.5-lite` pass over the fused pool are both implemented behind `retrieve()`'s `opts.mode` (`hybrid`, `hybrid+rerank`) and unit-tested. Hybrid marginally regressed on the eval; the rerank eval couldn't complete on the free-tier Voyage key (2 calls/query vs a 3 RPM bucket). Vector remains the production default until a mode demonstrably beats it — gated on the Voyage-plan upgrade (a [Rollout checklist](#rollout-checklist) item) and/or KB growth. See [Retrieval Evaluation](#retrieval-evaluation).
 - ~~No evaluation harness~~ — **done**: `pnpm eval:retrieval` + `content/eval/retrieval-golden.json` measure precision/recall/hit-rate/MRR against a 32-query golden set (see [Retrieval Evaluation](#retrieval-evaluation)), and `knowledge.test.ts` gives `retrieve()` deterministic unit coverage. Baseline recorded 2026-07-20.
 - **No fine-tuning** — uses off-the-shelf Claude + Voyage-3 via API calls; not planned unless a specific quality gap shows up that prompt/retrieval tuning can't close.
-- **No RAG-specific monitoring dashboard** — only general-purpose observability exists (pino logs, optional Sentry, `/api/health`). Nothing tracks retrieval latency, hit-rate, or answer quality specifically for the chatbot.
+- **RAG monitoring — backend done, dashboard UI pending** — `chat_metrics` (migration 044) captures per-request latency, token usage, tool-call counts, and retrieval stats fire-and-forget from `chat.service.ts`; `GET /admin/ai-metrics?days=N` (admin-gated) aggregates per-day + total counts, avg/p95 latency, token totals + a labelled USD cost estimate, tool-usage breakdown, and retrieval stats; the cleanup cron purges metrics past 90 days. The `/admin/ai` frontend page (Session F) is the remaining piece.
 
 ---
 
@@ -183,7 +183,7 @@ A 6-session roadmap to close the retrieval-quality and observability gaps above,
 | B | Hybrid search — FTS keyword leg + RRF fusion (`opts.mode: "hybrid"`, migration 043) | ✅ Done (built, opt-in — eval-gated off as default) |
 | C | Re-ranking — Voyage `rerank-2.5-lite` over the fused pool (`opts.mode: "hybrid+rerank"`), graceful fallback on failure/429, optional env `VOYAGE_RERANK_MODEL` | ✅ Done (built + unit-tested; eval & default-flip deferred to Voyage-plan upgrade) |
 | D | **Eval-driven retrieval tuning** — clean messy titles in `buildProductChunkText` (extract `chat.service.ts`'s name-cleaning into a shared helper), few-shot prompt tuning from eval failures, embedding-model A/B (`voyage-3-large`) — all measured with the Session A harness. (Not weight-level fine-tuning: not offered for this stack.) | Backlog |
-| E | **Monitoring — backend** — `chat_metrics` table (latency, tokens from the Anthropic stream `usage`, tool-call counts, retrieval stats), fire-and-forget capture in `chat.service.ts`, `GET /admin/ai-metrics?days=N` aggregation endpoint, metrics retention in the cleanup cron. | Backlog |
+| E | Monitoring — backend — `chat_metrics` table (latency, tokens from the Anthropic stream `usage`, tool-call counts, retrieval stats), fire-and-forget capture in `chat.service.ts`, `GET /admin/ai-metrics?days=N` aggregation endpoint, metrics retention in the cleanup cron. | ✅ Done |
 | F | **Monitoring — frontend** — `/admin/ai` admin page (recharts) following the `admin-dashboard-page` pattern: stat cards, per-day volume chart, tool-usage breakdown, latency/token/cost. | Backlog |
 
 Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite` (existing key, graceful 429 fallback); charting = recharts; "fine-tuning" reframed as eval-driven optimization (true fine-tuning isn't purchasable for this stack).
@@ -202,7 +202,9 @@ Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite`
 - `src/app/modules/knowledge/knowledge.test.ts`
 - `src/app/modules/chat/{chat.service,chat.persistence,chat.controller,chat.schema,chat.routes}.ts`
 - `src/app/modules/chat/{chat.internal.controller,chat.internal.routes}.ts`
-- `src/app/modules/chat/{chat.test,chat.internal.test}.ts`
+- `src/app/modules/chat/chat.metrics.ts` (telemetry: record / retention / getAiMetrics), `supabase/migrations/044_chat_metrics.sql`
+- `src/app/modules/admin/{admin.controller,admin.routes}.ts` (`GET /admin/ai-metrics`)
+- `src/app/modules/chat/{chat.test,chat.internal.test,chat.metrics.test}.ts`
 - `src/app/modules/products/products.service.ts` (auto-embed hooks)
 - `src/server.ts` (crash-handler fix)
 - `package.json` (`ingest:knowledge`, `eval:retrieval` scripts), `.env.example`
