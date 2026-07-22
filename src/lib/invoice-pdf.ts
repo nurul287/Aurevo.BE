@@ -3,6 +3,7 @@ import path from "path";
 import PDFDocument from "pdfkit";
 import SVGtoPDF = require("svg-to-pdfkit");
 import { config } from "../app/config";
+import { logger } from "./logger";
 import { formatShippingAddressLine, type OrderForEmail } from "./email";
 
 /**
@@ -34,9 +35,26 @@ const FONT_BOLD = path.join(FONTS_DIR, "NotoSansBengali-Bold.ttf");
 // (not shared across repos), drawn directly as vectors via svg-to-pdfkit so
 // it stays crisp at print resolution (no PNG rasterization step).
 const LOGO_PATH = path.join(process.cwd(), "assets/logo/aurevo-logo-black.svg");
-const LOGO_SVG = fs.readFileSync(LOGO_PATH, "utf8");
 // Source viewBox is 86x80 — used to keep the logo's aspect ratio at any render width.
 const LOGO_ASPECT_RATIO = 80 / 86;
+
+// Lazy + fault-tolerant: this used to be a top-level `readFileSync`, which
+// means a missing/misconfigured deploy image (assets/ not copied into the
+// production stage — see the Dockerfile fix) crashed the entire server on
+// require(), not just invoice generation. A decorative logo must never be
+// able to take down the whole API. `undefined` = not yet attempted,
+// `null` = attempted and failed (cached so we don't retry every invoice).
+let logoSvgCache: string | null | undefined;
+function getLogoSvg(): string | null {
+  if (logoSvgCache !== undefined) return logoSvgCache;
+  try {
+    logoSvgCache = fs.readFileSync(LOGO_PATH, "utf8");
+  } catch (err) {
+    logger.error({ err, path: LOGO_PATH }, "invoice-pdf: logo SVG unavailable, rendering without it");
+    logoSvgCache = null;
+  }
+  return logoSvgCache;
+}
 
 const BUSINESS_DOMAIN = "aurevofashion.store";
 const BUSINESS_LOCATION = "Mirpur, Dhaka, Bangladesh";
@@ -156,7 +174,10 @@ function renderInvoice(doc: Doc, order: OrderForInvoice): void {
 
   // --- Header: logo left, INVOICE right ---
   const logoWidth = 42;
-  SVGtoPDF(doc, LOGO_SVG, LEFT, 40, { width: logoWidth, height: logoWidth * LOGO_ASPECT_RATIO });
+  const logoSvg = getLogoSvg();
+  if (logoSvg) {
+    SVGtoPDF(doc, logoSvg, LEFT, 40, { width: logoWidth, height: logoWidth * LOGO_ASPECT_RATIO });
+  }
   doc.font("BodyBold").fontSize(22).fillColor(DARK)
     .text("INVOICE", LEFT, 42, { width: CONTENT_WIDTH, align: "right" });
 

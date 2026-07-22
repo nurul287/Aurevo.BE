@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import fs from "fs";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   buildInvoicePdfBuffer,
   deriveInvoicePayment,
@@ -103,5 +104,42 @@ describe("buildInvoicePdfBuffer", () => {
     );
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
     expect(buf.length).toBeGreaterThan(0);
+  });
+
+  describe("when the logo asset is missing (e.g. a deploy image without assets/)", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.resetModules();
+    });
+
+    it("still produces a valid PDF instead of throwing", async () => {
+      // Regression test for the Railway boot crash: assets/logo/*.svg wasn't
+      // copied into the production image, and the logo used to be read via a
+      // top-level readFileSync — which threw at require() time and took the
+      // whole server down, not just this function. Simulate that missing-file
+      // condition here (fonts still resolve normally, via the real
+      // readFileSync) and assert the PDF still renders — the logo is
+      // decorative and must degrade, never crash.
+      //
+      // invoice-pdf.ts caches the logo read (getLogoSvg) after its first
+      // call, and earlier tests above already populated that cache via the
+      // statically-imported module — so mocking fs here wouldn't be hit
+      // without a fresh module instance. Reset the module registry and
+      // re-import so this test gets its own unpopulated cache.
+      const original = fs.readFileSync.bind(fs);
+      vi.spyOn(fs, "readFileSync").mockImplementation(((...args: Parameters<typeof fs.readFileSync>) => {
+        const filePath = String(args[0]);
+        if (filePath.includes("aurevo-logo-black.svg")) {
+          throw Object.assign(new Error("ENOENT: no such file or directory"), { code: "ENOENT" });
+        }
+        return original(...(args as Parameters<typeof original>));
+      }) as typeof fs.readFileSync);
+
+      vi.resetModules();
+      const fresh = await import("./invoice-pdf");
+      const buf = await fresh.buildInvoicePdfBuffer(makeOrder());
+      expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
+      expect(buf.length).toBeGreaterThan(0);
+    });
   });
 });
