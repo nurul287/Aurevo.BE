@@ -1845,7 +1845,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app",
-      "community": 20,
+      "community": 76,
       "norm_label": "app.ts"
     },
     {
@@ -1855,7 +1855,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_app_app",
-      "community": 20,
+      "community": 76,
       "norm_label": "app"
     },
     {
@@ -1865,7 +1865,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_app_allowedorigins",
-      "community": 20,
+      "community": 76,
       "norm_label": "allowedorigins"
     },
     {
@@ -1875,7 +1875,7 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_app_healthhandler",
-      "community": 20,
+      "community": 76,
       "norm_label": "healthhandler()"
     },
     {
@@ -1885,7 +1885,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_config_index",
-      "community": 20,
+      "community": 76,
       "norm_label": "index.ts"
     },
     {
@@ -1895,7 +1895,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_config_index_envschema",
-      "community": 20,
+      "community": 76,
       "norm_label": "envschema"
     },
     {
@@ -1905,7 +1905,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_app_config_index_parsed",
-      "community": 20,
+      "community": 76,
       "norm_label": "parsed"
     },
     {
@@ -1915,7 +1915,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_config_swagger",
-      "community": 20,
+      "community": 76,
       "norm_label": "swagger.ts"
     },
     {
@@ -1925,7 +1925,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "src_app_config_swagger_options",
-      "community": 20,
+      "community": 76,
       "norm_label": "options"
     },
     {
@@ -1935,7 +1935,7 @@
       "source_location": "L100",
       "_origin": "ast",
       "id": "src_app_config_swagger_swaggerspec",
-      "community": 20,
+      "community": 76,
       "norm_label": "swaggerspec"
     },
     {
@@ -2125,7 +2125,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_interfaces_index",
-      "community": 26,
+      "community": 76,
       "norm_label": "index.ts"
     },
     {
@@ -2135,7 +2135,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "src_app_interfaces_index_express",
-      "community": 26,
+      "community": 76,
       "norm_label": "express"
     },
     {
@@ -2145,7 +2145,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "src_app_interfaces_index_request",
-      "community": 26,
+      "community": 76,
       "norm_label": "request"
     },
     {
@@ -2155,7 +2155,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_app_interfaces_index_paginationparams",
-      "community": 26,
+      "community": 76,
       "norm_label": "paginationparams"
     },
     {
@@ -2165,7 +2165,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "src_app_interfaces_index_paginatedresponse",
-      "community": 26,
+      "community": 76,
       "norm_label": "paginatedresponse"
     },
     {
@@ -2175,7 +2175,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_app_interfaces_index_apiresponse",
-      "community": 26,
+      "community": 76,
       "norm_label": "apiresponse"
     },
     {
@@ -2235,7 +2235,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_middlewares_globalerrorhandler",
-      "community": 20,
+      "community": 76,
       "norm_label": "globalerrorhandler.ts"
     },
     {
@@ -3975,7 +3975,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "src_app_modules_categories_categories_routes_router",
-      "community": 76,
+      "community": 17,
       "norm_label": "router"
     },
     {
@@ -4395,7 +4395,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_test",
-      "community": 285,
+      "community": 76,
       "norm_label": "chat.metrics.test.ts"
     },
     {
@@ -4405,7 +4405,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_test_daysago",
-      "community": 285,
+      "community": 76,
       "norm_label": "daysago()"
     },
     {
@@ -4415,7 +4415,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_test_seedconversation",
-      "community": 285,
+      "community": 76,
       "norm_label": "seedconversation()"
     },
     {
@@ -4425,7 +4425,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics",
-      "community": 285,
+      "community": 76,
       "norm_label": "chat.metrics.ts"
     },
     {
@@ -4435,7 +4435,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_chatmetric",
-      "community": 285,
+      "community": 76,
       "norm_label": "chatmetric"
     },
     {
@@ -4445,7 +4445,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_model_pricing_per_mtok",
-      "community": 285,
+      "community": 76,
       "norm_label": "model_pricing_per_mtok"
     },
     {
@@ -4455,7 +4455,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_pricingfor",
-      "community": 285,
+      "community": 76,
       "norm_label": "pricingfor()"
     },
     {
@@ -4465,7 +4465,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_recordchatmetric",
-      "community": 285,
+      "community": 76,
       "norm_label": "recordchatmetric()"
     },
     {
@@ -4485,7 +4485,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_aimetrics",
-      "community": 285,
+      "community": 76,
       "norm_label": "aimetrics"
     },
     {
@@ -4495,7 +4495,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_num",
-      "community": 285,
+      "community": 76,
       "norm_label": "num()"
     },
     {
@@ -4505,7 +4505,7 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_numornull",
-      "community": 285,
+      "community": 76,
       "norm_label": "numornull()"
     },
     {
@@ -4515,7 +4515,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_getaimetrics",
-      "community": 285,
+      "community": 76,
       "norm_label": "getaimetrics()"
     },
     {
@@ -4525,7 +4525,7 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "src_app_modules_chat_chat_metrics_recordchatmetricsafe",
-      "community": 285,
+      "community": 76,
       "norm_label": "recordchatmetricsafe()"
     },
     {
@@ -4945,7 +4945,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_app_modules_courier_courier_internal_controller",
-      "community": 20,
+      "community": 76,
       "norm_label": "courier.internal.controller.ts"
     },
     {
@@ -7465,7 +7465,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_admin_routes_router",
-      "community": 76,
+      "community": 27,
       "norm_label": "router"
     },
     {
@@ -7575,7 +7575,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_routes_router",
-      "community": 76,
+      "community": 9,
       "norm_label": "router"
     },
     {
@@ -7665,7 +7665,7 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_app_modules_variants_variants_schema_getallvariantsschema",
-      "community": 9,
+      "community": 27,
       "norm_label": "getallvariantsschema"
     },
     {
@@ -7985,7 +7985,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_db_index_client",
-      "community": 20,
+      "community": 76,
       "norm_label": "client"
     },
     {
@@ -8525,7 +8525,7 @@
       "source_location": "L602",
       "_origin": "ast",
       "id": "src_db_schema_conversations",
-      "community": 285,
+      "community": 76,
       "norm_label": "conversations"
     },
     {
@@ -8545,7 +8545,7 @@
       "source_location": "L636",
       "_origin": "ast",
       "id": "src_db_schema_chatmetrics",
-      "community": 285,
+      "community": 76,
       "norm_label": "chatmetrics"
     },
     {
@@ -8762,7 +8762,7 @@
       "label": "makeOrder()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L10",
+      "source_location": "L11",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_test_makeorder",
       "community": 3,
@@ -8782,7 +8782,7 @@
       "label": "OrderForInvoice",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L19",
+      "source_location": "L20",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_orderforinvoice",
       "community": 3,
@@ -8792,7 +8792,7 @@
       "label": "FONTS_DIR",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L29",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_fonts_dir",
       "community": 3,
@@ -8802,7 +8802,7 @@
       "label": "FONT_REGULAR",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L30",
+      "source_location": "L31",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_font_regular",
       "community": 3,
@@ -8812,7 +8812,7 @@
       "label": "FONT_BOLD",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L31",
+      "source_location": "L32",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_font_bold",
       "community": 3,
@@ -8822,27 +8822,27 @@
       "label": "LOGO_PATH",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L36",
+      "source_location": "L37",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_logo_path",
       "community": 3,
       "norm_label": "logo_path"
     },
     {
-      "label": "LOGO_SVG",
+      "label": "getLogoSvg()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L37",
+      "source_location": "L48",
       "_origin": "ast",
-      "id": "src_lib_invoice_pdf_logo_svg",
+      "id": "src_lib_invoice_pdf_getlogosvg",
       "community": 3,
-      "norm_label": "logo_svg"
+      "norm_label": "getlogosvg()"
     },
     {
       "label": "extractEmailAddress()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L55",
+      "source_location": "L73",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_extractemailaddress",
       "community": 3,
@@ -8852,7 +8852,7 @@
       "label": "formatAmount()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L61",
+      "source_location": "L79",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_formatamount",
       "community": 3,
@@ -8862,7 +8862,7 @@
       "label": "deriveInvoicePayment()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L70",
+      "source_location": "L88",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_deriveinvoicepayment",
       "community": 3,
@@ -8872,7 +8872,7 @@
       "label": "formatInvoiceDate()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L80",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_formatinvoicedate",
       "community": 3,
@@ -8882,7 +8882,7 @@
       "label": "Doc",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L91",
+      "source_location": "L109",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_doc",
       "community": 3,
@@ -8892,7 +8892,7 @@
       "label": "TABLE",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L93",
+      "source_location": "L111",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_table",
       "community": 3,
@@ -8902,7 +8902,7 @@
       "label": "drawItemsHeader()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L104",
+      "source_location": "L122",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_drawitemsheader",
       "community": 3,
@@ -8912,7 +8912,7 @@
       "label": "metaRow()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L130",
+      "source_location": "L148",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_metarow",
       "community": 3,
@@ -8922,7 +8922,7 @@
       "label": "renderInvoice()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L153",
+      "source_location": "L171",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_renderinvoice",
       "community": 3,
@@ -8932,7 +8932,7 @@
       "label": "buildInvoicePdfBuffer()",
       "file_type": "code",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L254",
+      "source_location": "L275",
       "_origin": "ast",
       "id": "src_lib_invoice_pdf_buildinvoicepdfbuffer",
       "community": 3,
@@ -8945,7 +8945,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_logger",
-      "community": 20,
+      "community": 76,
       "norm_label": "logger.ts"
     },
     {
@@ -8955,7 +8955,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_logger_logger",
-      "community": 20,
+      "community": 76,
       "norm_label": "logger"
     },
     {
@@ -8965,7 +8965,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_lib_sentry",
-      "community": 20,
+      "community": 76,
       "norm_label": "sentry.ts"
     },
     {
@@ -8975,7 +8975,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_lib_sentry_initsentry",
-      "community": 20,
+      "community": 76,
       "norm_label": "initsentry()"
     },
     {
@@ -8985,7 +8985,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_lib_sentry_sentryenabled",
-      "community": 20,
+      "community": 76,
       "norm_label": "sentryenabled()"
     },
     {
@@ -9335,7 +9335,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "src_routes_index_router",
-      "community": 20,
+      "community": 76,
       "norm_label": "router"
     },
     {
@@ -9545,7 +9545,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_server",
-      "community": 20,
+      "community": 76,
       "norm_label": "server.ts"
     },
     {
@@ -9555,7 +9555,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "src_server_port",
-      "community": 20,
+      "community": 76,
       "norm_label": "port"
     },
     {
@@ -9565,7 +9565,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "src_server_start",
-      "community": 20,
+      "community": 76,
       "norm_label": "start()"
     },
     {
@@ -11032,7 +11032,7 @@
       "label": "Environment",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L68",
+      "source_location": "L71",
       "_origin": "ast",
       "id": "claude_environment",
       "community": 31,
@@ -11042,7 +11042,7 @@
       "label": "Key gotchas",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L74",
+      "source_location": "L77",
       "_origin": "ast",
       "id": "claude_key_gotchas",
       "community": 31,
@@ -11052,7 +11052,7 @@
       "label": "graphify",
       "file_type": "document",
       "source_file": "CLAUDE.md",
-      "source_location": "L81",
+      "source_location": "L84",
       "_origin": "ast",
       "id": "claude_graphify",
       "community": 31,
@@ -11142,7 +11142,7 @@
       "label": "2. Run the backend API",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L91",
+      "source_location": "L94",
       "_origin": "ast",
       "id": "readme_2_run_the_backend_api",
       "community": 292,
@@ -11152,7 +11152,7 @@
       "label": "3. Run the frontend",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L99",
+      "source_location": "L102",
       "_origin": "ast",
       "id": "readme_3_run_the_frontend",
       "community": 292,
@@ -11162,7 +11162,7 @@
       "label": "Database Scripts",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L108",
+      "source_location": "L111",
       "_origin": "ast",
       "id": "readme_database_scripts",
       "community": 80,
@@ -11172,7 +11172,7 @@
       "label": "Deployment (Railway)",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L124",
+      "source_location": "L127",
       "_origin": "ast",
       "id": "readme_deployment_railway",
       "community": 80,
@@ -11182,7 +11182,7 @@
       "label": "Tech Decisions at a Glance",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L140",
+      "source_location": "L143",
       "_origin": "ast",
       "id": "readme_tech_decisions_at_a_glance",
       "community": 80,
@@ -11965,7 +11965,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_03_database_design",
-      "community": 32,
+      "community": 21,
       "norm_label": "03-database-design.md"
     },
     {
@@ -11975,7 +11975,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_03_database_design_phase_3_database_design",
-      "community": 32,
+      "community": 21,
       "norm_label": "phase 3 \u2014 database design"
     },
     {
@@ -11985,7 +11985,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "docs_03_database_design_overview",
-      "community": 32,
+      "community": 21,
       "norm_label": "overview"
     },
     {
@@ -11995,7 +11995,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "docs_03_database_design_enums",
-      "community": 32,
+      "community": 21,
       "norm_label": "enums"
     },
     {
@@ -12005,7 +12005,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "docs_03_database_design_entity_relationship_diagram",
-      "community": 32,
+      "community": 21,
       "norm_label": "entity relationship diagram"
     },
     {
@@ -12015,7 +12015,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "docs_03_database_design_interactive_lucidchart_diagram",
-      "community": 32,
+      "community": 21,
       "norm_label": "interactive lucidchart diagram"
     },
     {
@@ -12025,7 +12025,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "docs_03_database_design_text_summary_quick_reference",
-      "community": 32,
+      "community": 21,
       "norm_label": "text summary (quick reference)"
     },
     {
@@ -12195,7 +12195,7 @@
       "source_location": "L364",
       "_origin": "ast",
       "id": "docs_03_database_design_indexes",
-      "community": 32,
+      "community": 21,
       "norm_label": "indexes"
     },
     {
@@ -12205,7 +12205,7 @@
       "source_location": "L382",
       "_origin": "ast",
       "id": "docs_03_database_design_row_level_security",
-      "community": 32,
+      "community": 21,
       "norm_label": "row-level security"
     },
     {
@@ -13439,7 +13439,7 @@
       "contributor": null,
       "community": 169,
       "norm_label": "graphify skill pointer (/graphify)",
-      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_graphify_pointer"
+      "id": "claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_claude_graphify_pointer"
     },
     {
       "label": "Community Detection",
@@ -37808,7 +37808,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_email_orderforemail",
@@ -37841,7 +37841,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L6",
+      "source_location": "L7",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_email_formatshippingaddressline",
@@ -37852,7 +37852,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L181",
+      "source_location": "L202",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_email_formatshippingaddressline",
@@ -38022,7 +38022,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf",
@@ -38033,7 +38033,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf_buildinvoicepdfbuffer",
@@ -38044,7 +38044,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf_deriveinvoicepayment",
@@ -38055,7 +38055,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf_extractemailaddress",
@@ -38066,7 +38066,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf_formatamount",
@@ -38077,7 +38077,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L2",
+      "source_location": "L3",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf_orderforinvoice",
@@ -38087,7 +38087,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.test.ts",
-      "source_location": "L10",
+      "source_location": "L11",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_test",
       "target": "src_lib_invoice_pdf_test_makeorder",
@@ -38097,7 +38097,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L254",
+      "source_location": "L275",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_buildinvoicepdfbuffer",
@@ -38107,7 +38107,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L70",
+      "source_location": "L88",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_deriveinvoicepayment",
@@ -38117,7 +38117,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L91",
+      "source_location": "L109",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_doc",
@@ -38127,7 +38127,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L104",
+      "source_location": "L122",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_drawitemsheader",
@@ -38137,7 +38137,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L55",
+      "source_location": "L73",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_extractemailaddress",
@@ -38147,7 +38147,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L31",
+      "source_location": "L32",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_font_bold",
@@ -38157,7 +38157,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L30",
+      "source_location": "L31",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_font_regular",
@@ -38167,7 +38167,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L29",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_fonts_dir",
@@ -38177,7 +38177,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L61",
+      "source_location": "L79",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_formatamount",
@@ -38187,7 +38187,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L80",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_formatinvoicedate",
@@ -38197,10 +38197,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L36",
+      "source_location": "L48",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
-      "target": "src_lib_invoice_pdf_logo_path",
+      "target": "src_lib_invoice_pdf_getlogosvg",
       "confidence_score": 1.0
     },
     {
@@ -38210,14 +38210,14 @@
       "source_location": "L37",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
-      "target": "src_lib_invoice_pdf_logo_svg",
+      "target": "src_lib_invoice_pdf_logo_path",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L130",
+      "source_location": "L148",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_metarow",
@@ -38227,7 +38227,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L19",
+      "source_location": "L20",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_orderforinvoice",
@@ -38237,7 +38237,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L153",
+      "source_location": "L171",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_renderinvoice",
@@ -38247,10 +38247,32 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L93",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf",
       "target": "src_lib_invoice_pdf_table",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/invoice-pdf.ts",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_lib_invoice_pdf",
+      "target": "src_lib_logger",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/invoice-pdf.ts",
+      "source_location": "L6",
+      "weight": 1.0,
+      "source": "src_lib_invoice_pdf",
+      "target": "src_lib_logger_logger",
       "confidence_score": 1.0
     },
     {
@@ -38258,7 +38280,18 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L154",
+      "source_location": "L177",
+      "weight": 1.0,
+      "source": "src_lib_invoice_pdf_renderinvoice",
+      "target": "src_lib_invoice_pdf_getlogosvg",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/lib/invoice-pdf.ts",
+      "source_location": "L172",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_invoice_pdf_extractemailaddress",
@@ -38269,7 +38302,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L74",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_deriveinvoicepayment",
       "target": "src_lib_invoice_pdf_formatamount",
@@ -38280,7 +38313,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L223",
+      "source_location": "L244",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_invoice_pdf_formatamount",
@@ -38291,7 +38324,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L155",
+      "source_location": "L173",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_invoice_pdf_deriveinvoicepayment",
@@ -38302,7 +38335,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L187",
+      "source_location": "L208",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_invoice_pdf_formatinvoicedate",
@@ -38313,7 +38346,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L202",
+      "source_location": "L223",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_invoice_pdf_drawitemsheader",
@@ -38324,7 +38357,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L186",
+      "source_location": "L207",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_renderinvoice",
       "target": "src_lib_invoice_pdf_metarow",
@@ -38335,7 +38368,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/lib/invoice-pdf.ts",
-      "source_location": "L267",
+      "source_location": "L288",
       "weight": 1.0,
       "source": "src_lib_invoice_pdf_buildinvoicepdfbuffer",
       "target": "src_lib_invoice_pdf_renderinvoice",
@@ -40844,7 +40877,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L68",
+      "source_location": "L71",
       "weight": 1.0,
       "source": "claude_md_claude_claude",
       "target": "claude_environment",
@@ -40854,7 +40887,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L81",
+      "source_location": "L84",
       "weight": 1.0,
       "source": "claude_md_claude_claude",
       "target": "claude_graphify",
@@ -40864,7 +40897,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "CLAUDE.md",
-      "source_location": "L74",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "claude_md_claude_claude",
       "target": "claude_key_gotchas",
@@ -40974,7 +41007,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L108",
+      "source_location": "L111",
       "weight": 1.0,
       "source": "readme",
       "target": "readme_database_scripts",
@@ -40984,7 +41017,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L124",
+      "source_location": "L127",
       "weight": 1.0,
       "source": "readme",
       "target": "readme_deployment_railway",
@@ -41044,7 +41077,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L140",
+      "source_location": "L143",
       "weight": 1.0,
       "source": "readme",
       "target": "readme_tech_decisions_at_a_glance",
@@ -41064,7 +41097,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L91",
+      "source_location": "L94",
       "weight": 1.0,
       "source": "readme_quick_start",
       "target": "readme_2_run_the_backend_api",
@@ -41074,7 +41107,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L99",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "readme_quick_start",
       "target": "readme_3_run_the_frontend",
@@ -43775,5 +43808,5 @@
       "source_file": "docs/images/rag-chatbot-architecture.svg"
     }
   ],
-  "built_at_commit": "e249674a2a8104319dadd906fdb34fc98862b5da"
+  "built_at_commit": "4277b00ae11e3744b5faeb93dcd13c1600795d2d"
 }

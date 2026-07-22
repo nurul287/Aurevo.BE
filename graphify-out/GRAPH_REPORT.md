@@ -1,16 +1,16 @@
 # Graph Report - Aurevo.BE  (2026-07-22)
 
 ## Corpus Check
-- 205 files · ~267,722 words
+- 205 files · ~268,459 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1571 nodes · 2564 edges · 278 communities (70 shown, 208 thin omitted)
+- 1571 nodes · 2567 edges · 278 communities (70 shown, 208 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e249674a`
+- Built from commit: `4277b00a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -36,10 +36,10 @@
 - Inventory Tests & Error Handler
 - Categories Controller
 - Courier Webhook & Ship/Refresh Controller
+- Phase 3 — Database Design
 - Auth & Orders Route Tests
 - App Bootstrap & Images Tests
 - Variants Service & Schema
-- Products Service
 - Requirements Backlog & CI/CD Decisions
 - Non-Functional Requirements & Rate Limits
 - RAG Chatbot Architecture Diagram
@@ -367,7 +367,7 @@ Nodes (39): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFound
 
 ### Community 9 - "Cart Controller"
 Cohesion: 0.11
-Nodes (30): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getVariantById(), getVariants(), updateVariant(), AdjustStockInput (+22 more)
+Nodes (30): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getVariantById(), getVariants(), updateVariant(), router (+22 more)
 
 ### Community 10 - "Graphify Export & Traversal Features"
 Cohesion: 0.33
@@ -398,8 +398,8 @@ Cohesion: 0.06
 Nodes (34): addressesRelations, brandsRelations, cartItemsRelations, categoriesRelations, inventoryMovementsRelations, inventoryRelations, metaCapiSentRelations, orderItemsRelations (+26 more)
 
 ### Community 17 - "Product Images Admin API"
-Cohesion: 0.18
-Nodes (16): createCategory(), deleteCategory(), deleteCategoryImage(), getCategories(), getCategoryById(), updateCategory(), uploadCategoryImage(), upload (+8 more)
+Cohesion: 0.17
+Nodes (17): createCategory(), deleteCategory(), deleteCategoryImage(), getCategories(), getCategoryById(), updateCategory(), uploadCategoryImage(), router (+9 more)
 
 ### Community 18 - "Inventory Tests & Error Handler"
 Cohesion: 0.23
@@ -410,8 +410,12 @@ Cohesion: 0.25
 Nodes (15): cancelOrder(), claimGuestOrders(), DbTransaction, fetchOrderItemsWithImages(), getOrderById(), getOrderByNumber(), getOrderOrThrow(), getOrders() (+7 more)
 
 ### Community 20 - "Courier Webhook & Ship/Refresh Controller"
-Cohesion: 0.06
-Nodes (46): allowedOrigins, app, envSchema, parsed, options, swaggerSpec, getCourierBalance(), isValidWebhookBearer() (+38 more)
+Cohesion: 0.09
+Nodes (34): getCourierBalance(), isValidWebhookBearer(), receiveWebhook(), refreshOrderStatus(), shipOrder(), trackByCode(), router, CourierWebhookBody (+26 more)
+
+### Community 21 - "Phase 3 — Database Design"
+Cohesion: 0.22
+Nodes (8): Entity Relationship Diagram, Enums, Indexes, Interactive Lucidchart Diagram, Overview, Phase 3 — Database Design, Row-Level Security, Text Summary (quick reference)
 
 ### Community 22 - "Auth & Orders Route Tests"
 Cohesion: 0.11
@@ -421,13 +425,9 @@ Nodes (18): Answer-quality Evaluation, Architecture Diagram, Chat Request Lifecy
 Cohesion: 0.18
 Nodes (15): /api/chat (SSE stream), /api/orders (transactional), /api/products (read + admin write), Chat service (Claude tool-use loop, true token streaming), Chat widget (Storefront, SSE stream), Chunk + Embed (Voyage AI), conversations + messages (multi-turn history / conversations table), get_my_orders tool (auth-gated only, scoped to req.user.id) (+7 more)
 
-### Community 26 - "Products Service"
-Cohesion: 0.33
-Nodes (5): ApiResponse, Express, PaginatedResponse, PaginationParams, Request
-
 ### Community 27 - "Requirements Backlog & CI/CD Decisions"
-Cohesion: 0.22
-Nodes (11): authenticate(), optionalAuth(), requireAdmin(), verifyToken(), publicLimiter, validate(), zodFieldErrors(), router (+3 more)
+Cohesion: 0.18
+Nodes (13): authenticate(), optionalAuth(), requireAdmin(), verifyToken(), publicLimiter, validate(), zodFieldErrors(), router (+5 more)
 
 ### Community 28 - "Non-Functional Requirements & Rate Limits"
 Cohesion: 0.12
@@ -442,8 +442,8 @@ Cohesion: 0.25
 Nodes (7): Architecture, Commands, Development workflow (always apply), Environment, graphify, Key gotchas, Workspace-wide decisions
 
 ### Community 32 - "Auth Middleware"
-Cohesion: 0.08
-Nodes (24): `brands`, `cart_items`, `categories`, `courier_tracking_events`, Entity Relationship Diagram, Enums, Indexes, Interactive Lucidchart Diagram (+16 more)
+Cohesion: 0.12
+Nodes (16): `brands`, `cart_items`, `categories`, `courier_tracking_events`, `inventory`, `inventory_movements`, `order_items`, `orders` (+8 more)
 
 ### Community 33 - "Graphify Extraction Spec"
 Cohesion: 0.29
@@ -518,8 +518,8 @@ Cohesion: 0.25
 Nodes (7): Authentication, Base URL, Error Code Reference, HTTP Status Code Reference, Interactive Docs, Rate Limits, Response Shape
 
 ### Community 76 - "rateLimiter.ts"
-Cohesion: 0.15
-Nodes (15): express, getAiMetricsController(), getDashboard(), router, getAdminDashboard(), router, cleanupChatHistory(), router (+7 more)
+Cohesion: 0.06
+Nodes (40): express, allowedOrigins, app, envSchema, parsed, options, swaggerSpec, ApiResponse (+32 more)
 
 ### Community 80 - "Community 80"
 Cohesion: 0.22
@@ -574,8 +574,8 @@ Cohesion: 0.67
 Nodes (3): Auth Design (JWKS getClaims), Identity Linked Notice Template, Identity Unlinked Notice Template
 
 ### Community 285 - "chat.metrics.ts"
-Cohesion: 0.11
-Nodes (27): aggregate(), AnswerCaseResult, AnswerEvalSummary, buildJudgePrompt(), clampScore(), JudgeScores, keyFactCoverage(), mean() (+19 more)
+Cohesion: 0.22
+Nodes (16): aggregate(), AnswerCaseResult, AnswerEvalSummary, buildJudgePrompt(), clampScore(), JudgeScores, keyFactCoverage(), mean() (+8 more)
 
 ### Community 291 - "inventory.test.ts"
 Cohesion: 0.17
@@ -596,7 +596,7 @@ Nodes (5): 1. Start local database, 2. Run the backend API, 3. Run the frontend,
   supabase/email-templates/phone-changed.html · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **673 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+668 more)
+- **672 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+667 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **208 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -611,7 +611,7 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Profile & Addresses Requirements (BD shape)` and `Phone Number Changed Notice Template`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `express` connect `rateLimiter.ts` to `Error Type Hierarchy`, `Auth & Address Controller`, `Express App Bootstrap & Swagger`, `Chat Persistence Layer`, `inventory.test.ts`, `Package Metadata`, `Runtime Dependencies`, `Dev Dependencies`, `Community 40`, `Cart Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Products Service`, `Requirements Backlog & CI/CD Decisions`, `Community 93`?**
+- **Why does `express` connect `rateLimiter.ts` to `Error Type Hierarchy`, `Auth & Address Controller`, `Express App Bootstrap & Swagger`, `Chat Persistence Layer`, `inventory.test.ts`, `Package Metadata`, `Runtime Dependencies`, `Dev Dependencies`, `Community 40`, `Cart Controller`, `Product Images Admin API`, `Inventory Tests & Error Handler`, `Courier Webhook & Ship/Refresh Controller`, `Requirements Backlog & CI/CD Decisions`, `Community 93`?**
   _High betweenness centrality (0.105) - this node is a cross-community bridge._
 - **Why does `keywords` connect `Package Metadata` to `rateLimiter.ts`?**
   _High betweenness centrality (0.065) - this node is a cross-community bridge._
