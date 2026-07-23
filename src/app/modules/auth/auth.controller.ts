@@ -15,7 +15,11 @@ import type {
 export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const data = await AuthService.getMe(req.user!.id);
-    res.status(200).json({ success: true, data });
+    // Role lives in the Supabase Auth JWT (app_metadata.role, already resolved
+    // onto req.user by the authenticate middleware) — the profiles table has
+    // no role column of its own, so it must be merged in here rather than
+    // read back from the DB row.
+    res.status(200).json({ success: true, data: { ...data, role: req.user!.role } });
   } catch (err) { next(err); }
 };
 
