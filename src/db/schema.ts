@@ -4,6 +4,8 @@ import { sql } from "drizzle-orm"
 export const addressType = pgEnum("address_type", ['billing', 'shipping'])
 export const chatRole = pgEnum("chat_role", ['user', 'assistant'])
 export const fulfillmentStatus = pgEnum("fulfillment_status", ['unfulfilled', 'partial', 'fulfilled'])
+export const importJobStatus = pgEnum("import_job_status", ['pending', 'running', 'completed', 'partial', 'failed'])
+export const importRowStatus = pgEnum("import_row_status", ['pending', 'processing', 'done', 'failed', 'skipped'])
 export const kbSourceType = pgEnum("kb_source_type", ['product', 'policy', 'faq'])
 export const movementReason = pgEnum("movement_reason", ['purchase_order', 'customer_order', 'checkout_reserve', 'payment_failed', 'order_cancelled', 'customer_return', 'damaged_goods', 'inventory_count', 'theft_loss', 'location_transfer', 'manual_adjustment'])
 export const movementType = pgEnum("movement_type", ['restock', 'sale', 'reserve', 'unreserve', 'cancel', 'return', 'adjustment', 'damage', 'theft', 'transfer'])
@@ -180,6 +182,11 @@ export const products = pgTable("products", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 	stockQuantity: integer("stock_quantity").default(0),
 	lowStockThreshold: integer("low_stock_threshold").default(10),
+	// Provenance for bulk-imported products (spreadsheet or scraper) — null
+	// for manually-created ones. Unique together (when both set, migration
+	// 045) so re-importing the same source row updates instead of duplicating.
+	externalId: text("external_id"),
+	source: text(),
 }, (table) => [
 	index("idx_products_active").using("btree", table.isActive.asc().nullsLast().op("bool_ops")).where(sql`(is_active = true)`),
 	index("idx_products_brand").using("btree", table.brandId.asc().nullsLast().op("uuid_ops")),
@@ -189,6 +196,7 @@ export const products = pgTable("products", {
 	index("idx_products_name").using("gin", sql`to_tsvector('english'::regconfig, name)`),
 	index("idx_products_slug").using("btree", table.slug.asc().nullsLast().op("text_ops")),
 	index("idx_products_stock_quantity").using("btree", table.stockQuantity.asc().nullsLast().op("int4_ops")),
+	uniqueIndex("idx_products_source_external").using("btree", table.source.asc().nullsLast().op("text_ops"), table.externalId.asc().nullsLast().op("text_ops")).where(sql`(source IS NOT NULL) AND (external_id IS NOT NULL)`),
 	foreignKey({
 			columns: [table.categoryId],
 			foreignColumns: [categories.id],
@@ -651,5 +659,48 @@ export const chatMetrics = pgTable("chat_metrics", {
 			columns: [table.conversationId],
 			foreignColumns: [conversations.id],
 			name: "chat_metrics_conversation_id_fkey"
+		}).onDelete("set null"),
+]);
+
+export const importJobs = pgTable("import_jobs", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	source: text().notNull(),
+	status: importJobStatus().default('pending').notNull(),
+	totalRows: integer("total_rows").default(0).notNull(),
+	processedRows: integer("processed_rows").default(0).notNull(),
+	succeeded: integer().default(0).notNull(),
+	failed: integer().default(0).notNull(),
+	createdBy: uuid("created_by"),
+	error: text(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	startedAt: timestamp("started_at", { withTimezone: true, mode: 'string' }),
+	finishedAt: timestamp("finished_at", { withTimezone: true, mode: 'string' }),
+});
+
+export const importRows = pgTable("import_rows", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	jobId: uuid("job_id").notNull(),
+	rowNumber: integer("row_number").notNull(),
+	source: text().notNull(),
+	externalId: text("external_id").notNull(),
+	payload: jsonb().notNull(),
+	status: importRowStatus().default('pending').notNull(),
+	productId: uuid("product_id"),
+	error: text(),
+	attempts: integer().default(0).notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_import_rows_job").using("btree", table.jobId.asc().nullsLast().op("uuid_ops"), table.status.asc().nullsLast().op("enum_ops")),
+	uniqueIndex("idx_import_rows_job_external").using("btree", table.jobId.asc().nullsLast().op("uuid_ops"), table.source.asc().nullsLast().op("text_ops"), table.externalId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.jobId],
+			foreignColumns: [importJobs.id],
+			name: "import_rows_job_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "import_rows_product_id_fkey"
 		}).onDelete("set null"),
 ]);
