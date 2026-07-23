@@ -68,6 +68,27 @@ describe("POST / (upload)", () => {
     expect(jobs).toHaveLength(1);
   });
 
+  it("accepts a .ndjson file upload with the application/x-ndjson MIME type", async () => {
+    const ndjson =
+      JSON.stringify({
+        source: "scraper",
+        externalId: "scraper-1",
+        title: "Scraped Product",
+        category: "shirt",
+        gender: "men",
+        basePrice: 999,
+        variants: [{ size: "M" }],
+      }) + "\n";
+
+    const res = await request(app)
+      .post("/")
+      .set("Authorization", adminToken)
+      .attach("file", Buffer.from(ndjson), { filename: "batch.ndjson", contentType: "application/x-ndjson" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.total).toBe(1);
+  });
+
   it("accepts a raw JSON array body as a small-batch fallback", async () => {
     const res = await request(app)
       .post("/")

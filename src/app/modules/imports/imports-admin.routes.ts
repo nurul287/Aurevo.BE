@@ -22,6 +22,7 @@ const SUPPORTED_MIME_PREFIXES = [
   "application/vnd.ms-excel", // .xls
   "text/csv",
   "application/json",
+  "application/x-ndjson", // .ndjson
   "text/plain", // .csv/.ndjson from some clients report as text/plain
   "application/octet-stream", // browsers often send this for unfamiliar extensions
 ];
