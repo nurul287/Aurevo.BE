@@ -19,10 +19,30 @@ export const IMPORT_QUEUE_NAME = "product-import";
  * maxRetriesPerRequest: null is BullMQ's documented requirement — its
  * blocking commands (used internally by Workers) need unlimited retries,
  * not ioredis's default finite retry count.
+ *
+ * retryStrategy caps the reconnect backoff at 30s instead of ioredis's
+ * default 2s max, and the error handler only logs once per 30s window —
+ * Redis is optional infra for the import feature only, so a dev machine (or
+ * a transient prod outage) without it running must not spam the log every
+ * 1-2s indefinitely. Still retries forever, so it self-heals the moment
+ * Redis comes back; it's just far quieter while it's down.
  */
 export function createQueueConnection(): IORedis {
-  const connection = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: null, lazyConnect: true });
-  connection.on("error", (err) => logger.error({ err }, "Redis connection error (product-import queue)"));
+  const connection = new IORedis(config.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    lazyConnect: true,
+    retryStrategy: (times) => Math.min(times * 1000, 30000),
+  });
+
+  let lastLoggedAt = 0;
+  connection.on("error", (err) => {
+    const now = Date.now();
+    if (now - lastLoggedAt > 30000) {
+      logger.error({ err }, "Redis connection error (product-import queue)");
+      lastLoggedAt = now;
+    }
+  });
+
   return connection;
 }
 
