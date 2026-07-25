@@ -49,6 +49,12 @@ const envSchema = z.object({
   COURIER_SECRET_KEY: z.string().min(1).optional(),
   COURIER_WEBHOOK_TOKEN: z.string().min(1).optional(),
   COURIER_BASE_URL: z.string().url().default("https://portal.packzy.com/api/v1"),
+
+  // Bulk product import — BullMQ queue backing store. Defaults to local
+  // Docker Redis (same convention as COURIER_BASE_URL) so this never becomes
+  // a required env and doesn't need a CI workflow change; the API only fails
+  // to *enqueue* imports without a reachable Redis, it doesn't fail to boot.
+  REDIS_URL: z.string().default("redis://127.0.0.1:6379"),
 });
 
 const parsed = envSchema.safeParse(process.env);

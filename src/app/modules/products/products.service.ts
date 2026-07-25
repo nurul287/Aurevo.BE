@@ -151,6 +151,71 @@ export async function getProductBySlug(slug: string, isAdmin = false) {
   return { ...product, variants, images };
 }
 
+export type InsertProductData = {
+  name: string;
+  slug: string;
+  description?: string | null;
+  shortDescription?: string | null;
+  sku?: string | null;
+  categoryId?: string | null;
+  brandId?: string | null;
+  gender: "men" | "women" | "unisex";
+  material?: string | null;
+  careInstructions?: string | null;
+  basePrice: number;
+  compareAtPrice?: number | null;
+  isActive: boolean;
+  isFeatured: boolean;
+  trackInventory: boolean;
+  allowBackorder: boolean;
+  minOrderQuantity: number;
+  maxOrderQuantity?: number | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  tags: string[];
+  /** Provenance for bulk-imported products (migration 045) — omit for manual creation. */
+  externalId?: string | null;
+  source?: string | null;
+};
+
+/**
+ * Raw product insert with NO side effects (no re-embed) — the shared core
+ * behind createProduct (below, which re-embeds once per call) and the bulk
+ * import worker (which batch-embeds every product once at the end of a job
+ * instead of firing one Voyage call per row). Callers are responsible for
+ * their own slug/SKU uniqueness checks — createProduct does the normal
+ * check-then-insert; the import worker uses a race-safe slug generator
+ * since many rows are inserted concurrently (see imports/resolvers.ts).
+ */
+export async function insertProduct(data: InsertProductData) {
+  const [created] = await db.insert(products).values({
+    name: data.name,
+    slug: data.slug,
+    description: data.description ?? null,
+    shortDescription: data.shortDescription ?? null,
+    sku: data.sku ?? null,
+    categoryId: data.categoryId ?? null,
+    brandId: data.brandId ?? null,
+    gender: data.gender,
+    material: data.material ?? null,
+    careInstructions: data.careInstructions ?? null,
+    basePrice: data.basePrice.toString(),
+    compareAtPrice: data.compareAtPrice?.toString() ?? null,
+    isActive: data.isActive,
+    isFeatured: data.isFeatured,
+    trackInventory: data.trackInventory,
+    allowBackorder: data.allowBackorder,
+    minOrderQuantity: data.minOrderQuantity,
+    maxOrderQuantity: data.maxOrderQuantity ?? null,
+    metaTitle: data.metaTitle ?? null,
+    metaDescription: data.metaDescription ?? null,
+    tags: data.tags,
+    externalId: data.externalId ?? null,
+    source: data.source ?? null,
+  }).returning();
+  return created!;
+}
+
 export async function createProduct(input: CreateProductInput) {
   const [existing] = await db.select({ id: products.id })
     .from(products)
@@ -164,32 +229,9 @@ export async function createProduct(input: CreateProductInput) {
     if (skuConflict) throw new ConflictError(`SKU "${input.sku}" is already taken`);
   }
 
-  const [created] = await db.insert(products).values({
-    name: input.name,
-    slug: input.slug,
-    description: input.description ?? null,
-    shortDescription: input.shortDescription ?? null,
-    sku: input.sku ?? null,
-    categoryId: input.categoryId ?? null,
-    brandId: input.brandId ?? null,
-    gender: input.gender,
-    material: input.material ?? null,
-    careInstructions: input.careInstructions ?? null,
-    basePrice: input.basePrice.toString(),
-    compareAtPrice: input.compareAtPrice?.toString() ?? null,
-    isActive: input.isActive,
-    isFeatured: input.isFeatured,
-    trackInventory: input.trackInventory,
-    allowBackorder: input.allowBackorder,
-    minOrderQuantity: input.minOrderQuantity,
-    maxOrderQuantity: input.maxOrderQuantity ?? null,
-    metaTitle: input.metaTitle ?? null,
-    metaDescription: input.metaDescription ?? null,
-    tags: input.tags,
-  }).returning();
-
-  reembedProduct(created!.id);
-  return created!;
+  const created = await insertProduct(input);
+  reembedProduct(created.id);
+  return created;
 }
 
 export async function updateProduct(id: string, input: UpdateProductInput) {

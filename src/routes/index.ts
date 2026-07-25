@@ -11,6 +11,7 @@ import courierInternalRoutes from "../app/modules/courier/courier.internal.route
 import emailTestRoutes from "../app/modules/internal/email-test.routes";
 import imageRoutes from "../app/modules/images/images.routes";
 import imageAdminRoutes from "../app/modules/images/images-admin.routes";
+import importAdminRoutes from "../app/modules/imports/imports-admin.routes";
 import inventoryRoutes from "../app/modules/inventory/inventory.routes";
 import orderRoutes from "../app/modules/orders/orders.routes";
 import productRoutes from "../app/modules/products/products.routes";
@@ -26,6 +27,7 @@ router.use("/variants", variantAdminRoutes);
 router.use("/products/:productId/variants", variantRoutes);
 router.use("/products/:productId/images", imageRoutes);
 router.use("/admin/images", imageAdminRoutes);
+router.use("/admin/imports", importAdminRoutes);
 router.use("/cart", cartRoutes);
 router.use("/orders", orderRoutes);
 router.use("/inventory", inventoryRoutes);

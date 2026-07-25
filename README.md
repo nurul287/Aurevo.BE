@@ -53,6 +53,7 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 - **Auth & Profiles** — backend-driven auth (email/password + Google/Facebook OAuth, all via Aurevo.BE — no Supabase SDK on the client), user profiles, saved address book with checkout autofill
 - **Internationalization** — English/বাংলা (Bangla) via i18next; English by default, user-selected and persisted via a header toggle
 - **AI Shopping Assistant** — full RAG pipeline: Claude + Voyage AI embeddings; **hybrid retrieval (pgvector + FTS via RRF) with Voyage cross-encoder reranking** over `kb_chunks`, real token streaming, auth-gated order lookup, conversation persistence with retention cleanup, retrieval + answer-quality eval harnesses, and a `chat_metrics` admin monitoring dashboard — see [docs/09-ai-chatbot-rag.md](docs/09-ai-chatbot-rag.md)
+- **Bulk Product Import** — spreadsheet/JSON/NDJSON upload processed asynchronously (Redis + BullMQ worker): brand/category resolution, variant/inventory creation, image fetch+re-host to Supabase Storage, batch-embedded into the AI chatbot's knowledge base, idempotent re-import by `(source, external_id)`. Also fed by a standalone scraper package pulling real product data from external sites — see [docs/10-bulk-import-pipeline.md](docs/10-bulk-import-pipeline.md)
 - **Admin Dashboard** — product/order/inventory management, bulk operations, analytics
 - **Observability** — structured pino logs, Sentry error tracking (FE + BE, optional/no-op unless configured), deep health check, graceful shutdown
 
@@ -71,6 +72,7 @@ Aurevo Fashion is a full-stack e-commerce portfolio project built to demonstrate
 | 7. Deployment | [docs/07-deployment.md](docs/07-deployment.md) |
 | 8. Load Testing Plan | [docs/08-load-testing-plan.md](docs/08-load-testing-plan.md) |
 | 9. AI Chatbot (RAG) | [docs/09-ai-chatbot-rag.md](docs/09-ai-chatbot-rag.md) |
+| 10. Bulk Import Pipeline | [docs/10-bulk-import-pipeline.md](docs/10-bulk-import-pipeline.md) |
 
 ---
 
@@ -105,6 +107,15 @@ cd Aurevo.UI
 cp .env.example .env.local   # fill in Supabase local keys
 pnpm dev                     # http://localhost:5173
 ```
+
+### 4. (Optional) Bulk product import
+Needs a local Redis for the queue, plus the worker process alongside the API:
+```bash
+docker run -d -p 6379:6379 redis:7-alpine
+cd Aurevo.BE
+pnpm worker                  # separate terminal — consumes the import-processing queue
+```
+See [docs/10-bulk-import-pipeline.md](docs/10-bulk-import-pipeline.md) for the full pipeline, and [`../scraper/README.md`](../scraper/README.md) for the standalone scraper that can feed it real product data.
 
 ---
 

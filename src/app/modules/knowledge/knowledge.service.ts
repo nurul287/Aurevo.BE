@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -119,6 +119,116 @@ export async function upsertProductChunk(productId: string): Promise<void> {
       targetWhere: eq(kbChunks.sourceType, "product"),
       set: { content: text, embedding: embedding!, title: product.name, metadata, updatedAt: new Date().toISOString() },
     });
+}
+
+/**
+ * Batch equivalent of upsertProductChunk for the bulk import worker — loads
+ * every product in one query (+ one query for variants), embeds all chunk
+ * texts in chunks of 100 (Voyage calls, not per-product), then writes the
+ * kb_chunks rows. Bypassing the one-embed-call-per-product hook is the whole
+ * point of this path: 1000 products would otherwise mean 1000 sequential
+ * Voyage requests instead of ~10.
+ */
+export async function batchUpsertProductChunks(productIds: string[]): Promise<void> {
+  if (productIds.length === 0) return;
+
+  const rows = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      slug: products.slug,
+      description: products.description,
+      shortDescription: products.shortDescription,
+      basePrice: products.basePrice,
+      gender: products.gender,
+      tags: products.tags,
+      isActive: products.isActive,
+      categoryName: categories.name,
+      brandName: brands.name,
+    })
+    .from(products)
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .leftJoin(brands, eq(products.brandId, brands.id))
+    .where(inArray(products.id, productIds));
+
+  const activeRows = rows.filter((r) => r.isActive);
+  if (activeRows.length === 0) return;
+
+  const [allImages, allVariants] = await Promise.all([
+    db
+      .select({ productId: productImages.productId, url: productImages.url, isPrimary: productImages.isPrimary, sortOrder: productImages.sortOrder })
+      .from(productImages)
+      .where(inArray(productImages.productId, activeRows.map((r) => r.id))),
+    db
+      .select({ productId: productVariants.productId, size: productVariants.size, color: productVariants.color })
+      .from(productVariants)
+      .where(and(inArray(productVariants.productId, activeRows.map((r) => r.id)), eq(productVariants.isActive, true))),
+  ]);
+
+  const primaryImageByProduct = new Map<string, string>();
+  for (const img of allImages) {
+    if (!img.productId) continue;
+    const existing = primaryImageByProduct.has(img.productId);
+    if (!existing || img.isPrimary) primaryImageByProduct.set(img.productId, img.url);
+  }
+
+  const variantsByProduct = new Map<string, { size: string | null; color: string | null }[]>();
+  for (const v of allVariants) {
+    if (!v.productId) continue;
+    const list = variantsByProduct.get(v.productId) ?? [];
+    list.push({ size: v.size, color: v.color });
+    variantsByProduct.set(v.productId, list);
+  }
+
+  const chunkInputs = activeRows.map((row) => {
+    const variants = variantsByProduct.get(row.id) ?? [];
+    const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))];
+    const colors = [...new Set(variants.map((v) => v.color).filter(Boolean))];
+    const variantSummary = [
+      sizes.length ? `sizes ${sizes.join(", ")}` : null,
+      colors.length ? `colors ${colors.join(", ")}` : null,
+    ].filter(Boolean).join("; ");
+
+    return {
+      productId: row.id,
+      slug: row.slug,
+      name: row.name,
+      basePrice: row.basePrice,
+      image: primaryImageByProduct.get(row.id) ?? null,
+      text: buildProductChunkText({ ...row, variantSummary }),
+    };
+  });
+
+  const EMBED_BATCH_SIZE = 100;
+  const embeddings: number[][] = [];
+  for (let i = 0; i < chunkInputs.length; i += EMBED_BATCH_SIZE) {
+    const batch = chunkInputs.slice(i, i + EMBED_BATCH_SIZE);
+    const batchEmbeddings = await embedDocuments(batch.map((c) => c.text));
+    embeddings.push(...batchEmbeddings);
+  }
+
+  for (let i = 0; i < chunkInputs.length; i++) {
+    const chunk = chunkInputs[i]!;
+    const embedding = embeddings[i]!;
+    const metadata = { productId: chunk.productId, slug: chunk.slug, image: chunk.image, basePrice: chunk.basePrice };
+
+    await db
+      .insert(kbChunks)
+      .values({
+        sourceType: "product",
+        sourceId: chunk.productId,
+        title: chunk.name,
+        content: chunk.text,
+        embedding,
+        metadata,
+        updatedAt: new Date().toISOString(),
+      })
+      .onConflictDoUpdate({
+        target: kbChunks.sourceId,
+        targetWhere: eq(kbChunks.sourceType, "product"),
+        set: { content: chunk.text, embedding, title: chunk.name, metadata, updatedAt: new Date().toISOString() },
+      });
+  }
 }
 
 /** Removes a product's chunk — called when a product is deleted or deactivated. Fire-and-forget. */

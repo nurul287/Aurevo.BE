@@ -43,6 +43,14 @@ describe("GET /auth/me", () => {
     expect(res.body.data.id).toBe(MOCK_USER.id);
   });
 
+  it("includes the caller's real role from the Auth JWT, not the profiles table", async () => {
+    const userRes = await request(app).get("/me").set("Authorization", userToken);
+    expect(userRes.body.data.role).toBe("user");
+
+    const adminRes = await request(app).get("/me").set("Authorization", adminToken);
+    expect(adminRes.body.data.role).toBe("admin");
+  });
+
   it("returns 401 without auth", async () => {
     const res = await request(app).get("/me");
     expect(res.status).toBe(401);
