@@ -148,6 +148,48 @@ describe("processRow", () => {
     expect(inv[0]!.quantity).toBe(25);
   });
 
+  it("creates one variant per size even when the source reuses the same SKU across sizes (e.g. klothen.shop)", async () => {
+    const cache = createResolverCache();
+
+    const jobId = await createJob();
+    const row = await insertRow(jobId, 2, normalizedProduct({
+      externalId: "same-sku-multi-size",
+      variants: [
+        { size: "S", sku: "SHARED-SKU", stock: 5 },
+        { size: "M", sku: "SHARED-SKU", stock: 5 },
+        { size: "L", sku: "SHARED-SKU", stock: 5 },
+      ],
+    }));
+
+    const { productId, error } = await processRow(row, cache);
+    expect(error).toBeNull();
+
+    const variants = await db.select().from(productVariants).where(eq(productVariants.productId, productId!));
+    expect(variants).toHaveLength(3);
+    expect(variants.map((v) => v.size).sort()).toEqual(["L", "M", "S"]);
+    // The first size to be created keeps the raw source SKU; each sibling
+    // size that would otherwise collide on that same SKU gets disambiguated.
+    expect(new Set(variants.map((v) => v.sku)).size).toBe(3);
+    expect(variants.every((v) => v.sku?.startsWith("SHARED-SKU"))).toBe(true);
+
+    // Re-processing the same payload (a re-scrape) must still be idempotent
+    // per size, not collapse back down to one row or duplicate to six.
+    const secondJobId = await createJob();
+    const secondRow = await insertRow(secondJobId, 2, normalizedProduct({
+      externalId: "same-sku-multi-size",
+      variants: [
+        { size: "S", sku: "SHARED-SKU", stock: 9 },
+        { size: "M", sku: "SHARED-SKU", stock: 9 },
+        { size: "L", sku: "SHARED-SKU", stock: 9 },
+      ],
+    }));
+    await processRow(secondRow, cache);
+
+    const variantsAfterReimport = await db.select().from(productVariants).where(eq(productVariants.productId, productId!));
+    expect(variantsAfterReimport).toHaveLength(3);
+    expect(variantsAfterReimport.every((v) => v.stock === 9)).toBe(true);
+  });
+
   it("fetches, converts, and re-hosts images for a newly created product", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, arrayBuffer: async () => ONE_PX_PNG.buffer.slice(ONE_PX_PNG.byteOffset, ONE_PX_PNG.byteOffset + ONE_PX_PNG.byteLength) }));
 
