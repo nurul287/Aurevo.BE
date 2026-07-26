@@ -27,26 +27,39 @@ export const IMPORT_QUEUE_NAME = "product-import";
  * 1-2s indefinitely. Still retries forever, so it self-heals the moment
  * Redis comes back; it's just far quieter while it's down.
  */
+/** Throttled logger factory — at most one log line per 30s per caller, regardless of how often the underlying event fires. */
+export function throttledErrorLogger(label: string): (err: unknown) => void {
+  let lastLoggedAt = 0;
+  return (err: unknown) => {
+    const now = Date.now();
+    if (now - lastLoggedAt > 30000) {
+      logger.error({ err }, label);
+      lastLoggedAt = now;
+    }
+  };
+}
+
 export function createQueueConnection(): IORedis {
   const connection = new IORedis(config.REDIS_URL, {
     maxRetriesPerRequest: null,
     lazyConnect: true,
     retryStrategy: (times) => Math.min(times * 1000, 30000),
   });
-
-  let lastLoggedAt = 0;
-  connection.on("error", (err) => {
-    const now = Date.now();
-    if (now - lastLoggedAt > 30000) {
-      logger.error({ err }, "Redis connection error (product-import queue)");
-      lastLoggedAt = now;
-    }
-  });
-
+  connection.on("error", throttledErrorLogger("Redis connection error (product-import queue)"));
   return connection;
 }
 
 export const importQueue = new Queue(IMPORT_QUEUE_NAME, { connection: createQueueConnection() });
+
+// BullMQ's Queue/Worker/QueueEvents classes re-emit connection errors on
+// THEMSELVES (a separate EventEmitter from the underlying ioredis
+// connection above) -- per Node's EventEmitter semantics, an 'error' event
+// with zero listeners throws instead of just logging. Missing this exact
+// listener is what produced raw, unformatted ECONNREFUSED stack traces
+// even after the ioredis connection's own error handler (above) was
+// already throttled -- BullMQ's docs call this out explicitly as a
+// required listener, not an optional one.
+importQueue.on("error", throttledErrorLogger("Redis connection error (product-import queue, BullMQ Queue)"));
 
 export type ImportJobPayload = { jobId: string };
 

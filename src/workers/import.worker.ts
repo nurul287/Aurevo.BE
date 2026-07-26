@@ -1,5 +1,5 @@
 import { Worker, type Job } from "bullmq";
-import { IMPORT_QUEUE_NAME, createQueueConnection, type ImportJobPayload } from "../lib/queue";
+import { IMPORT_QUEUE_NAME, createQueueConnection, throttledErrorLogger, type ImportJobPayload } from "../lib/queue";
 import { logger } from "../lib/logger";
 import { runImportJob } from "../app/modules/imports/imports.worker-logic";
 
@@ -20,9 +20,7 @@ importWorker.on("failed", (job, err) => {
   logger.error({ err, jobId: job?.data.jobId }, "Import worker: job failed at the BullMQ level (row-level errors are recorded per-row regardless)");
 });
 
-importWorker.on("error", (err) => {
-  logger.error({ err }, "Import worker: connection error");
-});
+importWorker.on("error", throttledErrorLogger("Import worker: connection error"));
 
 logger.info(`Import worker started, listening on queue "${IMPORT_QUEUE_NAME}"`);
 
