@@ -90,6 +90,19 @@ describe("createImportJob", () => {
     const { enqueueImportJob } = await import("../../../lib/queue");
     expect(enqueueImportJob).not.toHaveBeenCalled();
   });
+
+  it("marks the job failed (not stuck pending) when enqueueing throws after the rows already committed", async () => {
+    const { enqueueImportJob } = await import("../../../lib/queue");
+    vi.mocked(enqueueImportJob).mockRejectedValueOnce(new Error("Connection is closed"));
+
+    const { job } = await ImportsService.createImportJob("spreadsheet", [row(2)], []);
+
+    expect(job.status).toBe("failed");
+    expect(job.error).toMatch(/Connection is closed/);
+
+    const rows = await db.select().from(importRows);
+    expect(rows).toHaveLength(1); // rows still committed — enqueue failure doesn't roll back the import itself
+  });
 });
 
 describe("getImportJob / listImportJobs", () => {
