@@ -49,6 +49,7 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Guest-Session",
   );
+  res.header("Access-Control-Expose-Headers", "Content-Disposition");
 
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
