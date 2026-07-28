@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../../../db";
 import { importJobs, importRows, inventory, products, productVariants } from "../../../db/schema";
 import { logger } from "../../../lib/logger";
@@ -34,42 +34,83 @@ export async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (i
   return results;
 }
 
+/** Matches a nullable text column against a possibly-undefined value with proper SQL NULL semantics (`= NULL` never matches, so an absent value needs `IS NULL` instead). */
+function matchesNullable(column: Parameters<typeof eq>[0], value: string | undefined) {
+  return value === undefined ? isNull(column) : eq(column, value);
+}
+
 /**
- * Creates a new variant, or — if `variant.sku` matches one already on this
- * product — updates its price/stock instead. Only SKU-matched variants are
- * sync-safe across re-imports; a sizeless/SKU-less variant has no stable key
- * to match against on a re-scrape, so those are only ever created once (by
- * the caller only invoking this for new products — see processRow).
+ * Creates a new variant, or updates one already on this product instead of
+ * duplicating it. The match key is `(size, color)` whenever either is
+ * present — not SKU: some source catalogs (e.g. klothen.shop) reuse one SKU
+ * across every size of a product, so matching on SKU alone collapsed every
+ * size into a single row (each subsequent size just re-updated the first
+ * instead of being created). A variant with neither size nor color has no
+ * other stable key, so that case still falls back to matching by SKU alone.
+ *
+ * Reusing one SKU across sizes also means a plain `createVariant` call for
+ * the 2nd+ size would trip the store's normal (and otherwise correct)
+ * global SKU-uniqueness check. When the conflicting row belongs to *this
+ * same product*, that's this exact scenario — disambiguate the stored SKU
+ * with the size/color instead of failing the whole row. A conflict against
+ * a *different* product is a genuine data problem and still fails normally.
  */
 export async function syncVariant(productId: string, variant: NormalizedVariant): Promise<void> {
-  if (variant.sku) {
-    const [existing] = await db
-      .select({ id: productVariants.id })
-      .from(productVariants)
-      .where(and(eq(productVariants.productId, productId), eq(productVariants.sku, variant.sku)));
+  const hasSizeOrColor = variant.size !== undefined || variant.color !== undefined;
 
-    if (existing) {
+  const existing = hasSizeOrColor
+    ? await db
+        .select({ id: productVariants.id })
+        .from(productVariants)
+        .where(
+          and(
+            eq(productVariants.productId, productId),
+            matchesNullable(productVariants.size, variant.size),
+            matchesNullable(productVariants.color, variant.color),
+          ),
+        )
+        .then((rows) => rows[0])
+    : variant.sku
+      ? await db
+          .select({ id: productVariants.id })
+          .from(productVariants)
+          .where(and(eq(productVariants.productId, productId), eq(productVariants.sku, variant.sku)))
+          .then((rows) => rows[0])
+      : undefined;
+
+  if (existing) {
+    await db
+      .update(productVariants)
+      .set({
+        ...(variant.price !== undefined && { price: variant.price.toString() }),
+        ...(variant.stock !== undefined && { stock: variant.stock }),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(productVariants.id, existing.id));
+
+    if (variant.stock !== undefined) {
       await db
-        .update(productVariants)
-        .set({
-          ...(variant.price !== undefined && { price: variant.price.toString() }),
-          ...(variant.stock !== undefined && { stock: variant.stock }),
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(productVariants.id, existing.id));
+        .update(inventory)
+        .set({ quantity: variant.stock, updatedAt: new Date().toISOString() })
+        .where(eq(inventory.variantId, existing.id));
+    }
+    return;
+  }
 
-      if (variant.stock !== undefined) {
-        await db
-          .update(inventory)
-          .set({ quantity: variant.stock, updatedAt: new Date().toISOString() })
-          .where(eq(inventory.variantId, existing.id));
-      }
-      return;
+  let sku = variant.sku;
+  if (sku) {
+    const [conflict] = await db
+      .select({ id: productVariants.id, productId: productVariants.productId })
+      .from(productVariants)
+      .where(eq(productVariants.sku, sku));
+    if (conflict && conflict.productId === productId) {
+      const suffix = [variant.size, variant.color].filter(Boolean).join("-");
+      if (suffix) sku = `${sku}-${suffix}`;
     }
   }
 
   await createVariant(productId, {
-    sku: variant.sku,
+    sku,
     size: variant.size,
     color: variant.color,
     colorCode: variant.colorCode,

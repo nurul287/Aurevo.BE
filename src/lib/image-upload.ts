@@ -40,7 +40,13 @@ export async function uploadEntityImage(
     throw new AppError(400, `Image exceeds the ${Math.round(maxBytes / 1024 / 1024)} MB size limit.`, "VALIDATION_ERROR");
   }
 
-  return uploadFile(BUCKET, storagePath, file.buffer, file.mimetype);
+  const url = await uploadFile(BUCKET, storagePath, file.buffer, file.mimetype);
+  // storagePath is a fixed, deterministic per-entity path (e.g.
+  // "categories/{id}/cover.png") that a re-upload overwrites in place via
+  // upsert -- so replacing an image produces the exact same public URL as
+  // before, and browsers/CDNs never see a reason to refetch it. Append a
+  // cache-busting version so a new upload is actually a new URL.
+  return `${url}?v=${Date.now()}`;
 }
 
 /**
@@ -59,11 +65,13 @@ export function buildImagePath(
 
 /**
  * Extracts the storage path from a Supabase public URL.
- * Input:  ".../storage/v1/object/public/{bucket}/{path}"
+ * Input:  ".../storage/v1/object/public/{bucket}/{path}?v=169..." (the `?v=`
+ *         cache-buster from uploadEntityImage is optional -- older URLs
+ *         stored before that existed won't have one)
  * Output: "{path}" or null if not a Supabase storage URL
  */
 export function extractStoragePath(url: string): string | null {
-  const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/);
+  const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^?]+)/);
   return match?.[1] ?? null;
 }
 

@@ -33,16 +33,48 @@ async function resolveOrCreate(
 }
 
 export const resolveOrCreateBrand = (name: string) => resolveOrCreate(brands, name);
-export const resolveOrCreateCategory = (name: string) => resolveOrCreate(categories, name);
 
 /**
- * Per-import-job cache for resolveOrCreateBrand/Category — many rows in the
- * same spreadsheet typically repeat the same handful of brand/category
- * names. Caches the in-flight PROMISE (not just the resolved id), so
- * concurrent rows resolving the same name for the first time within one
- * worker process share a single DB round-trip instead of racing each other
- * (the DB-level ON CONFLICT DO NOTHING in resolveOrCreate is the second,
- * cross-process line of defense — this cache is purely a perf/race optimization).
+ * Import-side category names don't always match this catalog's exact
+ * curated slugs — different spelling/casing per source (the scraper's
+ * canonical "t-shirt" vs. this catalog's "t-shart", or "cap" vs. the CAP
+ * category's "mans" slug). Anything not listed here is looked up by its
+ * own slugified name directly.
+ */
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  "t-shirt": "t-shart",
+  cap: "mans",
+};
+
+/**
+ * Resolves a category name to one of the catalog's EXISTING categories —
+ * never creates a new one. The catalog's category set is curated by hand in
+ * the admin UI; letting a scraper's loose keyword mapping (or a messy
+ * spreadsheet cell) spawn a stray category on the fly is exactly what
+ * produced the junk "men's fashion" catch-all category this replaces.
+ * Throws when nothing matches, so the row fails clearly (and can be fixed
+ * by re-running against a corrected category name) instead of silently
+ * creating clutter or miscategorizing the product.
+ */
+export async function resolveExistingCategory(name: string): Promise<string> {
+  const rawSlug = slugify(name) || "unnamed";
+  const slug = CATEGORY_SLUG_ALIASES[rawSlug] ?? rawSlug;
+
+  const [existing] = await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, slug));
+  if (existing) return existing.id;
+
+  throw new Error(`No existing category matches "${name}" (slug "${slug}") — imports don't create new categories`);
+}
+
+/**
+ * Per-import-job cache for resolveOrCreateBrand/resolveExistingCategory —
+ * many rows in the same spreadsheet typically repeat the same handful of
+ * brand/category names. Caches the in-flight PROMISE (not just the resolved
+ * id), so concurrent rows resolving the same name for the first time within
+ * one worker process share a single DB round-trip instead of racing each
+ * other (the DB-level ON CONFLICT DO NOTHING in resolveOrCreate is the
+ * second, cross-process line of defense for brands — this cache is purely a
+ * perf/race optimization).
  */
 export function createResolverCache() {
   const brandCache = new Map<string, Promise<string>>();
@@ -60,7 +92,7 @@ export function createResolverCache() {
 
   return {
     resolveBrand: (name: string) => cached(brandCache, resolveOrCreateBrand, name),
-    resolveCategory: (name: string) => cached(categoryCache, resolveOrCreateCategory, name),
+    resolveCategory: (name: string) => cached(categoryCache, resolveExistingCategory, name),
   };
 }
 
