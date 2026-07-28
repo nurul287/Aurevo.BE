@@ -38,26 +38,45 @@ export async function createImportJob(
   const uniqueRows = [...seen.values()];
   const rejected = [...parseErrors, ...dupRejections].sort((a, b) => a.rowNumber - b.rowNumber);
 
-  const [job] = await db
-    .insert(importJobs)
-    .values({ source, status: "pending", totalRows: uniqueRows.length, createdBy: createdBy ?? null })
-    .returning();
+  const job = await db.transaction(async (tx) => {
+    const [job] = await tx
+      .insert(importJobs)
+      .values({ source, status: "pending", totalRows: uniqueRows.length, createdBy: createdBy ?? null })
+      .returning();
+
+    if (uniqueRows.length > 0) {
+      await tx.insert(importRows).values(
+        uniqueRows.map((row) => ({
+          jobId: job!.id,
+          rowNumber: row.rowNumber,
+          source,
+          externalId: row.product.externalId,
+          payload: row.product,
+          status: "pending" as const,
+        })),
+      );
+    }
+    return job!;
+  });
 
   if (uniqueRows.length > 0) {
-    await db.insert(importRows).values(
-      uniqueRows.map((row) => ({
-        jobId: job!.id,
-        rowNumber: row.rowNumber,
-        source,
-        externalId: row.product.externalId,
-        payload: row.product,
-        status: "pending" as const,
-      })),
-    );
-    await enqueueImportJob(job!.id);
+    try {
+      await enqueueImportJob(job.id);
+    } catch (err) {
+      // Rows are already committed above — if the enqueue itself fails (e.g. a dead
+      // Redis connection), the job must not stay stuck at "pending" forever with no
+      // worker ever picking it up and no visible sign of what went wrong.
+      const message = err instanceof Error ? err.message : String(err);
+      const [failedJob] = await db
+        .update(importJobs)
+        .set({ status: "failed", error: message, finishedAt: new Date().toISOString() })
+        .where(eq(importJobs.id, job.id))
+        .returning();
+      return { job: failedJob!, rejected };
+    }
   }
 
-  return { job: job!, rejected };
+  return { job, rejected };
 }
 
 export async function getImportJob(jobId: string) {

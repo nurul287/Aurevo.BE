@@ -166,10 +166,12 @@ Run end to end with real infrastructure, not just unit tests:
 
 ## Known Limitations / Backlog
 
-- **`Content-Disposition` isn't exposed via CORS** (`src/app.ts`'s manual CORS middleware never sets `Access-Control-Expose-Headers`) — every admin file download, including the import template, saves with a generic "download" filename in the browser instead of the real one. Pre-existing, not specific to this feature; flagged as a separate fix.
-- **A Redis outage during upload can leave a job stuck at `pending` forever.** `createImportJob` commits the job + row inserts, then calls `enqueueImportJob` — if that throws (Redis unreachable), the rows are already committed but never enqueued, and the existing retry endpoint only handles rows already marked `failed`, not a job that was never enqueued at all. Flagged as a separate fix (in progress).
-- **No admin promotion/audit UI** for the scraper's brand/category auto-resolution — a scraped site's messy category taxonomy maps through keyword matching (`category-map.ts`), which is decent but not perfect; worth a manual spot-check on a fresh site's first batch.
+- **No admin promotion/audit UI** for the scraper's brand/category auto-resolution — a scraped site's messy category taxonomy maps through keyword matching (`category-map.ts`), which is decent but not perfect; worth a manual spot-check on a fresh site's first batch. Imports never auto-create a new category on a miss (see `resolveExistingCategory` in `resolvers.ts`) — an unmapped category fails the row instead of cluttering the catalog.
 - **The scraper only supports Shopify-based sites today.** A non-Shopify source needs a genuinely new HTML-scraping adapter (Playwright/Cheerio), not just a new site config.
+
+Fixed since the initial build:
+- ~~`Content-Disposition` isn't exposed via CORS~~ — `src/app.ts` now sets `Access-Control-Expose-Headers: Content-Disposition`.
+- ~~A Redis outage during upload can leave a job stuck at `pending` forever~~ — `createImportJob` now marks the job `failed` (with the real error) instead when `enqueueImportJob` throws after the rows are already committed.
 
 ---
 
