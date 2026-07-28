@@ -44,6 +44,9 @@ async function cleanAll() {
 
 beforeEach(async () => {
   await cleanAll();
+  // resolveExistingCategory (imports never create a new category) needs a
+  // real row to match normalizedProduct()'s default category: "shirt".
+  await db.insert(categories).values({ name: "Shirt", slug: "shirt", isActive: true });
   vi.mocked((await import("../../../lib/voyage")).embedDocuments).mockClear().mockResolvedValue([]);
 });
 afterEach(() => vi.unstubAllGlobals());
