@@ -815,14 +815,14 @@
     "semantic_hash": "5cf97f1dd6cb0112f8c5edc2ad1a7f7b"
   },
   "CLAUDE.md": {
-    "mtime": 1784664891.8946157,
-    "ast_hash": "3fc78f857baee612b0fcd13d210c5873",
-    "semantic_hash": "3fc78f857baee612b0fcd13d210c5873"
+    "mtime": 1784773562.7972493,
+    "ast_hash": "d20ba688ce22d93ab4eedc6969e2166e",
+    "semantic_hash": "d20ba688ce22d93ab4eedc6969e2166e"
   },
   "README.md": {
-    "mtime": 1784664891.8966327,
-    "ast_hash": "9f7b3a15b76dd1ff32304c95cf8802ec",
-    "semantic_hash": "9f7b3a15b76dd1ff32304c95cf8802ec"
+    "mtime": 1784773552.5045507,
+    "ast_hash": "6b8c718d733de3bd44a436854d2eee70",
+    "semantic_hash": "6b8c718d733de3bd44a436854d2eee70"
   },
   "SKILLS.md": {
     "mtime": 1784664891.8966327,
@@ -1175,9 +1175,9 @@
     "semantic_hash": "e0bccc8a302acb36521f152a7ede3843"
   },
   "src/lib/queue.ts": {
-    "mtime": 1784734293.073332,
-    "ast_hash": "64e540078eee8f6cbdd040e7aed24887",
-    "semantic_hash": "64e540078eee8f6cbdd040e7aed24887"
+    "mtime": 1785005990.2971003,
+    "ast_hash": "497fdbb227fb4ccbc427e92568bb7909",
+    "semantic_hash": "497fdbb227fb4ccbc427e92568bb7909"
   },
   "src/lib/slugify.test.ts": {
     "mtime": 1784734066.5748746,
@@ -1190,13 +1190,18 @@
     "semantic_hash": "5a7551ad3c5f7ad9cd32b7348f006626"
   },
   "src/workers/import.worker.ts": {
-    "mtime": 1784735201.639699,
-    "ast_hash": "490bdf5f5a044a60c97b99701df2dd22",
-    "semantic_hash": "490bdf5f5a044a60c97b99701df2dd22"
+    "mtime": 1785006001.7591407,
+    "ast_hash": "33efd175a15f30b9188f02dca009600a",
+    "semantic_hash": "33efd175a15f30b9188f02dca009600a"
   },
   "supabase/migrations/045_product_import.sql": {
     "mtime": 1784733558.4347148,
     "ast_hash": "4c6082d0b032b345359d15a1fc4722dd",
     "semantic_hash": "4c6082d0b032b345359d15a1fc4722dd"
+  },
+  "docs/10-bulk-import-pipeline.md": {
+    "mtime": 1784773526.3598392,
+    "ast_hash": "5356f1d22e30d68277188d5c29dcebc7",
+    "semantic_hash": "5356f1d22e30d68277188d5c29dcebc7"
   }
 }
