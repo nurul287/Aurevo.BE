@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785405582476,
+      "tag": "0000_pre_baseline_extensions_and_is_admin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785405583899,
+      "tag": "0001_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785405585220,
+      "tag": "0002_functions_triggers_comments",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785405586494,
+      "tag": "0003_storage_policies_and_bucket",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785424331659,
+      "tag": "0004_prod_only_objects",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785425685609,
+      "tag": "0005_storage_buckets",
+      "breakpoints": true
+    }
+  ]
+}
