@@ -37,10 +37,22 @@ const MIGRATIONS_DIR = join(process.cwd(), "drizzle");
 async function main() {
   const args = process.argv.slice(2);
   const apply = args.includes("--apply");
-  const url = args.find((a) => !a.startsWith("--")) ?? process.env.DATABASE_URL;
+  // Treat an empty argument as absent: `"$FOO"` in PowerShell (where the syntax
+  // is `$env:FOO`) expands to an empty string rather than failing, which would
+  // otherwise silently fall through to the local DATABASE_URL from .env.local.
+  const positional = args.filter((a) => !a.startsWith("--") && a.trim() !== "");
+  const url = positional[0] || process.env.DATABASE_URL;
 
   if (!url) {
-    console.error("Usage: node scripts/db-baseline.mjs <DATABASE_URL> [--apply]");
+    console.error(
+      "No database URL given.\n\n" +
+        "  PowerShell:  $env:PROD_DATABASE_URL = \"postgresql://...\"\n" +
+        "               pnpm db:baseline $env:PROD_DATABASE_URL\n\n" +
+        "  bash:        pnpm db:baseline \"$PROD_DATABASE_URL\"\n\n" +
+        "Add --apply to write; without it this is a dry run.\n" +
+        "Falls back to DATABASE_URL if no argument is passed — careful, in this\n" +
+        "repo that points at the LOCAL database.",
+    );
     process.exit(1);
   }
 
