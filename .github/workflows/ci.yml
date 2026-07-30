@@ -28,7 +28,9 @@ jobs:
       # of the same push — if it wins the race, dev and main are already
       # identical by the time this step runs, so the branch-tip diff is empty
       # and "0 changed files" is reported even though the merge genuinely
-      # touched supabase/migrations/. This is what actually caused migration
+      # touched drizzle/ (this filter watched supabase/migrations/ before
+      # schema ownership moved to Drizzle Kit; the race is identical either
+      # way). This is what actually caused migration
       # 039 to be silently skipped twice (the earlier fetch-depth-only fix
       # addressed a real but different risk and did not fix this one — verified
       # by replaying run 29450921051's log, which still showed 0 changed files
@@ -42,7 +44,7 @@ jobs:
           ref: ${{ github.sha }}
           filters: |
             migrations:
-              - 'supabase/migrations/**'
+              - 'drizzle/**'
 
       - uses: pnpm/action-setup@v4
         with:
@@ -69,8 +71,14 @@ jobs:
       - name: Start local Supabase
         run: supabase start
 
-      - name: Apply migrations
-        run: supabase db reset --local
+      # `supabase db reset` no longer applies the project schema — [db.migrations]
+      # and [db.seed] are disabled in config.toml. It provisions only the
+      # Supabase baseline; drizzle-kit migrate creates the schema and seed.sql
+      # is applied last. That is exactly what db:bootstrap does.
+      - name: Apply schema (drizzle) + seed
+        run: pnpm db:bootstrap
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
       - name: Run integration tests
         run: pnpm test
@@ -116,13 +124,21 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Validate migration files
-        run: node scripts/db-validate.mjs
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - run: pnpm install --frozen-lockfile
+
+      # Catches journal/snapshot collisions (e.g. two branches both generating
+      # the same migration index).
+      - name: Check migration journal
+        run: pnpm db:check
 
       - name: Apply pending migrations
-        run: supabase db push
+        run: pnpm db:migrate
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Lint production schema
         run: supabase db lint --linked
