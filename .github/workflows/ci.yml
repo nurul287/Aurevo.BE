@@ -75,10 +75,23 @@ jobs:
       # and [db.seed] are disabled in config.toml. It provisions only the
       # Supabase baseline; drizzle-kit migrate creates the schema and seed.sql
       # is applied last. That is exactly what db:bootstrap does.
+      # Needs the same env as the test step, not just DATABASE_URL: bootstrap's
+      # last stage is db:seed-assets, which uploads through the Supabase storage
+      # client and imports the Zod-validated config. With only DATABASE_URL set
+      # it dies with "Invalid environment variables" for seven required keys and
+      # takes the whole job down.
       - name: Apply schema (drizzle) + seed
         run: pnpm db:bootstrap
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          INTERNAL_TASK_TOKEN: ci-test-internal-task-token
+          NODE_ENV: test
 
       - name: Run integration tests
         run: pnpm test
