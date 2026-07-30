@@ -52,7 +52,7 @@ type NormalizedProduct = {
 
 ## Data Model
 
-Migration: `supabase/migrations/045_product_import.sql`
+Migration: `supabase/migrations-archive/045_product_import.sql`
 
 | Table | Purpose | Key columns |
 |---|---|---|
@@ -178,7 +178,7 @@ Fixed since the initial build:
 ## File Reference
 
 **Aurevo.BE**
-- `supabase/migrations/045_product_import.sql`, `src/db/schema.ts` (`importJobs`, `importRows`, `products.externalId`/`source`)
+- `supabase/migrations-archive/045_product_import.sql`, `src/db/schema.ts` (`importJobs`, `importRows`, `products.externalId`/`source`)
 - `src/lib/slugify.ts`, `src/lib/queue.ts`
 - `src/app/modules/imports/{imports.schema,spreadsheet,resolvers,imports.service,imports.controller,imports-admin.routes,imports.worker-logic}.ts`
 - `src/workers/import.worker.ts`

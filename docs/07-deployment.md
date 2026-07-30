@@ -196,8 +196,8 @@ Configured in `.github/workflows/ci.yml` and `.github/workflows/merge-back.yml`.
 
 ### Pipeline (`ci.yml`) — on PR / push to `main`
 
-1. **test** — build, start local Supabase, apply migrations, run Vitest integration suite
-2. **migrate** — on push to `main` only when `supabase/migrations/**` changed: link prod project, validate, `supabase db push`, lint schema
+1. **test** — build, start local Supabase, `pnpm db:bootstrap` (baseline → `drizzle-kit migrate` → seed), run Vitest integration suite
+2. **migrate** — on push to `main` only when `drizzle/**` changed: link prod project, `pnpm db:check`, `pnpm db:migrate` against `DATABASE_URL`, lint schema
 3. **deploy-functions** — after tests pass (migrate success or skipped): deploy `meta-conversions` edge function
 
 Railway then deploys the new server because CI passed ("Wait for CI").

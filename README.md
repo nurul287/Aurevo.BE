@@ -121,7 +121,9 @@ See [docs/10-bulk-import-pipeline.md](docs/10-bulk-import-pipeline.md) for the f
 
 ## Database Scripts
 
-DB ownership lives here. All migrations, seed data, and Supabase CLI scripts are in `supabase/`. Scripts use pinned `supabase@2.98.2` via `pnpm dlx`.
+DB ownership lives here. The schema is owned by **Drizzle Kit** — hand-authored `src/db/schema.ts` plus migrations in `drizzle/`, applied with `drizzle-kit migrate`. The Supabase CLI still provides the local Docker stack, seed data, edge functions and auth/storage config; `supabase/migrations-archive/` is historical only and never replayed. Supabase scripts use pinned `supabase@2.98.2` via `pnpm dlx`.
+
+`pnpm db:bootstrap` is the one-shot local setup (baseline reset → `drizzle-kit migrate` → seed). Do **not** run `drizzle-kit introspect` or `drizzle-kit push` — see the rules in [`CLAUDE.md`](CLAUDE.md).
 
 ```bash
 pnpm db:start          # start local Supabase Docker stack
@@ -140,7 +142,7 @@ pnpm db:studio         # Drizzle Studio (read-only introspection)
 `railway.json` configures Railway deployment. CI/CD is in `.github/workflows/ci.yml`:
 
 1. **test** — build, lint, and run integration tests against local Supabase Docker
-2. **migrate** — link to production Supabase, validate migrations, run `supabase db push`
+2. **migrate** — link to production Supabase, `pnpm db:check`, apply `drizzle/` with `pnpm db:migrate`, lint schema
 3. **deploy-functions** — deploy edge functions to Supabase
 
 Railway deploys automatically via the native **"Wait for CI"** setting — it triggers only after all CI checks on `main` pass, ensuring tests and DB migrations succeed before the new server goes live. No `RAILWAY_TOKEN` or `railway up` needed.
