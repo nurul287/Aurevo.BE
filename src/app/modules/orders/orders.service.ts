@@ -31,6 +31,7 @@ import {
   ForbiddenError,
   BusinessRuleError,
 } from "../../errors/AppError";
+import { logger } from "../../../lib/logger";
 import type {
   CreateOrderInput,
   GetOrdersInput,
@@ -39,6 +40,25 @@ import type {
   UpdateTrackingInput,
   UpdateFulfillmentInput,
 } from "./orders.schema";
+
+/**
+ * Delivery charges in BDT. Mirrored for display only in Aurevo.UI's
+ * checkout-page.tsx (SHIPPING_INSIDE_DHAKA / SHIPPING_OUTSIDE_DHAKA) — this
+ * copy is the one that decides what the customer is actually charged. Change
+ * both together; createOrder logs a warning if they disagree.
+ */
+export const SHIPPING_INSIDE_DHAKA = 100;
+export const SHIPPING_OUTSIDE_DHAKA = 130;
+
+/**
+ * Same rule the checkout page uses: the district string matching "dhaka"
+ * case-insensitively is inside-Dhaka, everything else is outside.
+ */
+export function calculateShippingAmount(district: string | null | undefined): number {
+  return (district ?? "").trim().toLowerCase() === "dhaka"
+    ? SHIPPING_INSIDE_DHAKA
+    : SHIPPING_OUTSIDE_DHAKA;
+}
 
 /**
  * `ORD-` + a 12-digit zero-padded sequential number (16 chars total, fixed
@@ -193,7 +213,32 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
   });
 
   const subtotal = lineItems.reduce((sum, i) => sum + Number(i.totalPrice), 0);
-  const shippingAmount = input.shippingAmount ?? 0;
+
+  // Shipping is derived from the delivery district, never taken from the
+  // request. POST /orders is public (guest checkout), so trusting a
+  // client-supplied shippingAmount meant anyone could send 0 and get free
+  // delivery — and because payment is Cash on Delivery, the courier collects
+  // total_amount, so an understated total is money the shop absorbs.
+  const shippingAmount = calculateShippingAmount(input.shippingAddress.district);
+
+  // The frontend keeps its own copy of these rates for display
+  // (SHIPPING_INSIDE_DHAKA / SHIPPING_OUTSIDE_DHAKA in checkout-page.tsx). It is
+  // ignored here, but a disagreement means the two copies have drifted and the
+  // customer was shown a total that differs from what will be charged.
+  if (
+    input.shippingAmount !== undefined &&
+    Number(input.shippingAmount) !== shippingAmount
+  ) {
+    logger.warn(
+      {
+        district: input.shippingAddress.district,
+        clientShippingAmount: input.shippingAmount,
+        serverShippingAmount: shippingAmount,
+      },
+      "Client-supplied shippingAmount disagrees with server calculation; using server value",
+    );
+  }
+
   const totalAmount = subtotal + shippingAmount;
 
   const shippingAddress = input.shippingAddress;

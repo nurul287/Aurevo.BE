@@ -85,7 +85,11 @@ describe("POST /orders", () => {
     expect(res.body.data.userId).toBe(MOCK_USER.id);
     expect(res.body.data.items).toHaveLength(1);
     expect(res.body.data.items[0].quantity).toBe(2);
-    expect(res.body.data.totalAmount).toBe("4000.00");
+    // Shipping is derived server-side from the district: TEST_ADDRESS is Dhaka,
+    // so 100 on top of the 4000 subtotal.
+    expect(res.body.data.subtotal).toBe("4000.00");
+    expect(res.body.data.shippingAmount).toBe("100.00");
+    expect(res.body.data.totalAmount).toBe("4100.00");
 
     // Stock should be reduced — inventory is source of truth, productVariants.stock kept in sync
     const [pv] = await db.select({ stock: productVariants.stock }).from(productVariants).where(eq(productVariants.id, variant.id));
@@ -95,6 +99,47 @@ describe("POST /orders", () => {
     // A sale is recorded solely as a quantity decrement — reserving on top of
     // it would double-count the sold units in availability calculations.
     expect(inv!.reservedQuantity).toBe(0);
+  });
+
+  it("charges the outside-Dhaka rate for a non-Dhaka district", async () => {
+    const product = await seedProduct();
+    const variant = await seedVariant(product.id, 10);
+
+    const res = await request(app)
+      .post("/")
+      .send({
+        email: "guest@example.com",
+        paymentMethod: "cash",
+        shippingAddress: { ...TEST_ADDRESS, district: "Chattogram", upazila: "Sitakunda" },
+        items: [{ variantId: variant.id, quantity: 1 }],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.shippingAmount).toBe("130.00");
+  });
+
+  it("ignores a client-supplied shippingAmount and charges the real rate", async () => {
+    // POST /orders is public for guest checkout, so a caller could otherwise
+    // send shippingAmount: 0 and get free delivery — and with Cash on Delivery
+    // the courier collects total_amount, so the shop would absorb the fee.
+    const product = await seedProduct();
+    const variant = await seedVariant(product.id, 10);
+
+    const res = await request(app)
+      .post("/")
+      .send({
+        email: "guest@example.com",
+        paymentMethod: "cash",
+        shippingAddress: { ...TEST_ADDRESS, district: "Chattogram", upazila: "Sitakunda" },
+        shippingAmount: 0,
+        items: [{ variantId: variant.id, quantity: 1 }],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.shippingAmount).toBe("130.00");
+    expect(Number(res.body.data.totalAmount)).toBe(
+      Number(res.body.data.subtotal) + 130,
+    );
   });
 
   it("assigns strictly increasing order numbers under sequential orders", async () => {

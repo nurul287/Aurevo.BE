@@ -22,7 +22,7 @@ An offline ingestion pipeline embeds products and policy docs into a pgvector st
 
 ## Data Model
 
-Migration: `supabase/migrations/039_rag_chat_knowledge_base.sql`
+Migration: `supabase/migrations-archive/039_rag_chat_knowledge_base.sql`
 
 | Table | Purpose | Key columns |
 |---|---|---|
@@ -216,7 +216,7 @@ Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite`
 ## File Reference
 
 **Aurevo.BE**
-- `supabase/migrations/039_rag_chat_knowledge_base.sql`, `src/db/schema.ts`
+- `supabase/migrations-archive/039_rag_chat_knowledge_base.sql`, `src/db/schema.ts`
 - `src/lib/voyage.ts`
 - `src/app/modules/knowledge/knowledge.service.ts`
 - `content/policies/{shipping,returns,sizing,payment,faq}.md`
@@ -226,7 +226,7 @@ Decisions locked for the remaining sessions: reranker = Voyage `rerank-2.5-lite`
 - `src/app/modules/knowledge/knowledge.test.ts`, `src/app/modules/chat/answer-eval.test.ts`
 - `src/app/modules/chat/{chat.service,chat.persistence,chat.controller,chat.schema,chat.routes}.ts`
 - `src/app/modules/chat/{chat.internal.controller,chat.internal.routes}.ts`
-- `src/app/modules/chat/chat.metrics.ts` (telemetry: record / retention / getAiMetrics), `supabase/migrations/044_chat_metrics.sql`
+- `src/app/modules/chat/chat.metrics.ts` (telemetry: record / retention / getAiMetrics), `supabase/migrations-archive/044_chat_metrics.sql`
 - `src/app/modules/admin/{admin.controller,admin.routes}.ts` (`GET /admin/ai-metrics`)
 - `src/app/modules/chat/{chat.test,chat.internal.test,chat.metrics.test}.ts`
 - `src/app/modules/products/products.service.ts` (auto-embed hooks)

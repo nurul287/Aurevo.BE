@@ -3,11 +3,22 @@
 ## Overview
 
 - **Database:** PostgreSQL 15 (via Supabase)
-- **Tables:** 23 (adds `kb_chunks`, `conversations`, `messages` — migration 039 RAG; `courier_tracking_events` — migration 041 Steadfast)
-- **Enums:** 11 (adds `kb_source_type`, `chat_role` — migration 039)
+- **Tables:** 24 — verified against the live schema, matches production exactly
+- **Enums:** 13 — the count previously read 11, which predated `import_job_status`
+  and `import_row_status` (bulk import)
 - **Sequences:** `order_number_seq` (migration 042 — sequential fixed-width order numbers)
-- **Schema managed by:** Supabase migrations (source of truth)
-- **ORM mapping:** Generated via `drizzle-kit introspect`
+- **Schema managed by:** Drizzle Kit (source of truth) — `src/db/schema.ts` +
+  `drizzle/`, applied with `drizzle-kit migrate`. The Supabase CLI still owns the
+  local Docker stack, edge functions, and auth/storage configuration, but no
+  longer the schema; `supabase/migrations-archive/` is historical only.
+- **ORM mapping:** `src/db/schema.ts` is **hand-authored**. Never run
+  `drizzle-kit introspect` — it drops RLS predicates (it emitted 34 of 49
+  policies with no `USING` clause), and never run `drizzle-kit push` — it
+  bypasses the migration files.
+- **What Drizzle cannot express**, and so lives as hand-written SQL in `drizzle/`:
+  PL/pgSQL functions, triggers, event triggers, extensions, `storage.*` policies
+  and bucket config, and `COMMENT ON` statements. Regenerate the functions/
+  triggers/comments migration with `pnpm db:gen-custom-sql <DATABASE_URL>`.
 
 ---
 
@@ -26,6 +37,8 @@
 | `user_gender` | `male`, `female`, `other` |
 | `kb_source_type` | `product`, `policy`, `faq` |
 | `chat_role` | `user`, `assistant` |
+| `import_job_status` | `pending`, `running`, `completed`, `partial`, `failed` |
+| `import_row_status` | `pending`, `processing`, `done`, `failed`, `skipped` |
 
 ---
 

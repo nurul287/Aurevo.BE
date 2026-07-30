@@ -27,8 +27,9 @@ Thumbs.db
 # Test coverage
 coverage/
 
-# Drizzle generated SQL snapshots (schema.ts is kept, raw SQL not needed)
-src/db/*.sql
+# NOTE: drizzle/ (migrations + meta/) MUST stay tracked — it is now the schema
+# source of truth. The old `src/db/*.sql` ignore rule was removed along with the
+# introspect-era snapshot it hid; `out` is ./drizzle now.
 
 # graphify build cache (content-hashed, regenerates locally, not worth committing)
 graphify-out/cache/

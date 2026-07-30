@@ -25,7 +25,25 @@ These apply across both Aurevo repos (this one and [`../Aurevo.UI`](../Aurevo.UI
 
 ```bash
 pnpm db:start       # start local Supabase Docker stack
-pnpm db:reset       # apply all migrations + seed data
+pnpm db:bootstrap   # THE local setup command: supabase db reset (baseline only)
+                    #   -> drizzle-kit migrate -> seed.sql
+pnpm db:reset       # Supabase baseline ONLY — no project tables. Rarely what you want.
+pnpm db:migrate     # apply pending drizzle/ migrations
+pnpm db:generate    # generate a migration after editing src/db/schema.ts
+pnpm db:seed-assets # re-upload supabase/seed-assets/ into the local bucket and
+                    #   repoint the rows. Part of db:bootstrap; no network to
+                    #   prod, so CI-safe. This is what makes local-only images
+                    #   survive a reset — seed.sql restores rows, never files.
+pnpm db:localize-images  # copy catalog images from prod storage into the LOCAL
+                    #   bucket and repoint the DB at them. Optional. NOT part of
+                    #   db:bootstrap — CI must never reach production.
+pnpm ingest:knowledge  # REQUIRED after a bootstrap if you touch the chatbot.
+                    #   seed.sql does not populate kb_chunks, and an empty
+                    #   knowledge base does not error — the bot just answers
+                    #   confidently wrong ("we don't currently have shoes" for a
+                    #   catalog of 9 sneakers). Not in db:bootstrap because it
+                    #   spends real Voyage embedding credits and bootstrap runs
+                    #   in CI.
 pnpm db:status      # verify: shows local URLs + keys
 pnpm dev            # tsx watch, localhost:5000
 pnpm build          # tsc
@@ -34,6 +52,8 @@ pnpm test:watch
 ```
 
 Tests run with `fileParallelism: false` — test files share one local Postgres instance, so parallel runs cause FK violations when one file inserts while another deletes.
+
+**`pnpm test` reseeds the catalog from `supabase/seed.sql` in `global-teardown`, which undoes `pnpm db:localize-images`** — the 47 production-sourced images revert to `bwcbcmeftplyljgcacvr.supabase.co` URLs. They still render (the bucket is public), just from production. Re-run `pnpm db:localize-images` after a test run if you want them local again. The images backed by `supabase/seed-assets/` are unaffected: `seed.sql` carries their correct local paths, so reseeding restores working URLs.
 
 ## Architecture
 
@@ -44,6 +64,8 @@ Tests run with `fileParallelism: false` — test files share one local Postgres 
 - Logout calls `supabaseAdmin.auth.admin.signOut(token, 'global')` — this is why OAuth had to move server-side at all: the FE can't reliably hold onto a Supabase session to kill it.
 
 **Stock accounting** — order creation does **one** atomic operation: `UPDATE inventory SET quantity = quantity - N WHERE quantity - reserved_quantity >= N`, guarded so concurrent checkouts can't oversell the same units. There is no separate "reserve then decrement" step — an earlier version incremented `reserved_quantity` *and* decremented `quantity` for the same sale, which double-counted every order in availability math (`quantity - reserved_quantity`) until stock silently hit zero. `reserved_quantity` stays at 0 by design now; cancel/admin-status-change restore stock via the shared `restoreOrderStock` helper (both paths must stay identical — that was a duplicated-logic bug once).
+
+**Shipping charges** — derived **server-side** from `shippingAddress.district` in `orders.service.ts` (`calculateShippingAmount`): 100 BDT inside Dhaka, 130 outside, the district matching `"dhaka"` case-insensitively being "inside". A client-supplied `shippingAmount` is accepted by the schema but **ignored**; a disagreement is logged as a warning. This is deliberate — `POST /orders` is public for guest checkout, so trusting the request meant anyone could send `shippingAmount: 0` for free delivery, and since payment is Cash on Delivery the courier collects `total_amount`, so an understated total is money the shop absorbs. Aurevo.UI keeps its own `SHIPPING_INSIDE_DHAKA`/`SHIPPING_OUTSIDE_DHAKA` constants for display only; change both together or the customer sees a total that differs from what is charged (the warning log is how you find out).
 
 **Saved addresses** — `user_addresses` matches the Bangladesh checkout shape exactly (`label, name, phone, address, district, upazila`), not the original US-style schema (migration 038 reshaped it). `getAddresses` orders by `created_at ASC` — without an explicit order, Postgres can return rows in a different physical order after an `UPDATE` (e.g. toggling `is_default`), which visibly swapped card positions in the FE grid.
 
@@ -79,12 +101,23 @@ Config validated by Zod in `src/app/config/index.ts` — invalid/missing env var
 
 **Local DB only**: `DATABASE_URL` in dev must always point at `127.0.0.1:54322` (local Supabase Docker). `SYNC_PROD_DATABASE_URL` (if present in Aurevo.UI's `.env.local`) is never used in migrations or seed scripts.
 
+## Database ownership — Drizzle Kit, not the Supabase CLI
+
+Changed 2026-07-30. `src/db/schema.ts` is **hand-authored** and is the source of truth; `drizzle/` holds the migrations. `supabase/migrations-archive/` is historical only and is never replayed (`[db.migrations] enabled = false`). Full detail in [`docs/03-database-design.md`](docs/03-database-design.md) and [`supabase/migrations-archive/README.md`](supabase/migrations-archive/README.md).
+
+- **Never run `drizzle-kit introspect`.** It regenerates `schema.ts` from the DB and *drops RLS predicates* — it originally emitted 34 of the 49 policies with no `USING` clause at all, silently turning owner-scoped policies into allow-all. The predicates in `schema.ts` were transcribed by hand from archived migrations `002`/`025`/`026`. Introspect would undo that. There is deliberately no `db:introspect` script anymore.
+- **Never run `drizzle-kit push`.** It applies schema diffs directly, bypassing `drizzle/` entirely. Note the official Drizzle+Supabase guide recommends `push` — that advice does not apply here. There is deliberately no `db:push` script.
+- **Migration files are immutable once applied.** Drizzle does **not** compare hashes — `pg-core/dialect.js` reads only the newest `drizzle.__drizzle_migrations` row and compares `created_at` against each migration's journal `when`. So editing an already-applied file is silently ignored forever and the DB drifts from the file with no error. Fix forward with a new migration. Never hand-edit `_journal.json` timestamps, and never let two migrations share a `when`.
+- **Things Drizzle cannot express** live as hand-written SQL in `drizzle/`: functions, triggers, event triggers, extensions, `storage.*` policies, and every `COMMENT ON`. Regenerate that migration from a live DB with `pnpm db:gen-custom-sql <url>` rather than transcribing by hand — several functions were redefined across multiple archived migrations, so "the latest definition" is not obvious from the files.
+- **`kb_chunks.fts` must stay mapped** in `schema.ts` (as `generatedAlwaysAs`). Archived migration 043 deliberately left it out, which was safe under introspect-only ownership but is now dangerous: if it is absent from `schema.ts`, the next `db:generate` emits `DROP COLUMN fts` and silently kills hybrid retrieval.
+- **Production has objects that no migration ever created** — 7 functions, a webhook trigger whose definition embeds a `service_role` JWT, and a custom `ensure_rls` event trigger. See [`docs/db-flip/unversioned-prod-objects.md`](docs/db-flip/unversioned-prod-objects.md) before assuming the migration history describes prod.
+
 ## Key gotchas
 
 - The dev server (`tsx watch`) doesn't always pick up an edit reliably — if behavior doesn't match a just-saved change, kill whatever process holds port 5000 and restart rather than assuming the fix is wrong.
 - `pnpm test` truncates most tables between files, **including `user_addresses`** — running the full suite against your local dev DB while manually testing addresses in the browser will wipe your test data. `src/test/global-teardown.ts` self-heals the two things this bit us on repeatedly: it reseeds the catalog from `supabase/seed.sql` and re-grants the `aurevo-test-admin@example.com` fixture's `public.profiles` row (its `auth.users` row/role was already self-healing via `ensureAuthUser` in `src/test/helpers.ts`) after every `pnpm test` run. If a browser session hits a `profiles`-FK error (e.g. `cart_items.user_id_fkey`) right after a test run, it's from mid-run truncation, not a stale fix — it clears itself once the run's teardown finishes.
 - CI's `test` job is the only required check on `main`; the `migrate` and `deploy-functions` stages only run on push to `main` (never on PRs) and only touch prod after `test` passes.
-- The `migrate` job's migration-changed detection (`dorny/paths-filter` in `.github/workflows/ci.yml`) must pin `base`/`ref` to `github.event.before`/`github.sha` explicitly. Without it, a merge-commit push falls back to comparing the live `dev`/`main` branch tips — which races `merge-back.yml` (it fast-forwards `dev` to `main` within seconds of the same push) and can silently report "0 changed files" even when the merge genuinely touched `supabase/migrations/**`. This is exactly what kept migration 039 out of production for two merges with CI reporting success the whole time — no failure, just a silently skipped stage. See `supabase/migrations/039_rag_chat_knowledge_base.sql`'s header comment for the full incident.
+- The `migrate` job's migration-changed detection (`dorny/paths-filter` in `.github/workflows/ci.yml`) must pin `base`/`ref` to `github.event.before`/`github.sha` explicitly. Without it, a merge-commit push falls back to comparing the live `dev`/`main` branch tips — which races `merge-back.yml` (it fast-forwards `dev` to `main` within seconds of the same push) and can silently report "0 changed files" even when the merge genuinely touched the watched path. This is exactly what kept migration 039 out of production for two merges with CI reporting success the whole time — no failure, just a silently skipped stage. See `supabase/migrations-archive/039_rag_chat_knowledge_base.sql`'s header comment for the full incident. The filter now watches `drizzle/**` instead of `supabase/migrations/**`; the race is identical either way, so the `base`/`ref` pinning must stay.
 
 ## graphify
 

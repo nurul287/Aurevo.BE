@@ -1,0 +1,54 @@
+tablename,policyname,permissive,roles,cmd,qual,with_check
+brands,Admins can manage brands,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+brands,Anyone can view active brands,PERMISSIVE,{public},SELECT,(is_active = true),""
+brands,Authenticated users can view all brands,PERMISSIVE,{authenticated},SELECT,true,""
+cart_items,Admins can manage all cart items,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+cart_items,Guests can manage cart with session,PERMISSIVE,{public},ALL,(((auth.uid() IS NULL) AND (session_id IS NOT NULL)) OR (auth.uid() = user_id)),""
+cart_items,Users can delete own cart items,PERMISSIVE,{public},DELETE,(auth.uid() = user_id),""
+cart_items,Users can insert own cart items,PERMISSIVE,{public},INSERT,"",(auth.uid() = user_id)
+cart_items,Users can update own cart items,PERMISSIVE,{public},UPDATE,(auth.uid() = user_id),""
+cart_items,Users can view own cart items,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),""
+categories,Admins can manage categories,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+categories,Anyone can view active categories,PERMISSIVE,{public},SELECT,(is_active = true),""
+categories,Authenticated users can view all categories,PERMISSIVE,{authenticated},SELECT,true,""
+inventory,Admins can manage inventory,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+inventory,Anyone can view inventory,PERMISSIVE,{public},SELECT,true,""
+inventory_movements,Admins can manage inventory movements,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+order_items,Admins can manage all order items,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+order_items,Users can view own order items,PERMISSIVE,{authenticated},SELECT,"(EXISTS ( SELECT 1
+   FROM orders o
+  WHERE ((o.id = order_items.order_id) AND (o.user_id = auth.uid()))))",""
+orders,Admins can manage all orders,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+orders,Users can view own orders,PERMISSIVE,{authenticated},SELECT,(auth.uid() = user_id),""
+payments,Admins can manage all payments,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+payments,Users can view own payments,PERMISSIVE,{public},SELECT,"(EXISTS ( SELECT 1
+   FROM orders
+  WHERE ((orders.id = payments.order_id) AND (orders.user_id = auth.uid()))))",""
+product_images,Admins can manage product images,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+product_images,Anyone can view product images,PERMISSIVE,{public},SELECT,true,""
+product_reviews,Admins can manage all reviews,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+product_reviews,Anyone can view approved reviews,PERMISSIVE,{public},SELECT,(is_approved = true),""
+product_reviews,Users can delete own reviews,PERMISSIVE,{public},DELETE,((auth.uid() = user_id) AND (is_approved = false)),""
+product_reviews,Users can insert own reviews,PERMISSIVE,{public},INSERT,"",(auth.uid() = user_id)
+product_reviews,Users can update own reviews,PERMISSIVE,{public},UPDATE,((auth.uid() = user_id) AND (is_approved = false)),(auth.uid() = user_id)
+product_reviews,Users can view own reviews,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),""
+product_variants,Admins can manage product variants,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+product_variants,Anyone can view active product variants,PERMISSIVE,{public},SELECT,(is_active = true),""
+product_variants,Authenticated users can view all product variants,PERMISSIVE,{authenticated},SELECT,true,""
+products,Admins can manage products,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+products,Anyone can view active products,PERMISSIVE,{public},SELECT,(is_active = true),""
+products,Authenticated users can view all products,PERMISSIVE,{authenticated},SELECT,true,""
+profiles,Admins can manage all profiles,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+profiles,Allow profile creation for authenticated users,PERMISSIVE,{public},INSERT,"",(auth.uid() IS NOT NULL)
+profiles,Users can insert own profile,PERMISSIVE,{public},INSERT,"",(auth.uid() = id)
+profiles,Users can update own profile,PERMISSIVE,{public},UPDATE,(auth.uid() = id),""
+profiles,Users can view own profile,PERMISSIVE,{public},SELECT,(auth.uid() = id),""
+user_addresses,Admins can manage all addresses,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+user_addresses,Users can delete own addresses,PERMISSIVE,{public},DELETE,(auth.uid() = user_id),""
+user_addresses,Users can insert own addresses,PERMISSIVE,{public},INSERT,"",(auth.uid() = user_id)
+user_addresses,Users can update own addresses,PERMISSIVE,{public},UPDATE,(auth.uid() = user_id),""
+user_addresses,Users can view own addresses,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),""
+wishlist_items,Admins can manage all wishlist items,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+wishlist_items,Users can delete own wishlist items,PERMISSIVE,{public},DELETE,(auth.uid() = user_id),""
+wishlist_items,Users can insert own wishlist items,PERMISSIVE,{public},INSERT,"",(auth.uid() = user_id)
+wishlist_items,Users can view own wishlist items,PERMISSIVE,{public},SELECT,(auth.uid() = user_id),""

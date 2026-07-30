@@ -64,12 +64,14 @@ Browser (React SPA)
 **Chosen over:** Prisma, TypeORM, raw SQL
 
 **Why Drizzle:**
-- Schema generated from the existing live DB via `drizzle-kit introspect` — no schema drift
+- Schema is the source of truth in `src/db/schema.ts`, applied via versioned `drizzle/` migrations
 - Queries compile to plain SQL; no N+1 magic
 - Type-safe without code generation at runtime
 - Lightweight — no Prisma binary, no ORM startup cost
 
-**Introspect-first rationale:** The database already existed (built with Supabase migrations). Rather than rewriting schema definitions, `drizzle-kit introspect` read the live Postgres schema and generated `src/db/schema.ts` exactly matching production. This is the correct approach when the DB is the source of truth.
+**History — introspect-first, then Drizzle-owned:** the database already existed (built with Supabase migrations), so `drizzle-kit introspect` originally generated `src/db/schema.ts` from the live schema and the Supabase CLI stayed the source of truth. That was reversed on 2026-07-30: `schema.ts` is now hand-authored and Drizzle Kit owns the schema.
+
+Introspection turned out to be lossy in ways that were invisible while nothing generated DDL from the file: 34 of 49 RLS policies came out with no `USING` clause, `profiles_id_fkey` was bound to a stale `public.users` table instead of `auth.users` (the `auth` schema was filtered out), and one index had its operator classes swapped onto the wrong columns. All were corrected during the switch, and equivalence with the old schema was verified by diffing `pg_dump` output and every `pg_policies` row. See [`supabase/migrations-archive/README.md`](../supabase/migrations-archive/README.md).
 
 ### Database: Supabase (PostgreSQL 15)
 

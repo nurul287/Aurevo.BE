@@ -45,15 +45,21 @@ default_pool_size = 20
 max_client_conn = 100
 
 [db.migrations]
-# If disabled, migrations will be skipped during a db push or reset.
-enabled = true
+# DISABLED: schema ownership moved to Drizzle Kit. `supabase db reset` now only
+# provisions the Supabase baseline (auth/storage/extensions/realtime schemas,
+# roles, auth.uid()); the project schema is applied by `drizzle-kit migrate`
+# afterwards — see `pnpm db:bootstrap`. supabase/migrations/ is archived and
+# must never be replayed, it would conflict with drizzle/.
+enabled = false
 # Specifies an ordered list of schema files that describe your database.
 # Supports glob patterns relative to supabase directory: "./schemas/*.sql"
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# DISABLED: seeding must happen AFTER `drizzle-kit migrate` has created the
+# tables, so it can no longer run as part of `supabase db reset`.
+# `pnpm db:bootstrap` applies seed.sql as its final step.
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]
