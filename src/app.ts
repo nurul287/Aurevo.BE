@@ -21,12 +21,24 @@ app.set("trust proxy", 1);
 // Security middleware (disable crossOriginResourcePolicy so CORS headers reach the browser)
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
-// CORS — must come before all routes and rate limiters
+// CORS — must come before all routes and rate limiters.
+//
+// Additional origins belong in this list, NOT in FRONTEND_URL. Although
+// FRONTEND_URL is split on commas below and so would work for CORS, it is also
+// used to BUILD absolute links — the OAuth success/error redirects
+// (oauth.service.ts, oauth.controller.ts) and the order-confirmation link in
+// email.ts. Setting it to a comma-separated list would produce URLs like
+// "https://a.store,https://b.app/order-confirmation?..." and silently break
+// every confirmation email and OAuth round-trip. It stays a single canonical
+// origin.
 const allowedOrigins = Array.from(
   new Set([
     "http://localhost:5173",
     "http://localhost:3000",
     "https://aurevofashion.store",
+    // Vercel alias for the same storefront — serves the site directly, so the
+    // browser sends this Origin and it needs allowing in its own right.
+    "https://aurevofashion.vercel.app",
     ...(config.FRONTEND_URL
       ? config.FRONTEND_URL.split(",").map((s) => s.trim())
       : []),
