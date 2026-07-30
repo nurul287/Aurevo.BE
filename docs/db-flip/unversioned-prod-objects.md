@@ -67,6 +67,40 @@ way: drop the file at `supabase/seed-assets/product-images/<path>` and the
 script picks it up. Rows are repointed by the id in the path, not the filename,
 so re-uploading in a different format (`cover.jpg` → `cover.png`) still matches.
 
+## RLS policies that drifted in production
+
+Found on 2026-07-30 *after* baselining, by comparing `pg_policies` in production
+against a database built from `drizzle/`. Production had **52** policies where
+the archived migrations produce **49**.
+
+This was a real gap in the pre-flip verification: equivalence was proven between
+a Drizzle-built database and a *local* migrations-built database (both 49, byte
+identical). Production was never in that comparison, and it had drifted.
+
+| Table | Archived migrations | Production |
+|---|---|---|
+| `brands` | one `"Admins can manage brands"` (`FOR ALL`) | four per-command policies — select/insert/update/delete, each `is_admin()` |
+| `profiles` | `"Users can insert own profile"`, `WITH CHECK (auth.uid() = id)` | `"Allow profile creation for existing users"`, `WITH CHECK (EXISTS (SELECT 1 FROM auth.users WHERE users.id = profiles.id))` |
+
+The `brands` split is functionally identical — it is the shape the Supabase
+dashboard's policy editor emits, which is almost certainly where it came from.
+
+The `profiles` difference is **not** cosmetic: production's version permits
+inserting a profile row for any existing auth user rather than only your own.
+It is weaker than the migration intended. Two things limit the impact — the
+sibling `"Allow profile creation for authenticated users"` policy is already
+permissive (`auth.uid() IS NOT NULL`), and the backend connects via the service
+role, which bypasses RLS entirely — so this is defence-in-depth rather than the
+enforcement path. Tightening it is tracked in `docs/backlog.md`.
+
+`drizzle/0006` and `0007` reconcile the repo to production's actual shape:
+production is the live truth and is left untouched, while a freshly built
+database now reproduces it exactly (verified — all 15 policy-bearing tables
+match production's per-table counts). Both files are deliberately idempotent
+(`DROP POLICY IF EXISTS` before every `CREATE`), because production was
+baselined at `0005` and will therefore execute them on the next merge, where the
+drops are already done and the creates already exist.
+
 ## Triggers
 
 | Trigger | Table | Disposition |

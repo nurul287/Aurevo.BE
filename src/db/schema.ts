@@ -279,7 +279,14 @@ export const brands = pgTable("brands", {
 	unique("brands_slug_key").on(table.slug),
 	pgPolicy("Authenticated users can view all brands", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	pgPolicy("Anyone can view active brands", { as: "permissive", for: "select", to: ["public"], using: sql`(is_active = true)` }),
-	pgPolicy("Admins can manage brands", { as: "permissive", for: "all", to: ["authenticated"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
+	// Production splits the admin grant into four per-command policies rather
+	// than the single FOR ALL that archived migration 002 created — the shape the
+	// Supabase dashboard's policy editor produces. Functionally identical; kept
+	// this way so a freshly built database matches production exactly.
+	pgPolicy("Admins can select brands", { as: "permissive", for: "select", to: ["authenticated"], using: sql`is_admin()` }),
+	pgPolicy("Admins can insert brands", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_admin()` }),
+	pgPolicy("Admins can update brands", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
+	pgPolicy("Admins can delete brands", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_admin()` }),
 ]);
 
 export const productVariants = pgTable("product_variants", {
@@ -348,7 +355,14 @@ export const profiles = pgTable("profiles", {
 	pgPolicy("Admins can manage all profiles", { as: "permissive", for: "all", to: ["authenticated"], using: sql`is_admin()`, withCheck: sql`is_admin()`  }),
 	pgPolicy("Users can update own profile", { as: "permissive", for: "update", to: ["public"], using: sql`auth.uid() = id` }),
 	pgPolicy("Allow profile creation for authenticated users", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`auth.uid() IS NOT NULL` }),
-	pgPolicy("Users can insert own profile", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`auth.uid() = id` }),
+	// Production replaced archived 002's "Users can insert own profile"
+	// (WITH CHECK auth.uid() = id) with this looser check, which permits
+	// inserting a profile row for ANY existing auth user rather than only your
+	// own. Recorded here because production is the live truth — but it is weaker
+	// than the migration intended. Tightening it is tracked in docs/backlog.md;
+	// note the BE connects via the service role and bypasses RLS entirely, so
+	// this is defence-in-depth rather than the enforcement path.
+	pgPolicy("Allow profile creation for existing users", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`EXISTS (SELECT 1 FROM auth.users WHERE users.id = profiles.id)` }),
 	pgPolicy("Users can view own profile", { as: "permissive", for: "select", to: ["public"], using: sql`auth.uid() = id` }),
 ]);
 
