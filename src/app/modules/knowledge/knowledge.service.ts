@@ -430,7 +430,10 @@ async function rerankCandidates(query: string, candidates: Candidate[], topK: nu
     );
     return ranked.map((r) => ({ ...candidates[r.index]!, score: r.relevanceScore }));
   } catch (err) {
-    logger.warn({ err, query }, "knowledge.rerank failed — falling back to fusion order");
+    logger.warn(
+      { err, queryLength: query.length },
+      "knowledge.rerank failed — falling back to fusion order",
+    );
     return candidates.slice(0, topK);
   }
 }

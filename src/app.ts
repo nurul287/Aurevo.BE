@@ -1,14 +1,13 @@
 import express, { Application } from "express";
 import helmet from "helmet";
 import compression from "compression";
-import { pinoHttp } from "pino-http";
 import { sql } from "drizzle-orm";
 import swaggerUi from "swagger-ui-express";
 import { config } from "./app/config";
 import { swaggerSpec } from "./app/config/swagger";
 import { globalErrorHandler } from "./app/middlewares";
 import { db } from "./db";
-import { logger } from "./lib/logger";
+import { bindRequestLogContext, httpLogger } from "./lib/http-logger";
 import router from "./routes";
 
 const app: Application = express();
@@ -61,7 +60,10 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Guest-Session",
   );
-  res.header("Access-Control-Expose-Headers", "Content-Disposition");
+  res.header(
+    "Access-Control-Expose-Headers",
+    "Content-Disposition, X-Request-Id",
+  );
 
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
@@ -70,13 +72,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Structured request logging (JSON in prod, pretty in dev via the shared logger)
-app.use(
-  pinoHttp({
-    logger,
-    autoLogging: { ignore: (req) => req.url === "/health" || req.url === "/api/health" },
-  }),
-);
+// Structured request logging plus async context shared by downstream logs.
+app.use(httpLogger);
+app.use(bindRequestLogContext);
 
 // Response compression
 app.use(compression());

@@ -12,12 +12,18 @@ export const globalErrorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  logger.error(
-    { err, cause: (err as NodeJS.ErrnoException).cause, method: req.method, path: req.path },
-    err.message,
-  );
+  const requestLogger = req.log ?? logger;
+  const requestDetails = {
+    method: req.method,
+    path: req.path,
+    userId: req.user?.id,
+  };
 
   if (err instanceof ZodError) {
+    requestLogger.warn(
+      { ...requestDetails, issueCount: err.issues.length },
+      "Request validation failed",
+    );
     res.status(400).json({
       success: false,
       error: {
@@ -30,6 +36,10 @@ export const globalErrorHandler = (
   }
 
   if (err instanceof AppError) {
+    requestLogger.warn(
+      { ...requestDetails, statusCode: err.statusCode, errorCode: err.code },
+      "Request rejected by application rule",
+    );
     res.status(err.statusCode).json({
       success: false,
       error: {
@@ -48,6 +58,10 @@ export const globalErrorHandler = (
     (err as { code?: string }).code ??
     ((err as { cause?: { code?: string } }).cause?.code);
   if (pgCode === "23505") {
+    requestLogger.warn(
+      { ...requestDetails, statusCode: 409, errorCode: "CONFLICT" },
+      "Request conflicted with an existing record",
+    );
     res.status(409).json({
       success: false,
       error: {
@@ -58,11 +72,25 @@ export const globalErrorHandler = (
     return;
   }
 
+  requestLogger.error(
+    {
+      ...requestDetails,
+      err,
+      cause: (err as NodeJS.ErrnoException).cause,
+    },
+    "Unhandled request error",
+  );
+
   // Only unexpected errors reach this point — expected business/validation
   // errors returned above must not pollute the error tracker.
   if (sentryEnabled()) {
     Sentry.captureException(err, {
-      extra: { method: req.method, path: req.path },
+      extra: {
+        method: req.method,
+        path: req.path,
+        requestId: req.id,
+        userId: req.user?.id,
+      },
     });
   }
 

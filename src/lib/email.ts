@@ -174,7 +174,7 @@ export async function sendOrderConfirmationEmail(
   // and nothing in the app logs either way) unresolvable from Railway logs
   // alone. Log both the attempt and the outcome explicitly.
   logger.info(
-    { orderNumber: order.orderNumber, to: order.email },
+    { orderNumber: order.orderNumber },
     "sending order confirmation email",
   );
 
@@ -205,7 +205,7 @@ export async function sendOrderConfirmationEmail(
   }
 
   logger.info(
-    { orderNumber: order.orderNumber, to: order.email, resendId: data?.id },
+    { orderNumber: order.orderNumber, resendId: data?.id },
     "order confirmation email sent",
   );
 }
