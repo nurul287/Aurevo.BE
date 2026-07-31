@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import type { JwtPayload } from "@supabase/supabase-js";
 import { supabaseAdmin } from "../../lib/supabase";
+import { updateRequestLogContext } from "../../lib/request-context";
 import { UnauthorizedError, ForbiddenError } from "../errors";
 
 /**
@@ -28,6 +29,7 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       email: payload.email ?? "",
       role: payload.app_metadata?.role ?? payload.role ?? "user",
     };
+    updateRequestLogContext({ userId: req.user.id, authType: "user" });
 
     next();
   } catch (err) {
@@ -48,13 +50,17 @@ export const optionalAuth = async (req: Request, _res: Response, next: NextFunct
           email: payload.email ?? "",
           role: payload.app_metadata?.role ?? payload.role ?? "user",
         };
+        updateRequestLogContext({ userId: req.user.id, authType: "user" });
       } catch {
         // invalid token — treat as unauthenticated
       }
     }
 
     const guestSessionId = req.headers["x-guest-session"] as string | undefined;
-    if (guestSessionId) req.guestSessionId = guestSessionId;
+    if (guestSessionId) {
+      req.guestSessionId = guestSessionId;
+      if (!req.user) updateRequestLogContext({ authType: "guest" });
+    }
 
     next();
   } catch {

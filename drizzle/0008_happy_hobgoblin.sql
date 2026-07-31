@@ -1,0 +1,2 @@
+ALTER TABLE "wishlist_items" DROP CONSTRAINT "wishlist_items_user_id_variant_id_key";--> statement-breakpoint
+ALTER TABLE "wishlist_items" ADD CONSTRAINT "wishlist_items_user_id_product_id_key" UNIQUE("user_id","product_id");

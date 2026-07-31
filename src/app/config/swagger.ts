@@ -91,6 +91,7 @@ const options: swaggerJsdoc.Options = {
       { name: "Categories", description: "Category management" },
       { name: "Brands", description: "Brand management" },
       { name: "Cart", description: "Shopping cart operations" },
+      { name: "Wishlist", description: "Authenticated product wishlist / favorites" },
       { name: "Orders", description: "Order management" },
     ],
   },
@@ -98,6 +99,3 @@ const options: swaggerJsdoc.Options = {
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-
-
-

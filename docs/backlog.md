@@ -2,7 +2,19 @@
 
 Ideas that have been scoped enough to be worth revisiting, but haven't gone through
 full brainstorming/design/planning yet. Not SDLC docs — see `docs/01-requirements.md`
-through `docs/10-bulk-import-pipeline.md` for those.
+through `docs/11-sslcommerz-payments.md` for those.
+
+---
+
+## SSLCommerz online payments (sandbox → live)
+
+**What:** Hosted SSLCommerz checkout for `paymentMethod: "online"`, sandbox-first,
+with a documented credentials flip for live. COD stays as today.
+
+**Status:** Plan parked at [`11-sslcommerz-payments.md`](11-sslcommerz-payments.md).
+**Blocked on** creating an SSLCommerz sandbox merchant account. Start implementation
+from that doc when sandbox Store ID / password are available — no need to re-plan
+unless requirements change.
 
 ---
 

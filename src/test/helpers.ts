@@ -1,6 +1,6 @@
 import { inArray, sql } from "drizzle-orm";
 import { db } from "../db";
-import { categories, brands, products, productVariants, cartItems, orders, orderItems, profiles } from "../db/schema";
+import { categories, brands, products, productVariants, cartItems, orders, orderItems, profiles, wishlistItems } from "../db/schema";
 import { supabaseAdmin } from "../lib/supabase";
 
 // Local Supabase Docker only — real Auth users/sessions, never production.
@@ -113,6 +113,7 @@ export async function seedTestUsers(): Promise<void> {
 
 export async function cleanTestUsers(): Promise<void> {
   await db.delete(cartItems);
+  await db.delete(wishlistItems);
   await db.delete(orderItems);
   await db.delete(orders);
   await db.delete(profiles).where(inArray(profiles.id, [MOCK_ADMIN_USER.id, MOCK_USER.id]));

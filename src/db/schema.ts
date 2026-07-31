@@ -143,7 +143,10 @@ export const wishlistItems = pgTable("wishlist_items", {
 			foreignColumns: [productVariants.id],
 			name: "wishlist_items_variant_id_fkey"
 		}).onDelete("cascade"),
-	unique("wishlist_items_user_id_variant_id_key").on(table.userId, table.variantId),
+	// Product-level favorites: one row per (user, product). variant_id is unused
+	// by the API (kept nullable for a non-destructive migration from the old
+	// variant-scoped unique key).
+	unique("wishlist_items_user_id_product_id_key").on(table.userId, table.productId),
 	pgPolicy("Admins can manage all wishlist items", { as: "permissive", for: "all", to: ["authenticated"], using: sql`is_admin()`, withCheck: sql`is_admin()` }),
 	pgPolicy("Users can delete own wishlist items", { as: "permissive", for: "delete", to: ["public"], using: sql`auth.uid() = user_id` }),
 	pgPolicy("Users can insert own wishlist items", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`auth.uid() = user_id` }),
