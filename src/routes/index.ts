@@ -17,6 +17,7 @@ import orderRoutes from "../app/modules/orders/orders.routes";
 import productRoutes from "../app/modules/products/products.routes";
 import variantRoutes from "../app/modules/variants/variants.routes";
 import variantAdminRoutes from "../app/modules/variants/variants-admin.routes";
+import wishlistRoutes from "../app/modules/wishlist/wishlist.routes";
 
 const router: IRouter = Router();
 
@@ -29,6 +30,7 @@ router.use("/products/:productId/images", imageRoutes);
 router.use("/admin/images", imageAdminRoutes);
 router.use("/admin/imports", importAdminRoutes);
 router.use("/cart", cartRoutes);
+router.use("/wishlist", wishlistRoutes);
 router.use("/orders", orderRoutes);
 router.use("/inventory", inventoryRoutes);
 router.use("/auth", authRoutes);

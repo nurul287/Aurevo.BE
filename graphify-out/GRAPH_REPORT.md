@@ -1,16 +1,16 @@
 # Graph Report - Aurevo.BE  (2026-08-01)
 
 ## Corpus Check
-- 249 files · ~382,810 words
+- 257 files · ~393,856 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1597 nodes · 3005 edges · 269 communities (79 shown, 190 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 204 edges (avg confidence: 0.8)
+- 1642 nodes · 3098 edges · 266 communities (75 shown, 191 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 210 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `70f296ac`
+- Built from commit: `8c5eaa70`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -37,37 +37,38 @@
 - Phase 10 - Bulk Product Import Pipeline (doc)
 - categories.routes.ts
 - images.routes.ts
-- orders.service.ts
+- orders.routes.ts
 - courier.test.ts
 - auth.service.ts
 - knowledge.service.ts
-- courier.controller.ts
+- variants.test.ts
 - imports.worker-logic.test.ts
 - invoice-pdf.ts
 - Global Constraints
 - Aurevo.BE CLAUDE.md
-- variants.test.ts
+- wishlist.service.ts
 - spreadsheet.ts
 - Aurevo.BE README.md
 - Chat service (Claude tool-use loop, true token streaming)
 - Production objects that exist in no migration
 - resolvers.ts
 - chat.service.ts (streamChat, tool-use loop)
-- brands.routes.ts
+- orders.service.ts
 - middlewares/index.ts
 - Chat service (Claude, tool-use loop, true token streaming)
 - deploy
 - db-sync.mjs
 - rateLimiter.ts
-- logger.ts
+- brands.routes.ts
+- package.json
 - Import Worker (imports.worker-logic.ts, src/workers/import.worker.ts, pnpm worker)
-- queue.ts
+- cart.test.ts
 - imports.worker-logic.ts
 - dependencies
 - Observability Strategy (pino, Sentry, health check, graceful shutdown)
 - _build-catalog-restore.js
 - chat.routes.ts
-- package.json
+- keywords
 - inventory.test.ts
 - Aurevo.BE (Express + TypeScript + Drizzle)
 - deploy
@@ -75,19 +76,15 @@
 - RAG Data Model (kb_chunks/conversations/messages)
 - authenticate
 - Courier Tracking (Steadfast) module
-- chat.internal.controller.ts
-- keywords
-- interfaces/index.ts
+- worker
 - Backend-driven Auth via supabaseAdmin.auth.getClaims
 - Chat Request Lifecycle
 - RAG Chatbot Architecture Diagram (draft/duplicate of docs/images/rag-chatbot-architecture.svg, the canonical diagram referenced from docs/09-ai-chatbot-rag.md)
 - CI Test Job (Stage 1)
 - Database Schema Overview
 - Tiered Rate Limiters
-- seed-assets.ts
-- Backlog
+- SSLCommerz Payment Integration (Parked Plan)
 - db-baseline.mjs
-- worker
 - orders.test.ts
 - CI/CD Pipeline (test/migrate/deploy-functions)
 - Real DB, No Mocks on Data Layer Philosophy
@@ -281,15 +278,15 @@
 - Reauthentication Verification Code Template
 
 ## God Nodes (most connected - your core abstractions)
-1. `express` - 47 edges
-2. `DB` - 45 edges
+1. `express` - 49 edges
+2. `DB` - 47 edges
 3. `express` - 43 edges
 4. `scripts` - 36 edges
-5. `config` - 29 edges
-6. `products` - 29 edges
-7. `Aurevo.BE CLAUDE.md` - 22 edges
-8. `Aurevo.BE README.md` - 21 edges
-9. `productVariants` - 20 edges
+5. `products` - 31 edges
+6. `config` - 29 edges
+7. `productVariants` - 22 edges
+8. `Aurevo.BE CLAUDE.md` - 22 edges
+9. `Aurevo.BE README.md` - 21 edges
 10. `streamChat()` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -319,27 +316,27 @@
 - **Offline ingestion pipeline (products + policy docs to kb_chunks)** — docs_images_rag_chatbot_architecture_products_db, docs_images_rag_chatbot_architecture_policy_faq_docs, docs_images_rag_chatbot_architecture_chunk_embed, docs_images_rag_chatbot_architecture_kb_chunks [INFERRED 0.85]
 - **Runtime chat tool-use loop (chat service + three tools)** — docs_images_rag_chatbot_architecture_chat_service, docs_images_rag_chatbot_architecture_search_knowledge, docs_images_rag_chatbot_architecture_get_product_details, docs_images_rag_chatbot_architecture_get_my_orders [INFERRED 0.85]
 
-## Communities (269 total, 190 thin omitted)
+## Communities (266 total, 191 thin omitted)
 
 ### Community 0 - "images.service.ts"
 Cohesion: 0.07
-Nodes (45): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, UpstreamServiceError, ValidationError (+37 more)
+Nodes (40): AppError, BusinessRuleError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, UpstreamServiceError, ValidationError (+32 more)
 
 ### Community 1 - "courier.service.ts"
-Cohesion: 0.15
-Nodes (18): CourierEffects, mapCourierStatus(), recordCourierEvent(), refreshOrderStatus(), shipOrder(), TERMINAL_COURIER_STATUSES, TERMINAL_ORDER_STATUSES, assertEnabled() (+10 more)
+Cohesion: 0.09
+Nodes (34): getCourierBalance(), isValidWebhookBearer(), receiveWebhook(), refreshOrderStatus(), shipOrder(), trackByCode(), router, CourierWebhookBody (+26 more)
 
 ### Community 2 - "chat.service.ts"
 Cohesion: 0.06
-Nodes (53): aggregate(), AnswerCaseResult, AnswerEvalSummary, buildJudgePrompt(), clampScore(), JudgeScores, keyFactCoverage(), mean() (+45 more)
+Nodes (57): aggregate(), AnswerCaseResult, AnswerEvalSummary, buildJudgePrompt(), clampScore(), JudgeScores, keyFactCoverage(), mean() (+49 more)
 
 ### Community 3 - "imports.controller.ts"
 Cohesion: 0.15
 Nodes (20): SUPPORTED_MIME_PREFIXES, upload, downloadTemplate(), getImportJob(), getImportRows(), listImportJobs(), parseCandidateArray(), retryImportJob() (+12 more)
 
 ### Community 4 - "email.ts"
-Cohesion: 0.19
-Nodes (14): testSendEmail(), testSendSchema, router, buildConfirmationUrl(), emailEnabled(), escapeHtml(), formatShippingAddressLine(), getResend() (+6 more)
+Cohesion: 0.20
+Nodes (13): testSendEmail(), testSendSchema, router, buildConfirmationUrl(), emailEnabled(), escapeHtml(), formatShippingAddressLine(), getResend() (+5 more)
 
 ### Community 5 - "scripts"
 Cohesion: 0.06
@@ -355,43 +352,43 @@ Nodes (39): drizzle-kit, devDependencies, drizzle-kit, pino-pretty, supertest, t
 
 ### Community 8 - "inventory.service.ts"
 Cohesion: 0.10
-Nodes (25): adjustInventory(), exportInventory(), getInventory(), getInventoryById(), getLowStockAlerts(), getMovements(), getVariantAvailability(), upsertInventory() (+17 more)
+Nodes (26): adjustInventory(), exportInventory(), getInventory(), getInventoryById(), getLowStockAlerts(), getMovements(), getVariantAvailability(), upsertInventory() (+18 more)
 
 ### Community 9 - "variants.service.ts"
-Cohesion: 0.10
-Nodes (31): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getAllVariants(), getVariantById(), getVariants(), updateVariant() (+23 more)
+Cohesion: 0.11
+Nodes (29): adjustStock(), bulkCreateVariants(), createVariant(), deleteVariant(), getVariantById(), getVariants(), updateVariant(), router (+21 more)
 
 ### Community 10 - "cart.service.ts"
 Cohesion: 0.12
 Nodes (29): addItem(), clearCart(), createGuestSession(), getCart(), migrateCart(), removeItem(), resolveOwner(), updateItem() (+21 more)
 
 ### Community 11 - "db/index.ts"
-Cohesion: 0.12
-Nodes (19): app, app, router, app, TINY_GIF, app, app, cleanProducts() (+11 more)
+Cohesion: 0.13
+Nodes (19): app, app, app, app, cleanProducts(), app, DB, brands (+11 more)
 
 ### Community 12 - "products.service.ts"
 Cohesion: 0.10
 Nodes (32): deleteProductChunk(), bulkDelete(), bulkUpdateStatus(), createProduct(), deleteProduct(), getFeaturedProducts(), getProductById(), getProductBySlug() (+24 more)
 
 ### Community 13 - "express"
-Cohesion: 0.15
-Nodes (18): express, express, getAiMetricsController(), getDashboard(), router, getAdminDashboard(), router, router (+10 more)
+Cohesion: 0.11
+Nodes (22): express, express, ApiResponse, Express, PaginatedResponse, PaginationParams, Request, getAiMetricsController() (+14 more)
 
 ### Community 14 - "compilerOptions"
 Cohesion: 0.08
 Nodes (23): dist, ES2022, node_modules, src/**/*, compilerOptions, baseUrl, declaration, declarationMap (+15 more)
 
 ### Community 15 - "relations.ts"
-Cohesion: 0.10
-Nodes (19): brandsRelations, cartItemsRelations, categoriesRelations, inventoryMovementsRelations, inventoryRelations, metaCapiSentRelations, orderItemsRelations, ordersRelations (+11 more)
+Cohesion: 0.11
+Nodes (18): brandsRelations, cartItemsRelations, categoriesRelations, inventoryMovementsRelations, inventoryRelations, metaCapiSentRelations, orderItemsRelations, ordersRelations (+10 more)
 
 ### Community 16 - "config/index.ts"
-Cohesion: 0.19
-Nodes (11): allowedOrigins, app, config, envSchema, parsed, options, swaggerSpec, logger (+3 more)
+Cohesion: 0.07
+Nodes (40): allowedOrigins, app, config, envSchema, parsed, options, swaggerSpec, client (+32 more)
 
 ### Community 17 - "schema.ts"
 Cohesion: 0.11
-Nodes (18): addressType, chatRole, fulfillmentStatus, importJobStatus, importRowStatus, kbSourceType, messages, movementReason (+10 more)
+Nodes (17): addressType, chatRole, fulfillmentStatus, importJobStatus, importRowStatus, kbSourceType, movementReason, movementType (+9 more)
 
 ### Community 18 - "meta-conversions/index.ts"
 Cohesion: 0.15
@@ -406,15 +403,15 @@ Cohesion: 0.18
 Nodes (16): createCategory(), deleteCategory(), deleteCategoryImage(), getCategories(), getCategoryById(), updateCategory(), uploadCategoryImage(), upload (+8 more)
 
 ### Community 21 - "images.routes.ts"
-Cohesion: 0.18
-Nodes (16): router, bulkUploadImages(), deleteImage(), getAllImagesAdmin(), getImageById(), getImages(), setPrimaryImage(), updateImage() (+8 more)
+Cohesion: 0.21
+Nodes (14): bulkUploadImages(), deleteImage(), getImageById(), getImages(), setPrimaryImage(), updateImage(), uploadImage(), upload (+6 more)
 
-### Community 22 - "orders.service.ts"
-Cohesion: 0.08
-Nodes (48): cancelOrder(), claimOrders(), createOrder(), deleteOrder(), getOrderById(), getOrderByNumber(), getOrderInvoicePdf(), getOrders() (+40 more)
+### Community 22 - "orders.routes.ts"
+Cohesion: 0.12
+Nodes (28): cancelOrder(), claimOrders(), createOrder(), deleteOrder(), getOrderById(), getOrderByNumber(), getOrderInvoicePdf(), getOrders() (+20 more)
 
 ### Community 23 - "courier.test.ts"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (10): app, TEST_ADDRESS, app, TEST_ADDRESS, courierTrackingEvents, inventory, orderItems, orders (+2 more)
 
 ### Community 24 - "auth.service.ts"
@@ -422,12 +419,12 @@ Cohesion: 0.06
 Nodes (54): createAddress(), deleteAddress(), deleteAvatar(), forgotPassword(), getAddresses(), getMe(), login(), logout() (+46 more)
 
 ### Community 25 - "knowledge.service.ts"
-Cohesion: 0.07
-Nodes (45): batchUpsertProductChunks(), buildProductChunkText(), buildVariantSummary(), Candidate, candidateColumns, ingestPolicyDocs(), ingestProducts(), keywordSearch() (+37 more)
+Cohesion: 0.08
+Nodes (44): batchUpsertProductChunks(), buildProductChunkText(), buildVariantSummary(), Candidate, candidateColumns, ingestPolicyDocs(), ingestProducts(), keywordSearch() (+36 more)
 
-### Community 26 - "courier.controller.ts"
-Cohesion: 0.20
-Nodes (15): getCourierBalance(), isValidWebhookBearer(), receiveWebhook(), refreshOrderStatus(), shipOrder(), trackByCode(), router, CourierWebhookBody (+7 more)
+### Community 26 - "variants.test.ts"
+Cohesion: 0.15
+Nodes (8): globalErrorHandler(), router, app, createImagesApp(), TINY_GIF, app, createVariantsApp(), createTestApp()
 
 ### Community 27 - "imports.worker-logic.test.ts"
 Cohesion: 0.14
@@ -435,7 +432,7 @@ Nodes (14): NormalizedProduct, createImportJob(), getImportJob(), getImportRows(
 
 ### Community 28 - "invoice-pdf.ts"
 Cohesion: 0.19
-Nodes (15): deriveInvoicePayment(), Doc, drawItemsHeader(), extractEmailAddress(), FONT_BOLD, FONT_REGULAR, FONTS_DIR, formatAmount() (+7 more)
+Nodes (16): buildInvoicePdfBuffer(), deriveInvoicePayment(), Doc, drawItemsHeader(), extractEmailAddress(), FONT_BOLD, FONT_REGULAR, FONTS_DIR (+8 more)
 
 ### Community 29 - "Global Constraints"
 Cohesion: 0.12
@@ -445,9 +442,9 @@ Nodes (16): AI Chat Service — Plan 1: Foundation, Ingestion & Retrieval, Defer
 Cohesion: 0.17
 Nodes (16): authenticate middleware (supabaseAdmin.auth.getClaims, JWKS/ES256), migrate-job paths-filter base/ref pinning incident (migration 039), CI/CD Pipeline (test -> migrate -> deploy-functions), Dev server (tsx watch) stale-reload gotcha, src/app/config/index.ts (Zod-validated env, crash on boot if invalid), graphify knowledge graph workflow, i18n (English/বাংলা via i18next), supabase/migrations/039_rag_chat_knowledge_base.sql (external reference) (+8 more)
 
-### Community 31 - "variants.test.ts"
+### Community 31 - "wishlist.service.ts"
 Cohesion: 0.14
-Nodes (8): globalErrorHandler(), app, createImagesApp(), app, createVariantsApp(), cartItems, createTestApp(), MOCK_USER
+Nodes (17): addItem(), clearWishlist(), getWishlist(), removeByProductId(), removeItem(), router, AddWishlistItemInput, addWishlistItemSchema (+9 more)
 
 ### Community 32 - "spreadsheet.ts"
 Cohesion: 0.21
@@ -473,13 +470,13 @@ Nodes (7): CATEGORY_SLUG_ALIASES, createResolverCache(), generateUniqueProductSl
 Cohesion: 0.20
 Nodes (12): AI Chat / RAG (chat + knowledge modules), chat_metrics monitoring (migration 044, /admin/ai-metrics), chat.service.ts (streamChat, tool-use loop), Conversation Retention (90d users / 48h guests, cleanup cron), docs/09-ai-chatbot-rag.md (external reference), Eval Harnesses (pnpm eval:retrieval, pnpm eval:answers), History Management (sliding window + rolling intent_summary), hybrid+rerank retrieval default (pgvector + FTS via RRF, Voyage rerank-2.5-lite, eval-gated) (+4 more)
 
-### Community 38 - "brands.routes.ts"
-Cohesion: 0.22
-Nodes (13): createBrand(), deleteBrand(), getBrandById(), getBrands(), updateBrand(), upload, brandIdSchema, CreateBrandInput (+5 more)
+### Community 38 - "orders.service.ts"
+Cohesion: 0.18
+Nodes (20): calculateShippingAmount(), cancelOrder(), claimGuestOrders(), createOrder(), DbTransaction, fetchOrderItemsWithImages(), generateOrderNumber(), getOrderById() (+12 more)
 
 ### Community 39 - "middlewares/index.ts"
-Cohesion: 0.31
-Nodes (6): requireAdmin(), publicLimiter, validate(), validateRequest, zodFieldErrors(), router
+Cohesion: 0.21
+Nodes (10): requireAdmin(), publicLimiter, validate(), validateRequest, zodFieldErrors(), router, getAllImagesAdmin(), router (+2 more)
 
 ### Community 40 - "Chat service (Claude, tool-use loop, true token streaming)"
 Cohesion: 0.20
@@ -497,17 +494,17 @@ Nodes (6): DUMP_DEFAULT, ENV_LOCAL, restoreLocalData(), ROOT, run(), WIPE_SCRIPT
 Cohesion: 0.22
 Nodes (7): authLimiter, baseOptions, cartLimiter, chatLimiter, strictLimiter, trackingLimiter, uploadLimiter
 
-### Community 45 - "logger.ts"
+### Community 44 - "brands.routes.ts"
 Cohesion: 0.22
-Nodes (12): bindRequestLogContext(), generateRequestId(), httpLogger, serializeRequest(), serializeResponse(), LOG_REDACTION_PATHS, loggerOptions, SENSITIVE_LOG_FIELDS (+4 more)
+Nodes (13): createBrand(), deleteBrand(), getBrandById(), getBrands(), updateBrand(), upload, brandIdSchema, CreateBrandInput (+5 more)
+
+### Community 45 - "package.json"
+Cohesion: 0.22
+Nodes (8): author, description, engines, node, license, main, name, version
 
 ### Community 46 - "Import Worker (imports.worker-logic.ts, src/workers/import.worker.ts, pnpm worker)"
 Cohesion: 0.31
 Nodes (9): Hook-free bulk insert (insertProduct skips per-product embed hook), knowledge.service.ts, src/lib/voyage.ts (Voyage AI embeddings), batchUpsertProductChunks (knowledge.service.ts, batched Voyage embed), Two-layer failure semantics (BullMQ job retries + per-row retry), Import Worker (imports.worker-logic.ts, src/workers/import.worker.ts, pnpm worker), insertProduct (products.service.ts, hook-free raw-insert core), Slug collision under row concurrency (unique constraint + retry self-heal) (+1 more)
-
-### Community 47 - "queue.ts"
-Cohesion: 0.43
-Nodes (6): createQueueConnection(), IMPORT_QUEUE_NAME, ImportJobPayload, importQueue, throttledErrorLogger(), importWorker
 
 ### Community 48 - "imports.worker-logic.ts"
 Cohesion: 0.27
@@ -529,9 +526,9 @@ Nodes (9): content, fs, leaked, normaliseStorageUrls(), outPath, path, sqlLitera
 Cohesion: 0.33
 Nodes (6): chat(), chatHealth(), router, ChatMessageInput, chatMessageSchema, app
 
-### Community 53 - "package.json"
-Cohesion: 0.22
-Nodes (8): author, description, engines, node, license, main, name, version
+### Community 53 - "keywords"
+Cohesion: 0.33
+Nodes (6): keywords, api, drizzle, ecommerce, node, supabase
 
 ### Community 55 - "Aurevo.BE (Express + TypeScript + Drizzle)"
 Cohesion: 0.29
@@ -550,24 +547,12 @@ Cohesion: 0.29
 Nodes (7): Other Tables (kb_chunks, conversations, messages, etc.), Row-Level Security Patterns, Migration 039 CI paths-filter Incident, RAG Data Model (kb_chunks/conversations/messages), Ingestion Pipeline (knowledge.service.ts), Production Ingestion Runbook, Rollout Checklist
 
 ### Community 60 - "authenticate"
-Cohesion: 0.52
-Nodes (5): authenticate(), optionalAuth(), verifyToken(), updateRequestLogContext(), supabaseAdmin
+Cohesion: 0.80
+Nodes (4): authenticate(), optionalAuth(), verifyToken(), updateRequestLogContext()
 
 ### Community 61 - "Courier Tracking (Steadfast) module"
 Cohesion: 0.40
 Nodes (6): Courier Tracking (Steadfast) module, restoreOrderStock shared helper, Atomic Stock Accounting (single guarded UPDATE, no reserve-then-decrement), Courier Tracking (Steadfast) feature, docs/05-implementation.md (external reference), Order Management (atomic stock decrement, lifecycle, sequential order numbers)
-
-### Community 62 - "chat.internal.controller.ts"
-Cohesion: 0.43
-Nodes (4): cleanupChatHistory(), router, app, deleteOldChatMetrics()
-
-### Community 63 - "keywords"
-Cohesion: 0.33
-Nodes (6): keywords, api, drizzle, ecommerce, node, supabase
-
-### Community 64 - "interfaces/index.ts"
-Cohesion: 0.33
-Nodes (5): ApiResponse, Express, PaginatedResponse, PaginationParams, Request
 
 ### Community 65 - "Backend-driven Auth via supabaseAdmin.auth.getClaims"
 Cohesion: 0.40
@@ -593,17 +578,13 @@ Nodes (4): Data Layer (PostgreSQL via Supabase), Drizzle ORM (introspect-first) 
 Cohesion: 0.50
 Nodes (4): Tiered Rate Limiters, Environment Variable Security Table, Rate-Limiter Bypass Token, Rate Limiter Reference (skills)
 
-### Community 71 - "seed-assets.ts"
-Cohesion: 0.40
-Nodes (5): client, ASSETS_ROOT, main(), MIME, walk()
-
-### Community 72 - "Backlog"
-Cohesion: 0.50
-Nodes (3): Admin escape hatch for waiving or overriding shipping, AI shopping assistant as a standalone service, Backlog
+### Community 72 - "SSLCommerz Payment Integration (Parked Plan)"
+Cohesion: 0.09
+Nodes (20): Backend work, Client — `src/lib/sslcommerz.ts`, Config / env ([`src/app/config/index.ts`](../src/app/config/index.ts), [`.env.example`](../.env.example)), Current hooks we will reuse, Docs / policy touch-ups during implementation, Frontend contract (Aurevo.UI — separate pass), Go-live checklist (sandbox → purchased live), Implementation checklist (when sandbox is ready) (+12 more)
 
 ### Community 75 - "orders.test.ts"
 Cohesion: 0.14
-Nodes (8): app, TEST_ADDRESS, app, TEST_ADDRESS, productReviews, profiles, userAddresses, MOCK_ADMIN_USER
+Nodes (8): app, TEST_ADDRESS, app, TEST_ADDRESS, productReviews, userAddresses, MOCK_ADMIN_USER, MOCK_USER
 
 ### Community 77 - "CI/CD Pipeline (test/migrate/deploy-functions)"
 Cohesion: 0.67
@@ -618,24 +599,24 @@ Cohesion: 0.67
 Nodes (3): inventory Table (generated available_quantity), Inventory Endpoints, Server-Side XLSX Export
 
 ## Knowledge Gaps
-- **533 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+528 more)
+- **550 isolated node(s):** `name`, `version`, `description`, `main`, `node` (+545 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **190 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **191 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `express` connect `express` to `imports.controller.ts`, `email.ts`, `inventory.service.ts`, `variants.service.ts`, `cart.service.ts`, `db/index.ts`, `products.service.ts`, `config/index.ts`, `categories.routes.ts`, `images.routes.ts`, `orders.service.ts`, `auth.service.ts`, `courier.controller.ts`, `variants.test.ts`, `brands.routes.ts`, `middlewares/index.ts`, `dependencies`, `chat.routes.ts`, `authenticate`, `chat.internal.controller.ts`, `keywords`, `interfaces/index.ts`?**
+- **Why does `express` connect `express` to `courier.service.ts`, `chat.service.ts`, `imports.controller.ts`, `email.ts`, `inventory.service.ts`, `variants.service.ts`, `cart.service.ts`, `products.service.ts`, `config/index.ts`, `categories.routes.ts`, `images.routes.ts`, `orders.routes.ts`, `auth.service.ts`, `variants.test.ts`, `middlewares/index.ts`, `brands.routes.ts`, `dependencies`, `chat.routes.ts`, `keywords`, `authenticate`?**
   _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `dependencies` to `spreadsheet.ts`, `package.json`, `bcryptjs`, `bullmq`, `compression`, `dotenv`, `drizzle-orm`, `express-rate-limit`, `helmet`, `ioredis`, `jsonwebtoken`, `pdfkit`, `pino`, `postgres`, `resend`, `@sentry/node`, `sharp`, `@supabase/supabase-js`, `svg-to-pdfkit`, `swagger-jsdoc`, `swagger-ui-express`, `uuid`, `zod`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
-- **Why does `express` connect `express` to `imports.controller.ts`, `email.ts`, `inventory.service.ts`, `variants.service.ts`, `cart.service.ts`, `db/index.ts`, `products.service.ts`, `config/index.ts`, `categories.routes.ts`, `images.routes.ts`, `orders.service.ts`, `auth.service.ts`, `courier.controller.ts`, `variants.test.ts`, `brands.routes.ts`, `middlewares/index.ts`, `logger.ts`, `chat.routes.ts`, `authenticate`, `chat.internal.controller.ts`, `keywords`, `interfaces/index.ts`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+- **Why does `express` connect `express` to `courier.service.ts`, `chat.service.ts`, `imports.controller.ts`, `email.ts`, `inventory.service.ts`, `variants.service.ts`, `cart.service.ts`, `products.service.ts`, `config/index.ts`, `categories.routes.ts`, `images.routes.ts`, `orders.routes.ts`, `auth.service.ts`, `variants.test.ts`, `wishlist.service.ts`, `middlewares/index.ts`, `brands.routes.ts`, `chat.routes.ts`, `keywords`, `authenticate`?**
+  _High betweenness centrality (0.048) - this node is a cross-community bridge._
 - **What connects `name`, `version`, `description` to the rest of the system?**
-  _533 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _550 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `images.service.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06806526806526807 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07431693989071038 - nodes in this community are weakly interconnected._
+- **Should `courier.service.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.08658536585365853 - nodes in this community are weakly interconnected._
 - **Should `chat.service.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06187202538339503 - nodes in this community are weakly interconnected._
-- **Should `scripts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05714285714285714 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05698778833107191 - nodes in this community are weakly interconnected._

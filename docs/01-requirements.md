@@ -108,7 +108,6 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Real payment processing (Stripe/PayPal) — payment method stored as string, gateway integration deferred
 - Shipping-status email/SMS notifications (order confirmation with invoice PDF is sent; courier status updates are reflected in-app and on `/tracking`, not pushed as emails)
 - Product reviews — table exists in DB, API module not built yet
-- Wishlists — table exists in DB, API module not built yet
 - Real-time inventory sync — polling-based for now
 - Mobile app
 - Separate staging environment — see Decisions Log below
@@ -118,6 +117,7 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 ## Decisions Log
 
 - **i18n was implemented**, not deferred (originally listed under Out of Scope). English/বাংলা via i18next; English is the default for every visitor, Bangla is opt-in via a header toggle and persists per user. No location/timezone-based auto-switching — an earlier version defaulted to Bangla for Asia/Dhaka timezones, but this was deliberately removed in favor of an explicit, predictable default.
+- **Wishlists were implemented**, not deferred (originally listed under Out of Scope). Authenticated, product-level favorites via `/api/wishlist` on the existing `wishlist_items` table (unique on `user_id + product_id`; `variant_id` left nullable/unused). Guests are prompted to log in — no guest wishlist session. Duplicate adds are idempotent. The storefront wires the product-card heart toggle and a `/dashboard/wishlist` page.
 - **No dedicated staging Supabase project.** Considered and rejected — the two-environment model (local Docker Supabase for dev/test, one production Supabase) is what the team can afford to operate. CI already runs every migration against a fresh, disposable local Postgres and the full test suite before anything reaches `main`, which covers most of what a staging environment would catch for schema/logic bugs. The gap this leaves: no free-tier backups on production Supabase — a real data-loss incident (not a schema bug) has no undo today. Upgrading to Supabase Pro (daily backups) is the recommended next step once real order volume makes the data irreplaceable.
 - **Order confirmation email ships via Resend**, sending from `orders@aurevofashion.store`. An earlier version used Gmail SMTP as a zero-cost stopgap before the team owned a domain (Resend/Brevo/SendGrid all need a verified sending domain to email arbitrary customer addresses, which a personal Gmail account can't provide). Once `aurevofashion.store` was purchased and DNS-verified with Resend (SPF/DKIM records via Vercel DNS), the team switched to Resend to drop Gmail's 500/day cap and get real transactional-email deliverability infrastructure. The confirmation email attaches a freshly generated PDF invoice; if PDF generation fails, the email still sends without the attachment (customers can download from the confirmation page).
 - **Invoice PDFs are generated on demand with `pdfkit`**, never persisted to disk or object storage. Regenerated on every email send and every `GET /orders/by-number/:orderNumber/invoice` request so payment status and line items stay current. Uses a bundled Noto Sans Bengali static TTF (not the variable font — fontkit corrupts variable-font glyphs) because shipping names/addresses may be Bangla, and draws the Aurevo wordmark as vector SVG via `svg-to-pdfkit`. Order numbers are fixed-width (`ORD-` + 12 digits from `order_number_seq`) so the invoice layout stays stable under concurrency.
@@ -134,7 +134,7 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Role-based access control — additional roles beyond admin/user (order management role, product management role)
 - Security audit
 - Bulk data processing pipeline
-- Payment gateway integration
+- Payment gateway integration — plan parked at [`11-sslcommerz-payments.md`](11-sslcommerz-payments.md) (SSLCommerz sandbox-first; blocked on sandbox account creation)
 - CDC/delta indexing for the RAG knowledge base — current auto-embed hook re-embeds one product per mutation, which is fine at today's catalog size but doesn't scale to high write volume; revisit if that changes
 - Self-service "clear my chat history" action for logged-in users (currently only the 90-day automatic retention window applies)
 - Clean up messy product title data in the catalog (e.g. stray `{shoe1:1}`-style annotations, glued-on `"1.1"` version suffixes, inconsistent spacing) — currently worked around in the chat product-card matching logic (`chat.service.ts`) rather than fixed at the source

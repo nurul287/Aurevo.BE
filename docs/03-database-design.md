@@ -363,7 +363,7 @@ Immutable audit log. Every stock change writes a row here.
 | Table | Purpose |
 |-------|---------|
 | `product_reviews` | Customer reviews with rating (1-5), verified purchase check, approval flow |
-| `wishlist_items` | User's saved products/variants |
+| `wishlist_items` | User's saved products (favorites). Unique on `(user_id, product_id)`; `variant_id` unused by the API. Auth-only — no guest session column. |
 | `guest_sessions` | Tracks guest session UUIDs with expiry |
 | `meta_capi_sent` | Dedupes Meta Conversions API `Purchase` events sent per order (webhook retries) |
 | `kb_chunks` | RAG knowledge base — one row per embedded chunk (`product`/`policy`/`faq`), `embedding vector(1024)` (Voyage AI). See `docs/09-ai-chatbot-rag.md` |
