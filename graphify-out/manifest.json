@@ -35,8 +35,8 @@
     "semantic_hash": "2f85c0bd9079213eff1e01d269d8dac3"
   },
   "src/app.ts": {
-    "mtime": 1785521647.2888765,
-    "ast_hash": "fe4d28d7a28ddddeae2850456ef8d664",
+    "mtime": 1785536433.4789538,
+    "ast_hash": "55ce48bcec9c0bc4bdf7480b8c7466e5",
     "semantic_hash": ""
   },
   "src/app/config/index.ts": {
@@ -45,7 +45,7 @@
     "semantic_hash": "9c72b67d05cdb85f6a85bf1c352e323b"
   },
   "src/app/config/swagger.ts": {
-    "mtime": 1785533727.1765811,
+    "mtime": 1785536433.5599904,
     "ast_hash": "51d03eaaae2598941f9fd05b95825a40",
     "semantic_hash": ""
   },
@@ -65,13 +65,13 @@
     "semantic_hash": "f4b47d74253145773b2ac960fc04046d"
   },
   "src/app/middlewares/auth.ts": {
-    "mtime": 1785521647.2888765,
-    "ast_hash": "961a91f3275e216c3face77eeeda27b5",
+    "mtime": 1785536433.4789538,
+    "ast_hash": "70c96468a9fc052d27616474072d65d3",
     "semantic_hash": ""
   },
   "src/app/middlewares/globalErrorHandler.ts": {
-    "mtime": 1785521647.2888765,
-    "ast_hash": "3a11f0ae29851320057b886973849be5",
+    "mtime": 1785536433.4789538,
+    "ast_hash": "f5572df098c2105bfae991b3a23da5eb",
     "semantic_hash": ""
   },
   "src/app/middlewares/index.ts": {
@@ -215,24 +215,24 @@
     "semantic_hash": "a4c617c0b90ceead40cae13aa9531e2b"
   },
   "src/app/modules/chat/chat.controller.ts": {
-    "mtime": 1784058566.638444,
-    "ast_hash": "16922f430d4fbdf9ef39a4140bff7034",
-    "semantic_hash": "16922f430d4fbdf9ef39a4140bff7034"
+    "mtime": 1785608554.5122855,
+    "ast_hash": "3da9429e661f3390d4e62035daf383a3",
+    "semantic_hash": ""
   },
   "src/app/modules/chat/chat.routes.ts": {
-    "mtime": 1784041281.8418572,
-    "ast_hash": "065ff8a462d5b90729f81da5335fbeb8",
-    "semantic_hash": "065ff8a462d5b90729f81da5335fbeb8"
+    "mtime": 1785608554.431955,
+    "ast_hash": "62210c69a01814dcf92df41361e52805",
+    "semantic_hash": ""
   },
   "src/app/modules/chat/chat.schema.ts": {
-    "mtime": 1784041199.0299728,
-    "ast_hash": "e48405169353e3a8718b453f5445a8b6",
-    "semantic_hash": "e48405169353e3a8718b453f5445a8b6"
+    "mtime": 1785608554.5347838,
+    "ast_hash": "b98a55859d0c982e917d3a7834bd14f7",
+    "semantic_hash": ""
   },
   "src/app/modules/chat/chat.service.ts": {
-    "mtime": 1784657111.588218,
-    "ast_hash": "cf4c1f64f88ae5f135be0118e3bbccf6",
-    "semantic_hash": "cf4c1f64f88ae5f135be0118e3bbccf6"
+    "mtime": 1785609249.5639474,
+    "ast_hash": "7877d126611a8d63d6154496b01f68cc",
+    "semantic_hash": ""
   },
   "src/app/modules/chat/chat.test.ts": {
     "mtime": 1784041344.2908282,
@@ -310,13 +310,13 @@
     "semantic_hash": "ede8f4ca6cf2d98052e68ce23a5ddc36"
   },
   "src/app/modules/orders/orders.service.ts": {
-    "mtime": 1785439315.286038,
-    "ast_hash": "86da30fedef26c6f838607a1f36fa33c",
+    "mtime": 1785606903.2373676,
+    "ast_hash": "feb642e88701bdc5dc15decde0fb3b59",
     "semantic_hash": ""
   },
   "src/app/modules/orders/orders.test.ts": {
-    "mtime": 1785439656.251559,
-    "ast_hash": "37893748683114117995845b010f0ff1",
+    "mtime": 1785606903.1856816,
+    "ast_hash": "b7aea7f0f47980b955ade8e12e4f30f3",
     "semantic_hash": ""
   },
   "src/app/modules/products/products.controller.ts": {
@@ -390,7 +390,7 @@
     "semantic_hash": ""
   },
   "src/db/schema.ts": {
-    "mtime": 1785533727.1773038,
+    "mtime": 1785536433.5627172,
     "ast_hash": "5213da21204776b02f957238376e565a",
     "semantic_hash": ""
   },
@@ -400,8 +400,8 @@
     "semantic_hash": ""
   },
   "src/lib/logger.ts": {
-    "mtime": 1785521647.2888765,
-    "ast_hash": "56cbe021bdda660ddfd4d4ef1510dee7",
+    "mtime": 1785536433.4789538,
+    "ast_hash": "5dd7cf6e14776bcfd479e617f94fad7e",
     "semantic_hash": ""
   },
   "src/lib/sentry.ts": {
@@ -425,7 +425,7 @@
     "semantic_hash": "086d83daa723f0c630672194f602c766"
   },
   "src/routes/index.ts": {
-    "mtime": 1785533727.1773038,
+    "mtime": 1785536433.5627172,
     "ast_hash": "07972f15d6eb9557676bb462447698d0",
     "semantic_hash": ""
   },
@@ -445,8 +445,8 @@
     "semantic_hash": "c180191d31f12484c878d1737f3ed03d"
   },
   "src/test/helpers.ts": {
-    "mtime": 1785533727.1773038,
-    "ast_hash": "1797a629dc4a2a98c69d84a925a30cf5",
+    "mtime": 1785536433.5627172,
+    "ast_hash": "c95536671f98d897c3ab7e561a828e0e",
     "semantic_hash": ""
   },
   "src/test/setup.ts": {
@@ -535,12 +535,12 @@
     "semantic_hash": "fcb3bcebf4e034a709c620745396904d"
   },
   "src/app/modules/knowledge/knowledge.service.ts": {
-    "mtime": 1785521647.2888765,
+    "mtime": 1785536433.4789538,
     "ast_hash": "2270a405b780de16c54063e9b03d7e8e",
     "semantic_hash": ""
   },
   "src/lib/email.ts": {
-    "mtime": 1785521647.2888765,
+    "mtime": 1785536433.4789538,
     "ast_hash": "839feac35cc7386f73b77fc4b0414f32",
     "semantic_hash": ""
   },
@@ -660,8 +660,8 @@
     "semantic_hash": "447ce7d67a37589156d38058b2a78570"
   },
   "docs/01-requirements.md": {
-    "mtime": 1785533727.1765811,
-    "ast_hash": "673a2dafe991e4b111faf0a9bfe66817",
+    "mtime": 1785609333.7275288,
+    "ast_hash": "0a20425bba514b1299792d70f08dc3df",
     "semantic_hash": ""
   },
   "docs/02-system-design.md": {
@@ -670,7 +670,7 @@
     "semantic_hash": ""
   },
   "docs/03-database-design.md": {
-    "mtime": 1785533727.166944,
+    "mtime": 1785536433.5312562,
     "ast_hash": "c3f032f58e4c2026064ba0c6684e07f5",
     "semantic_hash": ""
   },
@@ -700,8 +700,8 @@
     "semantic_hash": "a6abcc3b8bde332b1eacba6e03f03f42"
   },
   "docs/09-ai-chatbot-rag.md": {
-    "mtime": 1785440431.2628303,
-    "ast_hash": "523d174ea242b1a9223de48b31e27998",
+    "mtime": 1785609290.1831303,
+    "ast_hash": "2c6c9ebdde4f45cf5c2e6ff42c4fd800",
     "semantic_hash": ""
   },
   "pnpm-workspace.yaml": {
@@ -1060,8 +1060,8 @@
     "semantic_hash": ""
   },
   "drizzle/meta/_journal.json": {
-    "mtime": 1785532955.8496647,
-    "ast_hash": "0c1e8b218cf81c679b0accb91218f7a6",
+    "mtime": 1785536433.5312562,
+    "ast_hash": "2c455fa53ba8b67ee831dddc16233c6f",
     "semantic_hash": ""
   },
   "railway.worker.json": {
@@ -1080,7 +1080,7 @@
     "semantic_hash": ""
   },
   "src/lib/http-logger.ts": {
-    "mtime": 1785521647.2888765,
+    "mtime": 1785536433.4789538,
     "ast_hash": "067ee63a0618ef647655a3f3e6e7319f",
     "semantic_hash": ""
   },
@@ -1090,12 +1090,12 @@
     "semantic_hash": ""
   },
   "src/lib/logger.test.ts": {
-    "mtime": 1785521647.2888765,
+    "mtime": 1785536433.4789538,
     "ast_hash": "4b67e44b84d773bfbf967ba489ca42a0",
     "semantic_hash": ""
   },
   "src/lib/request-context.ts": {
-    "mtime": 1785521647.2951972,
+    "mtime": 1785536433.4789538,
     "ast_hash": "adcdeadc276af96f5dd6c85b364e3085",
     "semantic_hash": ""
   },
@@ -1315,8 +1315,8 @@
     "semantic_hash": ""
   },
   "docs/backlog.md": {
-    "mtime": 1785531890.0838137,
-    "ast_hash": "cc88a3599d558b74b8b3cfc2ffe2bbc9",
+    "mtime": 1785601607.053456,
+    "ast_hash": "6e63abcd1aedc5b8807634f71c9531ab",
     "semantic_hash": ""
   },
   "docs/db-flip/unversioned-prod-objects.md": {
@@ -1325,8 +1325,8 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-07-29-rag-chat-service-foundation.md": {
-    "mtime": 1785313852.9451537,
-    "ast_hash": "0e501a8a6ef6a0393e35cae55e1d443b",
+    "mtime": 1785536437.9526865,
+    "ast_hash": "0a392764be783608b16eec480c5b1904",
     "semantic_hash": ""
   },
   "supabase/migrations-archive/README.md": {
@@ -1345,43 +1345,63 @@
     "semantic_hash": ""
   },
   "drizzle/0008_happy_hobgoblin.sql": {
-    "mtime": 1785532955.8505845,
-    "ast_hash": "4d93f403b4168bb67a360c76fe71a374",
+    "mtime": 1785536433.5312562,
+    "ast_hash": "beac5b7b2d47e18d356859e2d248518d",
     "semantic_hash": ""
   },
   "drizzle/meta/0008_snapshot.json": {
-    "mtime": 1785532955.8475394,
-    "ast_hash": "648d6e7cf2c4a47b65479a4f7a73ae36",
+    "mtime": 1785536433.5312562,
+    "ast_hash": "fe92b3d342c088741691a25212e5bc8d",
     "semantic_hash": ""
   },
   "src/app/modules/wishlist/wishlist.controller.ts": {
-    "mtime": 1785533727.1773038,
+    "mtime": 1785536433.5599904,
     "ast_hash": "e8bce5ce342b618f40c8c5fd3b6ada2c",
     "semantic_hash": ""
   },
   "src/app/modules/wishlist/wishlist.routes.ts": {
-    "mtime": 1785533727.1773038,
+    "mtime": 1785536433.5627172,
     "ast_hash": "0a32d1a2fb0ed15854630fe7667c3c25",
     "semantic_hash": ""
   },
   "src/app/modules/wishlist/wishlist.schema.ts": {
-    "mtime": 1785533727.1773038,
+    "mtime": 1785536433.5627172,
     "ast_hash": "efc56a89d3d94ca34d82e07718117d32",
     "semantic_hash": ""
   },
   "src/app/modules/wishlist/wishlist.service.ts": {
-    "mtime": 1785534457.0685215,
+    "mtime": 1785536433.5627172,
     "ast_hash": "9aa109277824a99b8e5730662519c40e",
     "semantic_hash": ""
   },
   "src/app/modules/wishlist/wishlist.test.ts": {
-    "mtime": 1785534457.0685215,
+    "mtime": 1785536433.5627172,
     "ast_hash": "8623361903ee5196bcdb0c427127ac19",
     "semantic_hash": ""
   },
   "docs/11-sslcommerz-payments.md": {
-    "mtime": 1785531890.084912,
+    "mtime": 1785536437.9526865,
     "ast_hash": "a553d796b9be85e1e7d84023b2208a2d",
+    "semantic_hash": ""
+  },
+  "src/app/modules/chat/chat.force-prepare.test.ts": {
+    "mtime": 1785609284.420552,
+    "ast_hash": "bb5d550ad2da9b17d5a070788d58003d",
+    "semantic_hash": ""
+  },
+  "src/app/modules/chat/chat.order-draft.ts": {
+    "mtime": 1785604098.7458756,
+    "ast_hash": "1e97a8198b42d9d454b1602c01b1c8ff",
+    "semantic_hash": ""
+  },
+  "src/app/modules/chat/chat.orders.service.ts": {
+    "mtime": 1785606903.0587356,
+    "ast_hash": "9fcd890a86390ee8b676ff94585322bf",
+    "semantic_hash": ""
+  },
+  "src/app/modules/chat/chat.orders.test.ts": {
+    "mtime": 1785608554.431955,
+    "ast_hash": "9933656046ef780f5b6908da24dd4ae9",
     "semantic_hash": ""
   }
 }
