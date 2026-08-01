@@ -10,11 +10,11 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 
 ## User Roles
 
-| Role | Description |
-|------|-------------|
-| **Guest** | Unregistered visitor — can browse products, add to cart via session ID, place orders with email |
+| Role         | Description                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------- |
+| **Guest**    | Unregistered visitor — can browse products, add to cart via session ID, place orders with email    |
 | **Customer** | Registered user — everything a guest can do, plus saved cart, order history, address book, profile |
-| **Admin** | Store operator — manages products, inventory, orders, users; sees analytics |
+| **Admin**    | Store operator — manages products, inventory, orders, users; sees analytics                        |
 
 ---
 
@@ -23,17 +23,20 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 ### Storefront (Customer-facing)
 
 **Product Discovery**
+
 - Browse products with filters: category, brand, gender, price range, search
 - View product detail with all variants (size, color, SKU), images, stock level
 - See featured products on homepage
 - Browse by category or brand
 
 **Cart**
+
 - Add/remove/update items as guest (session-based) or logged-in user
 - Cart persists across browser sessions (localStorage session ID for guests)
 - Guest cart migrates to user account on sign-in (merges quantities for duplicate variants)
 
 **Checkout & Orders**
+
 - Place orders as guest (email + address required) or as authenticated user
 - Stock validation at order time — cannot order more than available
 - Sequential order numbers (`ORD-` + 12-digit zero-padded sequence)
@@ -43,17 +46,20 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Cancel pending orders
 
 **Authentication**
+
 - Sign up / sign in via email+password
 - OAuth (Google, etc.) via Supabase Auth
 - Password reset via email
 - JWT session auto-refresh
 
 **Profile & Addresses**
+
 - View and update profile (name, phone, date of birth, gender, avatar)
 - Save multiple billing/shipping addresses in Bangladesh checkout shape (`name`, `phone`, `address`, `district`, `upazila`, optional `label`)
 - Set a default address per type; reuse saved addresses at checkout without remapping fields
 
 **AI Shopping Assistant**
+
 - Full RAG chatbot (Claude + Voyage AI embeddings + pgvector) — full architecture in [`09-ai-chatbot-rag.md`](09-ai-chatbot-rag.md)
 - Semantic search over products, shipping/returns/sizing/payment policies, and FAQs (`kb_chunks`)
 - Logged-in customers can ask about their own orders (auth-gated tool, never offered to guests)
@@ -63,18 +69,21 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 ### Admin Panel
 
 **Products**
+
 - Create/edit/delete products with full metadata (SEO, pricing, dimensions)
 - Manage product variants (size, color, price, SKU, barcode)
 - Upload/manage product images (primary image auto-selection)
 - Bulk activate/deactivate, bulk delete
 
 **Inventory**
+
 - View per-variant stock levels
 - Adjust stock with reason tracking (restock, damage, theft, etc.)
 - Full audit log of every inventory movement
 - Low-stock alerts
 
 **Orders**
+
 - View all orders with filters (status, date, user)
 - Update order status, payment status, fulfillment status
 - Book a Steadfast courier consignment (explicit admin action — never automatic)
@@ -83,6 +92,7 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - Cancel any order (admins can cancel at any non-delivered stage)
 
 **Dashboard**
+
 - Total orders, revenue, customers, products at a glance
 - Low-stock / out-of-stock counts
 - Recent orders
@@ -91,15 +101,15 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 
 ## Non-Functional Requirements
 
-| Concern | Requirement |
-|---------|-------------|
-| **Security** | JWT auth on all protected routes; Helmet headers; CORS locked to frontend origin; RLS on Supabase tables |
-| **Validation** | All API inputs validated with Zod schemas; errors returned in a consistent machine-readable format |
-| **Rate Limiting** | Tiered limits: 100/15min public, 20/15min auth (login/register), 60/min cart writes, 30/min public tracking lookups, 10/min AI chat, 20/min uploads, 5/min sensitive writes |
-| **Error Handling** | Global typed error hierarchy (NotFoundError, ValidationError, etc.); no stack traces leaked to clients |
-| **Data Integrity** | Stock changes run in DB transactions; FK constraints enforced at DB level |
-| **Testability** | Integration tests against real local DB; no mocked data layer; tests run sequentially to avoid FK conflicts |
-| **Developer Experience** | TypeScript strict mode throughout; Swagger docs auto-generated from JSDoc; micro-commits per feature |
+| Concern                  | Requirement                                                                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Security**             | JWT auth on all protected routes; Helmet headers; CORS locked to frontend origin; RLS on Supabase tables                                                                    |
+| **Validation**           | All API inputs validated with Zod schemas; errors returned in a consistent machine-readable format                                                                          |
+| **Rate Limiting**        | Tiered limits: 100/15min public, 20/15min auth (login/register), 60/min cart writes, 30/min public tracking lookups, 10/min AI chat, 20/min uploads, 5/min sensitive writes |
+| **Error Handling**       | Global typed error hierarchy (NotFoundError, ValidationError, etc.); no stack traces leaked to clients                                                                      |
+| **Data Integrity**       | Stock changes run in DB transactions; FK constraints enforced at DB level                                                                                                   |
+| **Testability**          | Integration tests against real local DB; no mocked data layer; tests run sequentially to avoid FK conflicts                                                                 |
+| **Developer Experience** | TypeScript strict mode throughout; Swagger docs auto-generated from JSDoc; micro-commits per feature                                                                        |
 
 ---
 
@@ -123,6 +133,7 @@ Aurevo Fashion is a portfolio e-commerce project designed to demonstrate full-st
 - **Invoice PDFs are generated on demand with `pdfkit`**, never persisted to disk or object storage. Regenerated on every email send and every `GET /orders/by-number/:orderNumber/invoice` request so payment status and line items stay current. Uses a bundled Noto Sans Bengali static TTF (not the variable font — fontkit corrupts variable-font glyphs) because shipping names/addresses may be Bangla, and draws the Aurevo wordmark as vector SVG via `svg-to-pdfkit`. Order numbers are fixed-width (`ORD-` + 12 digits from `order_number_seq`) so the invoice layout stays stable under concurrency.
 - **Courier integration uses Steadfast** (Bangladesh). Consignment booking is an explicit admin action only (`POST /courier/orders/:id/ship`) — never automatic — because booking commits real COD/delivery-charge money and Steadfast has no cancel-consignment endpoint. Status updates arrive via a Bearer-token-guarded webhook (`POST /courier/webhook`) with a reconciliation poll (`POST /internal/courier/poll`) as a safety net for missed webhooks. Public tracking (`GET /courier/track/:trackingCode`) returns status + event timeline with no recipient PII.
 - **AI chat rebuilt as a full RAG pipeline** (previously a bare Anthropic tool-use bot with no retrieval, no persistence, and no real streaming). Voyage AI embeddings + pgvector (`kb_chunks`) power semantic search over products and a small set of policy/FAQ markdown docs (`content/policies/`); Anthropic's real `stream: true` API replaces the earlier simulated-streaming loop. Auto-embedding on product create/update/delete is a lightweight fire-and-forget hook, not full CDC — deliberately, given the catalog's current small scale (see Backlog for the CDC follow-up if that changes). Conversation history persists per `sessionId` with a 90-day retention window for logged-in users and 48 hours for guests, cleaned up by a secret-gated internal route (`POST /internal/chat/cleanup`) triggered by a daily Railway cron — no new job-runner infra. The order-lookup tool is only ever offered to the model on an authenticated request, enforced in code (not just prompted), so a guest session or a prompt-injection attempt has no path to another customer's order data.
+- **Chat-driven COD checkout.** The assistant collects size/qty (multi-item via “anything else?” with Yes/No chips), shipping, then optional email (Skip chip; omit if skipped), and prepares a short-TTL draft (`prepare_order`); the storefront Confirm/Cancel card is what creates the order (`POST /api/chat/orders/confirm`) as Cash on Delivery only — guest or logged-in, reusing `createOrder`. Typed “yes” alone does not place an order. Online/SSLCommerz from chat stays out of scope until the payment gateway ships.
 - **Full authentication + checkout E2E testing was implemented**, not deferred. Playwright specs in `Aurevo.UI/e2e/` cover login (valid/invalid credentials), logout (session revocation verified against a protected route), the full password-reset loop (request → real email via Inbucket → follow the link → set new password → log in with it, plus the expired/invalid-link state), guest checkout, and logged-in checkout with a saved address.
 - **The go-live checklist was executed.** The site is live in production — Aurevo.UI on Vercel at `aurevofashion.store`, Aurevo.BE on Railway at `api-aurevofashion.up.railway.app` — serving real customer orders, with Sentry error tracking, structured pino logs, and the deep `/api/health` check already covering the "monitor system health" half of this item.
 
