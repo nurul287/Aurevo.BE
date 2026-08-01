@@ -51,13 +51,18 @@ export const SHIPPING_INSIDE_DHAKA = 100;
 export const SHIPPING_OUTSIDE_DHAKA = 130;
 
 /**
- * Same rule the checkout page uses: the district string matching "dhaka"
- * case-insensitively is inside-Dhaka, everything else is outside.
+ * Same rule the checkout page uses: only an exact "dhaka" district
+ * (case-insensitive, trimmed) is inside-Dhaka at 100 BDT.
+ *
+ * Anything else — other districts, typos, free-text from the chat bot, empty —
+ * is treated as no inside-Dhaka match and charged the outside rate (130 BDT).
  */
-export function calculateShippingAmount(district: string | null | undefined): number {
-  return (district ?? "").trim().toLowerCase() === "dhaka"
-    ? SHIPPING_INSIDE_DHAKA
-    : SHIPPING_OUTSIDE_DHAKA;
+export function calculateShippingAmount(
+  district: string | null | undefined,
+): number {
+  const normalized = (district ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (normalized === "dhaka") return SHIPPING_INSIDE_DHAKA;
+  return SHIPPING_OUTSIDE_DHAKA;
 }
 
 /**
@@ -137,7 +142,10 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
   const items = Object.values(
     input.items.reduce<Record<string, { variantId: string; quantity: number }>>(
       (acc, item) => {
-        const line = (acc[item.variantId] ??= { variantId: item.variantId, quantity: 0 });
+        const line = (acc[item.variantId] ??= {
+          variantId: item.variantId,
+          quantity: 0,
+        });
         line.quantity += item.quantity;
         return acc;
       },
@@ -219,7 +227,9 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
   // client-supplied shippingAmount meant anyone could send 0 and get free
   // delivery — and because payment is Cash on Delivery, the courier collects
   // total_amount, so an understated total is money the shop absorbs.
-  const shippingAmount = calculateShippingAmount(input.shippingAddress.district);
+  const shippingAmount = calculateShippingAmount(
+    input.shippingAddress.district,
+  );
 
   // The frontend keeps its own copy of these rates for display
   // (SHIPPING_INSIDE_DHAKA / SHIPPING_OUTSIDE_DHAKA in checkout-page.tsx). It is
@@ -661,19 +671,32 @@ export async function claimGuestOrders(
  * against that here instead.
  */
 export async function deleteOrder(id: string) {
-  const [order] = await db.select({ id: orders.id }).from(orders).where(eq(orders.id, id));
+  const [order] = await db
+    .select({ id: orders.id })
+    .from(orders)
+    .where(eq(orders.id, id));
   if (!order) throw new NotFoundError("Order");
 
   const [[{ reviewCount }], [{ movementCount }]] = await Promise.all([
-    db.select({ reviewCount: count() }).from(productReviews).where(eq(productReviews.orderId, id)),
-    db.select({ movementCount: count() }).from(inventoryMovements).where(eq(inventoryMovements.orderId, id)),
+    db
+      .select({ reviewCount: count() })
+      .from(productReviews)
+      .where(eq(productReviews.orderId, id)),
+    db
+      .select({ movementCount: count() })
+      .from(inventoryMovements)
+      .where(eq(inventoryMovements.orderId, id)),
   ]);
 
   if (Number(reviewCount) > 0) {
-    throw new BusinessRuleError(`Cannot delete order — it has ${reviewCount} review(s) attached.`);
+    throw new BusinessRuleError(
+      `Cannot delete order — it has ${reviewCount} review(s) attached.`,
+    );
   }
   if (Number(movementCount) > 0) {
-    throw new BusinessRuleError(`Cannot delete order — it has ${movementCount} inventory movement record(s) attached.`);
+    throw new BusinessRuleError(
+      `Cannot delete order — it has ${movementCount} inventory movement record(s) attached.`,
+    );
   }
 
   await db.delete(orders).where(eq(orders.id, id));

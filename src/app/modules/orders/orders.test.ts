@@ -1,13 +1,51 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  afterAll,
+} from "vitest";
 import { eq } from "drizzle-orm";
 import request from "supertest";
 import { createTestApp } from "../../../test/app";
-import { adminToken, userToken, MOCK_USER, MOCK_ADMIN_USER, seedTestUsers, cleanTestUsers } from "../../../test/helpers";
+import {
+  adminToken,
+  userToken,
+  MOCK_USER,
+  MOCK_ADMIN_USER,
+  seedTestUsers,
+  cleanTestUsers,
+} from "../../../test/helpers";
 import { db } from "../../../db";
-import { orders, orderItems, products, productVariants, inventory, profiles, productReviews, inventoryMovements } from "../../../db/schema";
+import {
+  orders,
+  orderItems,
+  products,
+  productVariants,
+  inventory,
+  profiles,
+  productReviews,
+  inventoryMovements,
+} from "../../../db/schema";
 import orderRoutes from "./orders.routes";
+import { calculateShippingAmount } from "./orders.service";
 
 const app = createTestApp(orderRoutes);
+
+describe("calculateShippingAmount", () => {
+  it("charges 100 only for exact Dhaka; everything else is 130", () => {
+    expect(calculateShippingAmount("Dhaka")).toBe(100);
+    expect(calculateShippingAmount("dhaka")).toBe(100);
+    expect(calculateShippingAmount("  Dhaka  ")).toBe(100);
+    expect(calculateShippingAmount("Chittagong")).toBe(130);
+    expect(calculateShippingAmount("Chattogram")).toBe(130);
+    expect(calculateShippingAmount("NotARealDistrict")).toBe(130);
+    expect(calculateShippingAmount("")).toBe(130);
+    expect(calculateShippingAmount(null)).toBe(130);
+  });
+});
 
 const GHOST_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -30,36 +68,59 @@ async function cleanAll() {
 }
 
 async function seedProduct(slug = `order-prod-${Date.now()}`) {
-  const [row] = await db.insert(products).values({ name: "Order Product", slug, basePrice: "2000", isActive: true }).returning();
+  const [row] = await db
+    .insert(products)
+    .values({ name: "Order Product", slug, basePrice: "2000", isActive: true })
+    .returning();
   return row!;
 }
 
 async function seedVariant(productId: string, stock = 20) {
-  const [row] = await db.insert(productVariants).values({
-    productId, sku: `SKU-ORD-${Date.now()}`, price: "2000", stock, reservedStock: 0, isActive: true,
-  }).returning();
+  const [row] = await db
+    .insert(productVariants)
+    .values({
+      productId,
+      sku: `SKU-ORD-${Date.now()}`,
+      price: "2000",
+      stock,
+      reservedStock: 0,
+      isActive: true,
+    })
+    .returning();
   // Seed inventory table — orders service checks stock from here
-  await db.insert(inventory).values({ variantId: row!.id, quantity: stock, reservedQuantity: 0 });
+  await db
+    .insert(inventory)
+    .values({ variantId: row!.id, quantity: stock, reservedQuantity: 0 });
   return row!;
 }
 
 async function seedOrder(overrides: Partial<typeof orders.$inferInsert> = {}) {
-  const [row] = await db.insert(orders).values({
-    orderNumber: `ORD-TEST-${Date.now()}`,
-    subtotal: "2000",
-    totalAmount: "2000",
-    billingAddress: TEST_ADDRESS,
-    shippingAddress: TEST_ADDRESS,
-    email: "test@example.com",
-    paymentMethod: "cash",
-    ...overrides,
-  }).returning();
+  const [row] = await db
+    .insert(orders)
+    .values({
+      orderNumber: `ORD-TEST-${Date.now()}`,
+      subtotal: "2000",
+      totalAmount: "2000",
+      billingAddress: TEST_ADDRESS,
+      shippingAddress: TEST_ADDRESS,
+      email: "test@example.com",
+      paymentMethod: "cash",
+      ...overrides,
+    })
+    .returning();
   return row!;
 }
 
-beforeAll(async () => { await seedTestUsers(); });
-beforeEach(async () => { await cleanAll(); });
-afterAll(async () => { await cleanAll(); await cleanTestUsers(); });
+beforeAll(async () => {
+  await seedTestUsers();
+});
+beforeEach(async () => {
+  await cleanAll();
+});
+afterAll(async () => {
+  await cleanAll();
+  await cleanTestUsers();
+});
 
 // ─── POST / ───────────────────────────────────────────────────────────────────
 
@@ -92,9 +153,18 @@ describe("POST /orders", () => {
     expect(res.body.data.totalAmount).toBe("4100.00");
 
     // Stock should be reduced — inventory is source of truth, productVariants.stock kept in sync
-    const [pv] = await db.select({ stock: productVariants.stock }).from(productVariants).where(eq(productVariants.id, variant.id));
+    const [pv] = await db
+      .select({ stock: productVariants.stock })
+      .from(productVariants)
+      .where(eq(productVariants.id, variant.id));
     expect(pv!.stock).toBe(8);
-    const [inv] = await db.select({ quantity: inventory.quantity, reservedQuantity: inventory.reservedQuantity }).from(inventory).where(eq(inventory.variantId, variant.id));
+    const [inv] = await db
+      .select({
+        quantity: inventory.quantity,
+        reservedQuantity: inventory.reservedQuantity,
+      })
+      .from(inventory)
+      .where(eq(inventory.variantId, variant.id));
     expect(inv!.quantity).toBe(8);
     // A sale is recorded solely as a quantity decrement — reserving on top of
     // it would double-count the sold units in availability calculations.
@@ -110,7 +180,11 @@ describe("POST /orders", () => {
       .send({
         email: "guest@example.com",
         paymentMethod: "cash",
-        shippingAddress: { ...TEST_ADDRESS, district: "Chattogram", upazila: "Sitakunda" },
+        shippingAddress: {
+          ...TEST_ADDRESS,
+          district: "Chattogram",
+          upazila: "Sitakunda",
+        },
         items: [{ variantId: variant.id, quantity: 1 }],
       });
 
@@ -130,7 +204,11 @@ describe("POST /orders", () => {
       .send({
         email: "guest@example.com",
         paymentMethod: "cash",
-        shippingAddress: { ...TEST_ADDRESS, district: "Chattogram", upazila: "Sitakunda" },
+        shippingAddress: {
+          ...TEST_ADDRESS,
+          district: "Chattogram",
+          upazila: "Sitakunda",
+        },
         shippingAmount: 0,
         items: [{ variantId: variant.id, quantity: 1 }],
       });
@@ -152,8 +230,14 @@ describe("POST /orders", () => {
       items: [{ variantId: variant.id, quantity: 1 }],
     };
 
-    const first = await request(app).post("/").set("Authorization", userToken).send(body);
-    const second = await request(app).post("/").set("Authorization", userToken).send(body);
+    const first = await request(app)
+      .post("/")
+      .set("Authorization", userToken)
+      .send(body);
+    const second = await request(app)
+      .post("/")
+      .set("Authorization", userToken)
+      .send(body);
 
     expect(first.status).toBe(201);
     expect(second.status).toBe(201);
@@ -185,7 +269,11 @@ describe("POST /orders", () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", userToken)
-      .send({ email: "u@e.com", shippingAddress: TEST_ADDRESS, items: [{ variantId: variant.id, quantity: 5 }] });
+      .send({
+        email: "u@e.com",
+        shippingAddress: TEST_ADDRESS,
+        items: [{ variantId: variant.id, quantity: 5 }],
+      });
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("BUSINESS_RULE");
@@ -195,7 +283,11 @@ describe("POST /orders", () => {
     const res = await request(app)
       .post("/")
       .set("Authorization", userToken)
-      .send({ email: "u@e.com", shippingAddress: TEST_ADDRESS, items: [{ variantId: GHOST_ID, quantity: 1 }] });
+      .send({
+        email: "u@e.com",
+        shippingAddress: TEST_ADDRESS,
+        items: [{ variantId: GHOST_ID, quantity: 1 }],
+      });
 
     expect(res.status).toBe(404);
   });
@@ -214,7 +306,11 @@ describe("POST /orders", () => {
     const variant = await seedVariant(product.id);
     const res = await request(app)
       .post("/")
-      .send({ email: "not-an-email", shippingAddress: TEST_ADDRESS, items: [{ variantId: variant.id, quantity: 1 }] });
+      .send({
+        email: "not-an-email",
+        shippingAddress: TEST_ADDRESS,
+        items: [{ variantId: variant.id, quantity: 1 }],
+      });
 
     expect(res.status).toBe(400);
   });
@@ -247,7 +343,9 @@ describe("GET /orders", () => {
     await seedOrder({ status: "pending" });
     await seedOrder({ status: "shipped" });
 
-    const res = await request(app).get("/?status=shipped").set("Authorization", adminToken);
+    const res = await request(app)
+      .get("/?status=shipped")
+      .set("Authorization", adminToken);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
     expect(res.body.data[0].status).toBe("shipped");
@@ -280,7 +378,9 @@ describe("GET /orders/by-number/:orderNumber", () => {
 describe("GET /orders/by-number/:orderNumber/invoice", () => {
   it("returns a PDF for a public order-number lookup (no auth, no token)", async () => {
     await seedOrder({ orderNumber: "ORD-INV-PUB" });
-    const res = await request(app).get("/by-number/ORD-INV-PUB/invoice").buffer();
+    const res = await request(app)
+      .get("/by-number/ORD-INV-PUB/invoice")
+      .buffer();
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/pdf");
     expect(res.headers["content-disposition"]).toContain("attachment");
@@ -334,7 +434,9 @@ describe("GET /orders/by-number/:orderNumber/invoice", () => {
 describe("GET /orders/:id", () => {
   it("user can view own order", async () => {
     const order = await seedOrder({ userId: MOCK_USER.id });
-    const res = await request(app).get(`/${order.id}`).set("Authorization", userToken);
+    const res = await request(app)
+      .get(`/${order.id}`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(order.id);
     expect(Array.isArray(res.body.data.items)).toBe(true);
@@ -342,18 +444,24 @@ describe("GET /orders/:id", () => {
 
   it("user cannot view another user's order", async () => {
     const order = await seedOrder({ userId: MOCK_ADMIN_USER.id });
-    const res = await request(app).get(`/${order.id}`).set("Authorization", userToken);
+    const res = await request(app)
+      .get(`/${order.id}`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(403);
   });
 
   it("admin can view any order", async () => {
     const order = await seedOrder({ userId: MOCK_USER.id });
-    const res = await request(app).get(`/${order.id}`).set("Authorization", adminToken);
+    const res = await request(app)
+      .get(`/${order.id}`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(200);
   });
 
   it("returns 404 for unknown id", async () => {
-    const res = await request(app).get(`/${GHOST_ID}`).set("Authorization", adminToken);
+    const res = await request(app)
+      .get(`/${GHOST_ID}`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(404);
   });
 });
@@ -366,41 +474,64 @@ describe("PATCH /orders/:id/cancel", () => {
     const variant = await seedVariant(product.id, 10);
 
     // Create order via API so stock is correctly reserved
-    const created = await request(app).post("/").set("Authorization", userToken).send({
-      email: "u@e.com", shippingAddress: TEST_ADDRESS, items: [{ variantId: variant.id, quantity: 3 }],
-    });
+    const created = await request(app)
+      .post("/")
+      .set("Authorization", userToken)
+      .send({
+        email: "u@e.com",
+        shippingAddress: TEST_ADDRESS,
+        items: [{ variantId: variant.id, quantity: 3 }],
+      });
     const orderId = created.body.data.id;
 
-    const res = await request(app).patch(`/${orderId}/cancel`).set("Authorization", userToken);
+    const res = await request(app)
+      .patch(`/${orderId}/cancel`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("cancelled");
 
     // Stock should be restored
-    const [v] = await db.select({ stock: productVariants.stock }).from(productVariants);
+    const [v] = await db
+      .select({ stock: productVariants.stock })
+      .from(productVariants);
     expect(v!.stock).toBe(10);
   });
 
   it("user cannot cancel already-cancelled order", async () => {
-    const order = await seedOrder({ userId: MOCK_USER.id, status: "cancelled" });
-    const res = await request(app).patch(`/${order.id}/cancel`).set("Authorization", userToken);
+    const order = await seedOrder({
+      userId: MOCK_USER.id,
+      status: "cancelled",
+    });
+    const res = await request(app)
+      .patch(`/${order.id}/cancel`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(422);
   });
 
   it("user cannot cancel shipped order", async () => {
     const order = await seedOrder({ userId: MOCK_USER.id, status: "shipped" });
-    const res = await request(app).patch(`/${order.id}/cancel`).set("Authorization", userToken);
+    const res = await request(app)
+      .patch(`/${order.id}/cancel`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(422);
   });
 
   it("user cannot cancel another user's order", async () => {
     const order = await seedOrder({ userId: MOCK_ADMIN_USER.id });
-    const res = await request(app).patch(`/${order.id}/cancel`).set("Authorization", userToken);
+    const res = await request(app)
+      .patch(`/${order.id}/cancel`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(403);
   });
 
   it("admin can cancel any order", async () => {
-    const order = await seedOrder({ userId: MOCK_USER.id, status: "confirmed" });
-    const res = await request(app).patch(`/${order.id}/cancel`).set("Authorization", adminToken);
+    const order = await seedOrder({
+      userId: MOCK_USER.id,
+      status: "confirmed",
+    });
+    const res = await request(app)
+      .patch(`/${order.id}/cancel`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("cancelled");
   });
@@ -423,17 +554,28 @@ describe("DELETE /orders/:id (admin)", () => {
       totalPrice: "2000",
     });
 
-    const res = await request(app).delete(`/${order.id}`).set("Authorization", adminToken);
+    const res = await request(app)
+      .delete(`/${order.id}`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(200);
 
-    const [check] = await db.select({ id: orders.id }).from(orders).where(eq(orders.id, order.id));
+    const [check] = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.id, order.id));
     expect(check).toBeUndefined();
-    const remainingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+    const remainingItems = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order.id));
     expect(remainingItems).toHaveLength(0);
   });
 
   it("returns 422 when the order has a review attached", async () => {
-    const order = await seedOrder({ userId: MOCK_USER.id, status: "delivered" });
+    const order = await seedOrder({
+      userId: MOCK_USER.id,
+      status: "delivered",
+    });
     const product = await seedProduct();
     await db.insert(productReviews).values({
       productId: product.id,
@@ -442,11 +584,16 @@ describe("DELETE /orders/:id (admin)", () => {
       rating: 5,
     });
 
-    const res = await request(app).delete(`/${order.id}`).set("Authorization", adminToken);
+    const res = await request(app)
+      .delete(`/${order.id}`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("BUSINESS_RULE");
 
-    const [check] = await db.select({ id: orders.id }).from(orders).where(eq(orders.id, order.id));
+    const [check] = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.id, order.id));
     expect(check).toBeDefined();
   });
 
@@ -464,19 +611,25 @@ describe("DELETE /orders/:id (admin)", () => {
       orderId: order.id,
     });
 
-    const res = await request(app).delete(`/${order.id}`).set("Authorization", adminToken);
+    const res = await request(app)
+      .delete(`/${order.id}`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("BUSINESS_RULE");
   });
 
   it("returns 404 for unknown order", async () => {
-    const res = await request(app).delete(`/${GHOST_ID}`).set("Authorization", adminToken);
+    const res = await request(app)
+      .delete(`/${GHOST_ID}`)
+      .set("Authorization", adminToken);
     expect(res.status).toBe(404);
   });
 
   it("returns 403 for non-admin", async () => {
     const order = await seedOrder();
-    const res = await request(app).delete(`/${order.id}`).set("Authorization", userToken);
+    const res = await request(app)
+      .delete(`/${order.id}`)
+      .set("Authorization", userToken);
     expect(res.status).toBe(403);
   });
 
@@ -569,14 +722,23 @@ describe("PATCH /orders/:id/fulfillment (admin)", () => {
 
 describe("POST /orders/claim", () => {
   afterEach(async () => {
-    await db.update(profiles).set({ phone: null }).where(eq(profiles.id, MOCK_USER.id));
+    await db
+      .update(profiles)
+      .set({ phone: null })
+      .where(eq(profiles.id, MOCK_USER.id));
   });
 
   it("claims a guest order matching the caller's own saved phone", async () => {
-    await db.update(profiles).set({ phone: "01711112222" }).where(eq(profiles.id, MOCK_USER.id));
+    await db
+      .update(profiles)
+      .set({ phone: "01711112222" })
+      .where(eq(profiles.id, MOCK_USER.id));
     await seedOrder({ phone: "01711112222" });
 
-    const res = await request(app).post("/claim").set("Authorization", userToken).send({});
+    const res = await request(app)
+      .post("/claim")
+      .set("Authorization", userToken)
+      .send({});
 
     expect(res.status).toBe(200);
     expect(res.body.data.claimed).toBe(1);
@@ -594,7 +756,10 @@ describe("POST /orders/claim", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.claimed).toBe(0);
 
-    const [order] = await db.select({ userId: orders.userId }).from(orders).where(eq(orders.phone, "01799998888"));
+    const [order] = await db
+      .select({ userId: orders.userId })
+      .from(orders)
+      .where(eq(orders.phone, "01799998888"));
     expect(order!.userId).toBeNull();
   });
 
